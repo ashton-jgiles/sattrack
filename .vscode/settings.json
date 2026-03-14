@@ -1,0 +1,40 @@
+{
+  "workbench.colorTheme": "Default Dark Modern",
+  "workbench.colorCustomizations": {
+    "titleBar.activeBackground": "#0d1b2a",
+    "titleBar.activeForeground": "#e0e0e0",
+    "activityBar.background": "#0d1b2a",
+    "activityBar.foreground": "#4fc3f7",
+    "sideBar.background": "#111827",
+    "sideBarSectionHeader.background": "#0d1b2a",
+    "statusBar.background": "#0a3d62",
+    "statusBar.foreground": "#ffffff",
+    "tab.activeBackground": "#1a2744",
+    "tab.activeForeground": "#4fc3f7",
+    "tab.inactiveBackground": "#111827",
+    "editorGroupHeader.tabsBackground": "#0d1b2a",
+    "editor.background": "#0f172a"
+  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.tabSize": 4,
+  "editor.rulers": [80],
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "files.associations": {
+    "**/*.html": "django-html"
+  },
+  "emmet.includeLanguages": {
+    "django-html": "html"
+  },
+  "python.languageServer": "Pylance",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.python"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}

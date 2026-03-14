@@ -1,0 +1,21 @@
+{
+  "recommendations": [
+    "batisteo.vscode-django",
+    "mikestead.dotenv",
+    "dsznajder.es7-react-js-snippets",
+    "xabikos.javascriptsnippets",
+    "esbenp.prettier-vscode",
+    "ms-python.pylance",
+    "ms-python.python",
+    "ms-python.debugpy",
+    "ms-python.python-environment-manager",
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-mysql",
+    "eamodio.gitlens",
+    "christian-kohler.path-intellisense",
+    "formulahendry.auto-rename-tag",
+    "rangav.vscode-thunder-client",
+    "ms-azuretools.vscode-docker",
+    "ms-azuretools.vscode-containers"
+  ]
+}

@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.env
+venv/
+.venv/
+
+# Django
+db.sqlite3
+*.log
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Webpack build output
+backend/frontend/static/frontend/main.js
+
+# Database
+db/seed_dump.sql
+
+# Git
+.git/
+.gitignore
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore

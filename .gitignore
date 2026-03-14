@@ -1,0 +1,9 @@
+__pycache__/
+backend/*/migrations/
+*.py[cod]
+venv/
+.env
+db.sqlite3
+node_modules/
+backend/frontend/static/frontend/main.js
+.DS_Store
