@@ -9,7 +9,6 @@ from sgp4.omm import initialize
 from config import (
     get_connection,
     CELESTRAK_SOURCES,
-    CELESTRAK_URLS,
     ALL_NORAD_IDS,
     ORBIT_TYPE_MAP,
     NAME_MAP,

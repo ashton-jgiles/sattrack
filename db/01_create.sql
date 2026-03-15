@@ -145,13 +145,13 @@ DROP TABLE IF EXISTS `earth_science`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `earth_science` (
   `satellite_id` int NOT NULL,
-  `timestamp` datetime NOT NULL,
-  `land_surface_temp` decimal(8,4) NOT NULL,
-  `emissivity` decimal(6,4) DEFAULT NULL,
-  `quality_flag` varchar(10) DEFAULT NULL,
-  `instrument` varchar(50) NOT NULL,
-  `lst_unit` varchar(10) NOT NULL DEFAULT 'Kelvin',
-  PRIMARY KEY (`satellite_id`,`timestamp`),
+  `instrument` VARCHAR(100) NOT NULL,
+  `data_measured` VARCHAR(200) NOT NULL,
+  `wavelength_band` VARCHAR(100) DEFAULT NULL,
+  `resolution_m`INT DEFAULT NULL,
+  `data_archive_url` VARCHAR(500) DEFAULT NULL,
+  `mission_status` VARCHAR(20) DEFAULT NULL,
+  PRIMARY KEY (`satellite_id`),
   CONSTRAINT `earth_science_ibfk_1` FOREIGN KEY (`satellite_id`) REFERENCES `satellite` (`satellite_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -164,10 +164,12 @@ DROP TABLE IF EXISTS `internet`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `internet` (
-  `satellite_id` int NOT NULL,
-  `coverage` text,
-  `frequency_band` varchar(20) DEFAULT NULL,
-  `service_type` varchar(50) DEFAULT NULL,
+    `satellite_id` INT NOT NULL,
+    `coverage` VARCHAR(100) NOT NULL,
+    `frequency_band` VARCHAR(50) NOT NULL,
+    `service_type` VARCHAR(50) NOT NULL,
+    `throughput_gbps` DECIMAL(8,2) DEFAULT NULL,
+    `altitude_km` INT DEFAULT NULL,
   PRIMARY KEY (`satellite_id`),
   CONSTRAINT `internet_ibfk_1` FOREIGN KEY (`satellite_id`) REFERENCES `satellite` (`satellite_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -233,10 +235,12 @@ DROP TABLE IF EXISTS `navigation`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `navigation` (
-  `satellite_id` int NOT NULL,
-  `constellation` varchar(50) NOT NULL,
-  `signal_type` varchar(50) DEFAULT NULL,
-  `accuracy` decimal(8,2) DEFAULT NULL,
+    `satellite_id` INT NOT NULL,
+    `constellation` VARCHAR(50) NOT NULL,
+    `signal_type` VARCHAR(100) NOT NULL,
+    `accuracy_m` DECIMAL(8,2) DEFAULT NULL,
+    `orbital_slot` VARCHAR(20) DEFAULT NULL,
+    `clock_type` VARCHAR(50) DEFAULT NULL,
   PRIMARY KEY (`satellite_id`),
   CONSTRAINT `navigation_ibfk_1` FOREIGN KEY (`satellite_id`) REFERENCES `satellite` (`satellite_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -251,12 +255,13 @@ DROP TABLE IF EXISTS `oceanic_science`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `oceanic_science` (
   `satellite_id` int NOT NULL,
-  `timestamp` datetime NOT NULL,
-  `sst` decimal(8,4) NOT NULL,
-  `sst_anomaly` decimal(8,4) DEFAULT NULL,
-  `instrument` varchar(50) NOT NULL,
-  `sst_unit` varchar(10) NOT NULL DEFAULT 'Celsius',
-  PRIMARY KEY (`satellite_id`,`timestamp`),
+  `instrument` VARCHAR(100) NOT NULL,
+  `data_measured` VARCHAR(200) NOT NULL,
+  `wavelength_band` VARCHAR(100) DEFAULT NULL,
+  `resolution_m`INT DEFAULT NULL,
+  `data_archive_url` VARCHAR(500) DEFAULT NULL,
+  `mission_status` VARCHAR(20) DEFAULT NULL,
+  PRIMARY KEY (`satellite_id`),
   CONSTRAINT `oceanic_science_ibfk_1` FOREIGN KEY (`satellite_id`) REFERENCES `satellite` (`satellite_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -269,12 +274,13 @@ DROP TABLE IF EXISTS `research`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `research` (
-  `satellite_id` int NOT NULL,
-  `research_field` varchar(100) NOT NULL,
-  `instrument` varchar(100) DEFAULT NULL,
-  `wavelength_band` varchar(50) DEFAULT NULL,
-  `data_archive_url` varchar(500) DEFAULT NULL,
-  `mission_status` varchar(20) DEFAULT NULL,
+    `satellite_id` INT NOT NULL,
+    `instrument` VARCHAR(100) NOT NULL,
+    `data_measured` VARCHAR(200) NOT NULL, 
+    `research_field` VARCHAR(100) NOT NULL,
+    `wavelength_band` VARCHAR(100) DEFAULT NULL,
+    `data_archive_url` VARCHAR(500) DEFAULT NULL,
+    `mission_status` VARCHAR(20) DEFAULT NULL,
   PRIMARY KEY (`satellite_id`),
   CONSTRAINT `research_ibfk_1` FOREIGN KEY (`satellite_id`) REFERENCES `satellite` (`satellite_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -456,10 +462,13 @@ DROP TABLE IF EXISTS `weather`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `weather` (
   `satellite_id` int NOT NULL,
-  `coverage_region` varchar(100) NOT NULL,
-  `imaging_channels` int DEFAULT NULL,
-  `repeat_cycle_min` int DEFAULT NULL,
-  `instrument` varchar(100) DEFAULT NULL,
+  `instrument` VARCHAR(100) NOT NULL,
+  `data_measured` VARCHAR(200) NOT NULL,
+  `coverage_region` VARCHAR(100) NOT NULL,
+  `imaging_channels` INT DEFAULT NULL,
+  `repeat_cycle_min` INT DEFAULT NULL,
+  `data_archive_url` VARCHAR(500) DEFAULT NULL,
+  `mission_status` VARCHAR(20) DEFAULT NULL,
   PRIMARY KEY (`satellite_id`),
   CONSTRAINT `weather_ibfk_1` FOREIGN KEY (`satellite_id`) REFERENCES `satellite` (`satellite_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
