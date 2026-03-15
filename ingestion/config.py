@@ -20,29 +20,86 @@ def get_connection():
 
 # constants
 HISTORY_DAYS = 30
-INTERVAL_HOURS = 6
+INTERVAL_HOURS = 2
 
 # CelesTrak Datasource URLS
-CELESTRAK_ACTIVE_URL = (
-    "https://celestrak.org/NORAD/elements/gp.php"
-    "?GROUP=active&FORMAT=json"
-)
+CELESTRAK_SOURCES = [
+    {
+        'url':         'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=json',
+        'source':      'CelesTrak Starlink',
+        'name':        'CelesTrak Starlink Satellites',
+        'description': 'TLE orbital elements for Starlink satellites',
+        'frequency':   '6h',
+    },
+    {
+        'url':         'https://celestrak.org/NORAD/elements/gp.php?GROUP=gps-ops&FORMAT=json',
+        'source':      'CelesTrak GPS',
+        'name':        'CelesTrak GPS Operational Satellites',
+        'description': 'TLE orbital elements for GPS operational satellites',
+        'frequency':   '6h',
+    },
+    {
+        'url':         'https://celestrak.org/NORAD/elements/gp.php?GROUP=galileo&FORMAT=json',
+        'source':      'CelesTrak Galileo',
+        'name':        'CelesTrak Galileo Satellites',
+        'description': 'TLE orbital elements for Galileo navigation satellites',
+        'frequency':   '6h',
+    },
+    {
+        'url':         'https://celestrak.org/NORAD/elements/gp.php?GROUP=science&FORMAT=json',
+        'source':      'CelesTrak Science',
+        'name':        'CelesTrak Science Satellites',
+        'description': 'TLE orbital elements for Science satellites',
+        'frequency':   '6h',
+    },
+    {
+        'url':         'https://celestrak.org/NORAD/elements/gp.php?GROUP=noaa&FORMAT=json',
+        'source':      'CelesTrak NOAA',
+        'name':        'CelesTrak NOAA Satellites',
+        'description': 'TLE orbital elements for NOAA satellites',
+        'frequency':   '6h',
+    },
+    {
+        'url':         'https://celestrak.org/NORAD/elements/gp.php?GROUP=goes&FORMAT=json',
+        'source':      'CelesTrak GOES',
+        'name':        'CelesTrak GOES Satellites',
+        'description': 'TLE orbital elements for GOES satellites',
+        'frequency':   '6h',
+    },
+    {
+        'url':         'https://celestrak.org/NORAD/elements/gp.php?GROUP=weather&FORMAT=json',
+        'source':      'CelesTrak Weather',
+        'name':        'CelesTrak Weather Satellites',
+        'description': 'TLE orbital elements for Wheather satellites',
+        'frequency':   '6h',
+    },
+    {
+        'url':         'https://celestrak.org/NORAD/elements/gp.php?GROUP=resource&FORMAT=json',
+        'source':      'CelesTrak Earth and Ocean',
+        'name':        'CelesTrak Earth and Ocean Satellites',
+        'description': 'TLE orbital elements for Earth and Ocean satellites',
+        'frequency':   '6h',
+    },
+    {
+        'url':         'https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=json',
+        'source':      'CelesTrak Space Stations',
+        'name':        'CelesTrak Space Stations',
+        'description': 'TLE orbital elements for Space Stations',
+        'frequency':   '6h',
+    },
+    {
+        'url':         'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json',
+        'source':      'CelesTrak Active',
+        'name':        'CelesTrak Miscellaneous Satellites',
+        'description': 'TLE orbital elements for Miscellaneous Satellites',
+        'frequency':   '6h',
+    },
 
-CELESTRAK_GPS_URL = (
-    "https://celestrak.org/NORAD/elements/gp.php"
-    "?GROUP=gps-ops&FORMAT=json"
-)
 
-CELESTRAK_GALILEO_URL = (
-    "https://celestrak.org/NORAD/elements/gp.php"
-    "?GROUP=galileo&FORMAT=json"
-)
-
-CELESTRAK_URLS = [
-    CELESTRAK_ACTIVE_URL,
-    CELESTRAK_GPS_URL,
-    CELESTRAK_GALILEO_URL,
 ]
+
+# create the list of urls
+CELESTRAK_URLS = [s['url'] for s in CELESTRAK_SOURCES]
 
 # target satellites list
 TARGET_SATELLITES = {

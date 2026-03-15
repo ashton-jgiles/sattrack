@@ -1,17 +1,24 @@
+# import date time
 from datetime import datetime
 
+# get satellite method
 def get_satellite_id(cursor, norad_id):
+    # select the satellite id where the norad id equals the passed in id
     cursor.execute(
-        "SELECT satelite_id FROM satellite WHERE norad_id = %s",
+        "SELECT satellite_id FROM satellite WHERE norad_id = %s",
         (norad_id,)
     )
     row = cursor.fetchone()
     return row[0] if row else None
 
+# satellite exists function
 def satellite_exists(cursor, norad_id):
+    # return if there is a satellite at the norad id
     return get_satellite_id(cursor, norad_id)
 
+# ensure dataset method
 def ensure_dataset(cursor, source, name, description, url, frequency):
+    # select the dataset id from the source
     cursor.execute(
         "SELECT dataset_id FROM dataset WHERE source = %s LIMIT 1",
         (source,)
@@ -20,6 +27,7 @@ def ensure_dataset(cursor, source, name, description, url, frequency):
     if row:
         return row[0]
     
+    # insert into the dataset an approved status
     cursor.execute(
         """
         INSERT INTO dataset (
@@ -44,8 +52,10 @@ def ensure_dataset(cursor, source, name, description, url, frequency):
     )
     return cursor.lastrowid
 
+# record exists function
 def record_exists(cursor, table, conditions):
-    where  = ' AND '.join(f"`{col}` = %s" for col in conditions)
+    # check if a reocrd exists in a table
+    where = ' AND '.join(f"`{col}` = %s" for col in conditions)
     values = list(conditions.values())
     cursor.execute(
         f"SELECT 1 FROM `{table}` WHERE {where} LIMIT 1",

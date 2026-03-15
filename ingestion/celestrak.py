@@ -1,13 +1,14 @@
 # static imports
 import requests
 from datetime import datetime, timedelta, timezone
-from math import pi, sqrt, atan2, degrees
+from math import pi, sqrt, atan2, degrees, sin, cos
 from sgp4.api import Satrec, jday
+from sgp4.omm import initialize
 
 # config and helper imports
 from config import (
     get_connection,
-    CELESTRAK_ACTIVE_URL,
+    CELESTRAK_SOURCES,
     CELESTRAK_URLS,
     ALL_NORAD_IDS,
     ORBIT_TYPE_MAP,
@@ -21,35 +22,42 @@ from db_helpers import (
     record_exists
 )
 
-# SGP4 helpers
-def ecef_to_geodetic(x, y, z):
+# build record function
+def build_sat_record(satellite_data):
+    # create the sat
+    satellite_record = Satrec()
+    # intitalize the recrod
+    initialize(satellite_record, satellite_data)
+    # return the record
+    return satellite_record
 
-    # constants
+# SGP4 helper
+def ecef_to_geodetic(x, y, z):
     a = 6378.137
     f = 1 / 298.257223563
     e2 = 2 * f - f ** 2
- 
+
     lon = degrees(atan2(y, x))
     p = sqrt(x ** 2 + y ** 2)
- 
-    # initial estimate
+
     lat = degrees(atan2(z, p * (1 - e2)))
- 
-    # iterate for accuracy
+
     for _ in range(10):
         lat_rad = lat * pi / 180
-        N = a / sqrt(1 - e2 * (lat_rad ** 2))
-        lat = degrees(atan2(z + e2 * N * (lat * pi / 180), p))
- 
-    # computed values
+        N = a / sqrt(1 - e2 * sin(lat_rad) ** 2)
+        lat = degrees(atan2(z + e2 * N * sin(lat_rad), p))
+
     lat_rad = lat * pi / 180
-    N = a / sqrt(1 - e2 * (lat_rad ** 2))
-    alt = (p / max(abs(lat_rad), 1e-10)) - N
- 
-    # return the rounded values
+    N = a / sqrt(1 - e2 * sin(lat_rad) ** 2)
+
+    if abs(lat) > 89.9:
+        alt = abs(z) / sin(lat_rad) - N * (1 - e2)
+    else:
+        alt = p / cos(lat_rad) - N
+
     return round(lat, 6), round(lon, 6), round(alt, 4)
  
- 
+# compute the velocity of the satellite
 def compute_velocity(mean_motion_rad_per_sec):
     # gravity constant
     GM = 398600.4418 
@@ -61,17 +69,31 @@ def compute_velocity(mean_motion_rad_per_sec):
 # fetch the satellites
 def fetch_all_satellites():
     all_sats = []
-    for url in CELESTRAK_URLS:
-        print(f"[CelesTrak] Fetching {url}")
+    norad_to_url = {}
+
+    # go through each soruce 
+    for source in CELESTRAK_SOURCES:
+        print(f"[CelesTrak] Fetching {source['source']}...")
+        # get the data from the source
         try:
-            response = requests.get(url, timeout=30)
+            response = requests.get(source['url'], timeout=30)
             response.raise_for_status()
-            all_sats.extend(response.json())
-            print(f"[CelesTrak] Got {len(response.json())} satellites")
+            sats = response.json()
+            print(f"[CelesTrak] Got {len(sats)} satellites from {source['source']}")
+
+            # map the orad id to the url
+            for sat in sats:
+                nid = str(sat.get('NORAD_CAT_ID', ''))
+                # map norad_id to source url on first encounter
+                if nid not in norad_to_url:
+                    norad_to_url[nid] = source['url']
+
+            all_sats.extend(sats)
+        # if we cant fetch our data
         except Exception as e:
-            print(f"[CelesTrak] Failed to fetch {url}: {e}")
+            print(f"[CelesTrak] Failed to fetch {source['source']}: {e}")
             continue
- 
+
     # deduplicate by NORAD_CAT_ID
     seen = set()
     unique = []
@@ -80,9 +102,9 @@ def fetch_all_satellites():
         if nid and nid not in seen:
             seen.add(nid)
             unique.append(sat)
- 
+
     print(f"[CelesTrak] Total unique satellites: {len(unique)}")
-    return unique
+    return unique, norad_to_url
  
 # add the satellite
 def insert_satellite(cursor, sat_data, dataset_id):
@@ -90,12 +112,15 @@ def insert_satellite(cursor, sat_data, dataset_id):
  
     # return existing satellite_id if already inserted
     existing = get_satellite_id(cursor, norad_id)
+
+    # if the satellite exists return
     if existing:
         return existing
  
     # use our curated name if available otherwise use CelesTrak name
     name = NAME_MAP.get(norad_id, sat_data.get('OBJECT_NAME', 'Unknown'))
  
+    # insert the satellite into the table
     cursor.execute(
         """
         INSERT INTO satellite (
@@ -110,7 +135,7 @@ def insert_satellite(cursor, sat_data, dataset_id):
         """,
         (
             name,
-            f"Imported from CelesTrak — {sat_data.get('OBJECT_TYPE', 'PAYLOAD')}",
+            f"",
             ORBIT_TYPE_MAP.get(norad_id, 'LEO'),
             norad_id,
             sat_data.get('OBJECT_ID', ''),
@@ -119,7 +144,7 @@ def insert_satellite(cursor, sat_data, dataset_id):
         )
     )
     return cursor.lastrowid
- 
+
 # add the trajectory
 def insert_trajectory(cursor, satellite_id, dataset_id, sat_record, timestamp):
     # skip if already exists
@@ -150,6 +175,7 @@ def insert_trajectory(cursor, satellite_id, dataset_id, sat_record, timestamp):
     # mean motion in radians per second for velocity calculation
     velocity = compute_velocity(sat_record.no_kozai)
  
+    # insert the trajectory row
     cursor.execute(
         """
         INSERT INTO trajectory (
@@ -192,71 +218,76 @@ def insert_trajectory(cursor, satellite_id, dataset_id, sat_record, timestamp):
         )
     )
  
- # main running method
 def run():
     print("\n[CelesTrak] Starting ingestion...")
- 
-    # fetch all satellites from CelesTrak
-    all_satellites = fetch_all_satellites()
- 
-    # filter to our curated list
+
+    # fetch and deduplicate as before
+    all_satellites, norad_to_url = fetch_all_satellites()
+
+    # get the target satellites
     target_sats = [
         sat for sat in all_satellites
         if str(sat.get('NORAD_CAT_ID', '')) in ALL_NORAD_IDS
     ]
     print(f"[CelesTrak] Matched {len(target_sats)} of {len(ALL_NORAD_IDS)} target satellites")
- 
+
+    # if we dont find a target satellite
     if not target_sats:
         print("[CelesTrak] No target satellites found — check NORAD IDs in config.py")
         return
- 
-    # open DB connection
+
+    # get the connection and cursor
     conn = get_connection()
     cursor = conn.cursor()
- 
-    # ensure CelesTrak dataset record exists
-    dataset_id = ensure_dataset(
-        cursor,
-        source = 'CelesTrak',
-        name = 'CelesTrak Active Satellites',
-        description = 'TLE orbital elements for active satellites',
-        url = CELESTRAK_ACTIVE_URL,
-        frequency = '6h',
-    )
+
+    # create one dataset record per source
+    dataset_map = {}
+
+    # iterate through each source
+    for source in CELESTRAK_SOURCES:
+        # ensure there is a dataset
+        dataset_id = ensure_dataset(
+            cursor,
+            source = source['source'],
+            name = source['name'],
+            description = source['description'],
+            url = source['url'],
+            frequency = source['frequency'],
+        )
+        # map the source url to the id
+        dataset_map[source['url']] = dataset_id
+        print(f"[CelesTrak] Dataset '{source['source']}' ID: {dataset_id}")
+
     conn.commit()
-    print(f"[CelesTrak] Dataset ID: {dataset_id}")
- 
-    # build list of timestamps to back-compute
-    now        = datetime.now(timezone.utc)
+
+    # build list of timestamps
+    now = datetime.now(timezone.utc)
     timestamps = [
         now - timedelta(hours=h)
         for h in range(0, HISTORY_DAYS * 24, INTERVAL_HOURS)
     ]
     print(f"[CelesTrak] Computing {len(timestamps)} trajectory snapshots per satellite")
- 
+
     # process each satellite
     for sat_data in target_sats:
         norad_id = str(sat_data.get('NORAD_CAT_ID', ''))
         name = NAME_MAP.get(norad_id, sat_data.get('OBJECT_NAME', 'Unknown'))
- 
-        print(f"[CelesTrak] Processing {name} ({norad_id})")
- 
-        # insert satellite record
+
+        # get correct dataset_id for this satellite
+        url = norad_to_url.get(norad_id, CELESTRAK_SOURCES[0]['url'])
+        dataset_id = dataset_map[url]
+
+        print(f"[CelesTrak] Processing {name} ({norad_id}) → dataset {dataset_id}")
+
         satellite_id = insert_satellite(cursor, sat_data, dataset_id)
         conn.commit()
- 
-        # get TLE lines
-        tle_line1 = sat_data.get('TLE_LINE1', '')
-        tle_line2 = sat_data.get('TLE_LINE2', '')
- 
-        if not tle_line1 or not tle_line2:
-            print(f"[CelesTrak] No TLE data for {name} — skipping trajectory")
+
+        try:
+            sat_record = build_sat_record(sat_data)
+        except Exception as e:
+            print(f"[CelesTrak] Could not build SGP4 record for {name}: {e}")
             continue
- 
-        # build SGP4 satellite record
-        sat_record = Satrec.twoline2rv(tle_line1, tle_line2)
- 
-        # insert trajectory for each timestamp
+
         inserted = 0
         for timestamp in timestamps:
             insert_trajectory(
@@ -267,14 +298,12 @@ def run():
                 timestamp.replace(tzinfo=None),
             )
             inserted += 1
- 
-            # commit every 50 rows to avoid large transactions
             if inserted % 50 == 0:
                 conn.commit()
- 
+
         conn.commit()
         print(f"[CelesTrak] Done {name} — {len(timestamps)} trajectory snapshots")
- 
+
     cursor.close()
     conn.close()
     print("[CelesTrak] Ingestion complete")
