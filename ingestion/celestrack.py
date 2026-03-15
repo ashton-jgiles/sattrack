@@ -8,19 +8,15 @@ from sgp4.api import Satrec, jday
 from config import (
     get_connection,
     CELESTRAK_ACTIVE_URL,
-    CELESTRAK_GPS_URL,
-    CELESTRAK_GALILEO_URL,
     CELESTRAK_URLS,
     ALL_NORAD_IDS,
     ORBIT_TYPE_MAP,
-    SUBCLASS_MAP,
     NAME_MAP,
     HISTORY_DAYS,
     INTERVAL_HOURS,
 )
 from db_helpers import (
     ensure_dataset,
-    satellite_exists,
     get_satellite_id,
     record_exists
 )
