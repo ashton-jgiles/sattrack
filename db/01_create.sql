@@ -115,7 +115,7 @@ CREATE TABLE `dataset` (
   `last_pulled` datetime DEFAULT NULL,
   `review_status` varchar(10) NOT NULL DEFAULT 'pending',
   PRIMARY KEY (`dataset_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -204,7 +204,7 @@ CREATE TABLE `launch_vehicle` (
   `country` varchar(100) DEFAULT NULL,
   `payload_capacity` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`vehicle_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -325,7 +325,7 @@ CREATE TABLE `satellite` (
   CONSTRAINT `satellite_ibfk_2` FOREIGN KEY (`dataset_id`) REFERENCES `dataset` (`dataset_id`),
   CONSTRAINT `satellite_ibfk_3` FOREIGN KEY (`username`) REFERENCES `user` (`username`),
   CONSTRAINT `satellite_chk_1` CHECK ((`orbit_type` in (_utf8mb4'LEO',_utf8mb4'MEO',_utf8mb4'GEO',_utf8mb4'HEO')))
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -345,7 +345,7 @@ CREATE TABLE `satellite_owner` (
   `owner_type` varchar(15) DEFAULT NULL,
   PRIMARY KEY (`owner_id`),
   CONSTRAINT `satellite_owner_chk_1` CHECK ((`owner_type` in (_utf8mb4'government',_utf8mb4'commercial',_utf8mb4'military',_utf8mb4'academic')))
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
