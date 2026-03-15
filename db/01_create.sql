@@ -181,11 +181,11 @@ DROP TABLE IF EXISTS `launch_site`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `launch_site` (
-  `location` varchar(100) NOT NULL,
-  `weather` varchar(100) DEFAULT NULL,
-  `site_name` varchar(150) DEFAULT NULL,
+  `site_name` varchar(150) NOT NULL,
+  `location` varchar(100) DEFAULT NULL,
+  `climate` varchar(100) DEFAULT NULL,
   `country` varchar(100) DEFAULT NULL,
-  PRIMARY KEY (`location`)
+  PRIMARY KEY (`site_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -216,12 +216,12 @@ DROP TABLE IF EXISTS `launched_from`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `launched_from` (
   `vehicle_id` int NOT NULL,
-  `location` varchar(100) NOT NULL,
+  `site_name` varchar(100) NOT NULL,
   `launch_date` date NOT NULL,
-  PRIMARY KEY (`vehicle_id`,`location`,`launch_date`),
-  KEY `location` (`location`),
+  PRIMARY KEY (`vehicle_id`,`site_name`,`launch_date`),
+  KEY `site_name` (`site_name`),
   CONSTRAINT `launched_from_ibfk_1` FOREIGN KEY (`vehicle_id`) REFERENCES `launch_vehicle` (`vehicle_id`),
-  CONSTRAINT `launched_from_ibfk_2` FOREIGN KEY (`location`) REFERENCES `launch_site` (`location`)
+  CONSTRAINT `launched_from_ibfk_2` FOREIGN KEY (`site_name`) REFERENCES `launch_site` (`site_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -382,7 +382,7 @@ CREATE TABLE `trajectory` (
   `mean_anomaly` decimal(10,4) NOT NULL,
   `mean_motion` decimal(12,8) NOT NULL,
   `bstar` decimal(12,8) NOT NULL,
-  `altitude` decimal(10,4) NOT NULL,
+  `altitude` decimal(12,4) NOT NULL,
   `latitude` decimal(9,6) NOT NULL,
   `longitude` decimal(9,6) NOT NULL,
   PRIMARY KEY (`dataset_id`,`satellite_id`,`timestamp`),
