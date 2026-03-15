@@ -57,8 +57,9 @@ DROP TABLE IF EXISTS `communicates_with`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `communicates_with` (
-  `location` varchar(100) NOT NULL,
+  `location` varchar(200) NOT NULL,
   `satellite_id` int NOT NULL,
+  `communication_frequency` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`location`,`satellite_id`),
   KEY `satellite_id` (`satellite_id`),
   CONSTRAINT `communicates_with_ibfk_1` FOREIGN KEY (`location`) REFERENCES `communication_station` (`location`),
@@ -74,9 +75,8 @@ DROP TABLE IF EXISTS `communication_station`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `communication_station` (
-  `location` varchar(100) NOT NULL,
+  `location` varchar(200) NOT NULL,
   `name` varchar(100) NOT NULL,
-  `communication_frequency` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`location`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

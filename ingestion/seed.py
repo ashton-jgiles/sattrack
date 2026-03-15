@@ -5,7 +5,7 @@ from config import get_connection
 from db_helpers import record_exists, get_satellite_id
 
 
-# statuc data
+# static data
 OWNERS = [
     {
         'owner_name':    'NASA',
@@ -327,29 +327,72 @@ USERS = [
 
 COMMUNICATION_STATIONS = [
     {
+        'location':                'White Sands, New Mexico, USA',
+        'name':                    'White Sands Complex',
+    },
+    {
+        'location':                'Redmond, Washington',
+        'name':                    'Starcloud Mission Control',
+    },
+    {
+        'location':                'International (Sioux Falls, SD, USA, Gilmore Creek, AK, USA, Svalbard, Norway, Neustrelitz, Germany, Alice Springs, Australia)',
+        'name':                    'USGS Ground Network',
+    },
+    {
         'location':                'Svalbard, Norway',
         'name':                    'Svalbard Satellite Station',
-        'communication_frequency': 'S-band, X-band',
     },
     {
-        'location':                'Fairbanks, Alaska, USA',
-        'name':                    'Alaska Satellite Facility',
-        'communication_frequency': 'S-band, X-band',
+        'location':                'Greenbelt, Maryland, USA',
+        'name':                    'Goddard Space Flight Center',
     },
     {
-        'location':                'McMurdo, Antarctica',
-        'name':                    'McMurdo Ground Station',
-        'communication_frequency': 'S-band',
+        'location':                'Antartica',
+        'name':                    'McMurdo Station',
     },
     {
-        'location':                'Madrid, Spain',
-        'name':                    'ESAC Ground Station',
-        'communication_frequency': 'S-band, X-band, Ka-band',
+        'location':                'Fairbanks, Alaska',
+        'name':                    'NOAA Ground Station',
     },
     {
-        'location':                'Maspalomas, Spain',
-        'name':                    'Maspalomas Ground Station',
-        'communication_frequency': 'S-band, X-band',
+        'location':                'Wallops, Virginia, USA',
+        'name':                    'NOAA Ground Station',
+    },
+    {
+        'location':                'Global Gateways',
+        'name':                    'Starlink Gateways',
+    },
+    {
+        'location':                'Wallops Island, Virginia, USA',
+        'name':                    'Wallops Command & Data Aquisition',
+    },
+    {
+        'location':                'Tokyo, Japan',
+        'name':                    'Kanto Region Station',
+    },
+    {
+        'location':                'Colorado Springs, CO, USA',
+        'name':                    'Schriever Space Force Base',
+    },
+    {
+        'location':                'Oberpfaffenhofen, Germany',
+        'name':                    'German Space Operation Center',
+    },
+    {
+        'location':                'Darmstadt, Germany',
+        'name':                    'European Organization for the Explotation of Meterological Satellites',
+    },
+    {
+        'location':                'Northrop Grumman, Dulles, Virginia, USA',
+        'name':                    'Mission Operations Center',
+    },
+    {
+        'location':                'Houston, Texas, USA',
+        'name':                    'Johnson Space Center',
+    },
+    {
+        'location':                'Okinawa, Japan',
+        'name':                    'Japan Aerospace Exploration Agency',
     },
 ]
 
@@ -427,6 +470,7 @@ SATELLITE_OWNER_MAP = {
     '41836': 'JAXA',    # Himawari-9
 }
 
+# naps norad_id to vehicle name site name and creates the launch date
 DEPLOYS_PAYLOAD_MAP = {
     '25994': {
         'vehicle':    'Atlas IIAS',
@@ -685,7 +729,216 @@ DEPLOYS_PAYLOAD_MAP = {
     },
 }
 
+COMMUNICATES_WITH_MAP = {
+    '25994': {
+        'location':   'Greenbelt, Maryland, USA',
+        'frequency':  'Once per orbit (16 orbits)',
+    },
+    '27424': {
+        'location':   'Greenbelt, Maryland, USA',
+        'frequency':  'Once per orbit (16 orbits)',
+    },
+    '39084': {
+        'location':   'International (Sioux Falls, SD, USA, Gilmore Creek, AK, USA, Svalbard, Norway, Neustrelitz, Germany, Alice Springs, Australia)',
+        'frequency':  'Once per orbit (14 orbits)',
+    },
+    '49260': {
+        'location':   'International (Sioux Falls, SD, USA, Gilmore Creek, AK, USA, Svalbard, Norway, Neustrelitz, Germany, Alice Springs, Australia)',
+        'frequency':  'Once per orbit (14 orbits)',
+    },
+    '41335': {
+        'location':   'Svalbard, Norway',
+        'frequency':  'Once per orbit (15 orbits)',
+    },
+    '43437': {
+        'location':   'Svalbard, Norway',
+        'frequency':  'Once per orbit (15 orbits)',
+    },
+    '39574': {
+       'location':   'White Sands, New Mexico, USA',
+        'frequency':  'Continuous',
+    },
+    '43476': {
+        'location':   'Oberpfaffenhofen, Germany',
+        'frequency':  'Once per orbit (15 orbits)',
+    },
+    '43613': {
+        'location':   'Antartica',
+        'frequency':  'Once per orbit (15 orbits)',
+    },
+    '38771': {
+        'location':   'Svalbard, Norway',
+        'frequency':  'Once per orbit (14 orbits)',
+    },
+    '43013': {
+        'location':   'Fairbanks, Alaska',
+        'frequency':  'Once per orbit (14 orbits)',
+    },
+    '41240': {
+        'location':   'Fairbanks, Alaska',
+        'frequency':  'Once per orbit (14 orbits)',
+    },
+    '46984': {
+        'location':   'Fairbanks, Alaska',
+        'frequency':  'Once per orbit (13 orbits)',
+    },
+    '66514': {
+        'location':   'Fairbanks, Alaska',
+        'frequency':  'Once per orbit (13 orbits)',
+    },
+    '38337': {
+        'location':   'Okinawa, Japan',
+        'frequency':  'Once per orbit (15 orbits)',
+    },
+    '20580': {
+        'location':   'White Sands, New Mexico, USA',
+        'frequency':  'Near Continuous',
+    },
+    '43435': {
+        'location':   'Northrop Grumman, Dulles, Virginia, USA',
+        'frequency':  'Once every 14 days',
+    },
+    '25544': {
+        'location':   'Houston, Texas, USA',
+        'frequency':  'Near Continuous',
+    },
+    '28376': {
+        'location':   'Antartica',
+        'frequency':  'Once per orbit (14 orbits)',
+    },
+    '66303': {
+        'location':   'Redmond, Washington', 
+        'frequency':  'Periodic over groundstation',
+    },
+    '65616': {
+        'location':    'Northrop Grumman, Dulles, Virginia, USA',
+        'frequency':  'Periodic over groundstation',
+    },
+    '41866': {
+        'location':   'Wallops Island, Virginia, USA',
+        'frequency':  'Continuous',
+    },
+    '51850': {
+        'location':   'Wallops Island, Virginia, USA',
+        'frequency':  'Continuous',
+    },
+    '41836': {
+        'location':   'Tokyo, Japan',
+        'frequency':  'Continuous',
+    },
+    '38552': {
+        'location':   'Darmstadt, Germany',
+        'frequency':  'Continuous',
+    },
+    '40732': {
+        'location':   'Darmstadt, Germany',
+        'frequency':  'Continuous',
+    },
+    '65159': {
+        'location':   'Darmstadt, Germany',
+        'frequency':  'Once per orbit (14 orbits)',
+    },
+    '54234': {
+        'location':   'Svalbard, Norway',
+        'frequency':  'Once per orbit (14 orbits)',
+    },
+    '37849': {
+        'location':   'Svalbard, Norway',
+        'frequency':  'Once per orbit (14 orbits)',
+    },
+    '24876': {
+        'location':   'Colorado Springs, CO, USA',
+        'frequency':  '2 per day',
+    },
+    '26407': {
+        'location':   'Colorado Springs, CO, USA',
+        'frequency':  '2 per day',
+    },
+    '27663': {
+        'location':   'Colorado Springs, CO, USA',
+        'frequency':  '2 per day',
+    },
+    '28190': {
+        'location':   'Colorado Springs, CO, USA',
+        'frequency':  '2 per day',
+    },
+    '28474': {
+        'location':   'Colorado Springs, CO, USA',
+        'frequency':  '2 per day',
+    },
+    '28874': {
+       'location':   'Colorado Springs, CO, USA',
+        'frequency':  '2 per day',
+    },
+    '37846': {
+        'location':   'Oberpfaffenhofen, Germany',
+        'frequency':  '2 per day',
+    },
+    '37847': {
+        'location':   'Oberpfaffenhofen, Germany',
+        'frequency':  '2 per day',
+    },
+    '38857': {
+        'location':   'Oberpfaffenhofen, Germany',
+        'frequency':  '2 per day',
+    },
+    '40128': {
+        'location':   'Oberpfaffenhofen, Germany',
+        'frequency':  '2 per day',
+    },
+    '40129': {
+        'location':   'Oberpfaffenhofen, Germany',
+        'frequency':  '2 per day',
+    },
+    '40544': {
+        'location':   'Oberpfaffenhofen, Germany',
+        'frequency':  '2 per day',
+    },
+    '68125': {
+        'location':   'Global Gateways',
+        'frequency':  'Continuous',
+    },
+    '68124': {
+        'location':   'Global Gateways',
+        'frequency':  'Continuous',
+    },
+    '68123': {
+        'location':   'Global Gateways',
+        'frequency':  'Continuous',
+    },
+    '68122': {
+        'location':   'Global Gateways',
+        'frequency':  'Continuous',
+    },
+    '68121': {
+        'location':   'Global Gateways',
+        'frequency':  'Continuous',
+    },
+    '68097': {
+        'location':   'Global Gateways',
+        'frequency':  'Continuous',
+    },
+    '68096': {
+        'location':   'Global Gateways',
+        'frequency':  'Continuous',
+    },
+    '68095': {
+        'location':   'Global Gateways',
+        'frequency':  'Continuous',
+    },
+    '68094': {
+        'location':   'Global Gateways',
+        'frequency':  'Continuous',
+    },
+    '68093': {
+        'location':   'Global Gateways',
+        'frequency':  'Continuous',
+    },
+}
+
 # data insertion functions
+
+# seed the owners table
 def seed_owners(cursor):
     print("[Seed] Inserting satellite owners...")
     for owner in OWNERS:
@@ -710,7 +963,7 @@ def seed_owners(cursor):
         )
         print(f"[Seed] Inserted owner {owner['owner_name']}")
 
-
+# seed the launch sites table
 def seed_launch_sites(cursor):
     print("[Seed] Inserting launch sites...")
     for site in LAUNCH_SITES:
@@ -726,7 +979,7 @@ def seed_launch_sites(cursor):
         )
         print(f"[Seed] Inserted launch site {site['site_name']}")
 
-
+# seed the launch vehicles table
 def seed_launch_vehicles(cursor):
     print("[Seed] Inserting launch vehicles...")
     for vehicle in LAUNCH_VEHICLES:
@@ -750,7 +1003,7 @@ def seed_launch_vehicles(cursor):
         )
         print(f"[Seed] Inserted vehicle {vehicle['vehicle_name']}")
 
-
+# seed the users table
 def seed_users(cursor):
     print("[Seed] Inserting users...")
     for user in USERS:
@@ -789,7 +1042,7 @@ def seed_users(cursor):
 
         print(f"[Seed] Inserted user {user['username']} ({user['type']})")
 
-
+# seed the communication stations table
 def seed_communication_stations(cursor):
     print("[Seed] Inserting communication stations...")
     for station in COMMUNICATION_STATIONS:
@@ -799,19 +1052,15 @@ def seed_communication_stations(cursor):
         cursor.execute(
             """
             INSERT INTO communication_station (
-                location, name, communication_frequency
-            ) VALUES (%s, %s, %s)
+                location, name
+            ) VALUES (%s, %s)
             """,
-            (station['location'], station['name'], station['communication_frequency'])
+            (station['location'], station['name'])
         )
         print(f"[Seed] Inserted station {station['name']}")
 
-
+# resolve the foreign keys for satellite owners in satellite
 def seed_satellite_owners(cursor):
-    """
-    Runs after celestrak.run() — resolves owner_id FK
-    on each satellite row using SATELLITE_OWNER_MAP
-    """
     print("[Seed] Resolving satellite owner foreign keys...")
     for norad_id, owner_name in SATELLITE_OWNER_MAP.items():
 
@@ -836,6 +1085,7 @@ def seed_satellite_owners(cursor):
         )
         print(f"[Seed] Linked {norad_id} to {owner_name}")
 
+# seed the launched from table
 def seed_launched_from(cursor):
     print("[Seed] Inserting launched_from records...")
     for norad_id, data in DEPLOYS_PAYLOAD_MAP.items():
@@ -869,7 +1119,7 @@ def seed_launched_from(cursor):
         )
         print(f"[Seed] Inserted launched_from for {norad_id}")
 
-
+# seed the deploys payload table
 def seed_deploys_payload(cursor):
     print("[Seed] Inserting deploys_payload records...")
     for norad_id, data in DEPLOYS_PAYLOAD_MAP.items():
@@ -908,8 +1158,48 @@ def seed_deploys_payload(cursor):
         )
         print(f"[Seed] Inserted deploys_payload for {norad_id}")
 
+# seed the communicates_with table
+def seed_communicates_with(cursor):
+    print("[Seed] Inserting communicates_with records...")
+    for norad_id, data in COMMUNICATES_WITH_MAP.items():
+
+        # get location from communication_station
+        cursor.execute(
+            "SELECT location FROM communication_station WHERE location = %s",
+            (data['location'],)
+        )
+        row = cursor.fetchone()
+        if not row:
+            print(f"[Seed] Communication Station {data['location']} not found — skipping")
+            continue
+        location = row[0]
+
+        # get satellite_id
+        satellite_id = get_satellite_id(cursor, norad_id)
+        if not satellite_id:
+            print(f"[Seed] Satellite {norad_id} not found — skipping")
+            continue
+
+        # check if already exists
+        if record_exists(cursor, 'communicates_with', {
+            'location':     location,
+            'satellite_id': satellite_id,
+        }):
+            print(f"[Seed] communicates_with {norad_id} already exists — skipping")
+            continue
+
+        cursor.execute(
+            """
+            INSERT INTO communicates_with (location, satellite_id, communication_frequency)
+            VALUES (%s, %s, %s)
+            """,
+            (location, satellite_id, data['frequency'])
+        )
+        print(f"[Seed] Inserted communicates_with for {norad_id}")
+
 # main run method
 def run():
+    # track the straci time
     start = datetime.now()
 
     print("========================================")
@@ -930,51 +1220,65 @@ def run():
     conn   = get_connection()
     cursor = conn.cursor()
 
-    print("\n[1/9] Seeding satellite owners...")
+    # seed the owners
+    print("\n[1/10] Seeding satellite owners...")
     seed_owners(cursor)
     conn.commit()
 
-    print("\n[2/9] Seeding launch sites...")
+    # seed the launch sites
+    print("\n[2/10] Seeding launch sites...")
     seed_launch_sites(cursor)
     conn.commit()
 
-    print("\n[3/9] Seeding launch vehicles...")
+    # seed the launch vehicles
+    print("\n[3/10] Seeding launch vehicles...")
     seed_launch_vehicles(cursor)
     conn.commit()
 
-    print("\n[4/9] Seeding users...")
+    # seed the users
+    print("\n[4/10] Seeding users...")
     seed_users(cursor)
     conn.commit()
 
-    print("\n[5/9] Seeding communication stations...")
+    # seed the communication
+    print("\n[5/10] Seeding communication stations...")
     seed_communication_stations(cursor)
     conn.commit()
 
     cursor.close()
     conn.close()
 
-    print("\n[6/9] Running CelesTrak ingestion...")
+    # seed the celestrak data for all satellites and create their trajectories
+    print("\n[6/10] Running CelesTrak ingestion...")
     celestrak.run()
 
     # reopen connection after celestrak finishes
     conn   = get_connection()
     cursor = conn.cursor()
 
-    print("\n[7/9] Resolving satellite owner foreign keys...")
+    # resolve the satellite owner foreign keys
+    print("\n[7/10] Resolving satellite owner foreign keys...")
     seed_satellite_owners(cursor)
     conn.commit()
 
-    print("\n[8/9] Inserting launched_from records...")
+    # seed the launch from table
+    print("\n[8/10] Inserting launched_from records...")
     seed_launched_from(cursor)
     conn.commit()
 
-    print("\n[9/9] Inserting deploys_payload records...")
+    # seed the deploys payload table
+    print("\n[9/10] Inserting deploys_payload records...")
     seed_deploys_payload(cursor)
+    conn.commit()
+
+    print("\n[10/10] Inserting communicates_with records...")
+    seed_communicates_with(cursor)
     conn.commit()
 
     cursor.close()
     conn.close()
 
+    # compute the seed time and end the seed function
     elapsed = (datetime.now() - start).seconds
     print(f"\n========================================")
     print(f"  Seed complete in {elapsed}s")
