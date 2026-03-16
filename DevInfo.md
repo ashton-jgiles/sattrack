@@ -13,6 +13,7 @@ Run & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u <your_username>
 Then enter your MySQL Password
 
 cd ingestion
+pip install -r requirements.txt
 python seed.py
 
 # Should output
