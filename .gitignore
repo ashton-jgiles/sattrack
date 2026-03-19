@@ -7,3 +7,9 @@ db.sqlite3
 node_modules/
 backend/frontend/static/frontend/main.js
 .DS_Store
+
+# UV ignore
+pyproject.toml
+.python-version
+.venv/
+uv.lock
