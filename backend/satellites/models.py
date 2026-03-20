@@ -19,9 +19,11 @@ class SatelliteOwner(models.Model):
 
 
 class LaunchSite(models.Model):
-    location  = models.CharField(max_length=100, primary_key=True)
-    weather   = models.CharField(max_length=100, null=True, blank=True)
-    site_name = models.CharField(max_length=150, null=True, blank=True)
+    # PK is site_name (varchar 150), not location
+    site_name = models.CharField(max_length=150, primary_key=True)
+    location  = models.CharField(max_length=100, null=True, blank=True)
+    # SQL column is `climate`, not `weather`
+    climate   = models.CharField(max_length=100, null=True, blank=True)
     country   = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
@@ -29,7 +31,7 @@ class LaunchSite(models.Model):
         db_table = 'launch_site'
 
     def __str__(self):
-        return self.site_name or self.location
+        return self.site_name
 
 
 class LaunchVehicle(models.Model):
@@ -54,27 +56,28 @@ class LaunchedFrom(models.Model):
                       on_delete=models.CASCADE,
                       db_column='vehicle_id'
                   )
-    location    = models.ForeignKey(
+    # FK now points to site_name (the PK of LaunchSite)
+    site_name   = models.ForeignKey(
                       LaunchSite,
                       on_delete=models.CASCADE,
-                      db_column='location',
-                      to_field='location'
+                      db_column='site_name',
+                      to_field='site_name'
                   )
     launch_date = models.DateField()
 
     class Meta:
         managed         = False
         db_table        = 'launched_from'
-        unique_together = [['vehicle', 'location', 'launch_date']]
+        unique_together = [['vehicle', 'site_name', 'launch_date']]
 
     def __str__(self):
-        return f"{self.vehicle} from {self.location} on {self.launch_date}"
+        return f"{self.vehicle} from {self.site_name} on {self.launch_date}"
 
 
 class CommunicationStation(models.Model):
-    location                = models.CharField(max_length=100, primary_key=True)
-    name                    = models.CharField(max_length=100)
-    communication_frequency = models.CharField(max_length=50, null=True, blank=True)
+    location = models.CharField(max_length=200, primary_key=True)
+    name     = models.CharField(max_length=100)
+    # communication_frequency belongs in CommunicatesWith, not here
 
     class Meta:
         managed  = False
@@ -142,7 +145,7 @@ class Trajectory(models.Model):
     mean_anomaly      = models.DecimalField(max_digits=10, decimal_places=4)
     mean_motion       = models.DecimalField(max_digits=12, decimal_places=8)
     bstar             = models.DecimalField(max_digits=12, decimal_places=8)
-    altitude          = models.DecimalField(max_digits=10, decimal_places=4)
+    altitude          = models.DecimalField(max_digits=12, decimal_places=4)
     latitude          = models.DecimalField(max_digits=9,  decimal_places=6)
     longitude         = models.DecimalField(max_digits=9,  decimal_places=6)
 
@@ -156,46 +159,49 @@ class Trajectory(models.Model):
 
 
 class EarthScience(models.Model):
-    satellite         = models.ForeignKey(
-                            Satellite,
-                            on_delete=models.CASCADE,
-                            db_column='satellite_id'
-                        )
-    timestamp         = models.DateTimeField()
-    land_surface_temp = models.DecimalField(max_digits=8, decimal_places=4)
-    emissivity        = models.DecimalField(max_digits=6, decimal_places=4, null=True, blank=True)
-    quality_flag      = models.CharField(max_length=10, null=True, blank=True)
-    instrument        = models.CharField(max_length=50)
-    lst_unit          = models.CharField(max_length=10, default='Kelvin')
+    # Corrected: OneToOne with satellite_id as PK; replaced LST-specific fields with SQL schema
+    satellite        = models.OneToOneField(
+                           Satellite,
+                           on_delete=models.CASCADE,
+                           primary_key=True,
+                           db_column='satellite_id'
+                       )
+    instrument       = models.CharField(max_length=100)
+    data_measured    = models.CharField(max_length=200)
+    wavelength_band  = models.CharField(max_length=100, null=True, blank=True)
+    resolution_m     = models.IntegerField(null=True, blank=True)
+    data_archive_url = models.CharField(max_length=500, null=True, blank=True)
+    mission_status   = models.CharField(max_length=20, null=True, blank=True)
 
     class Meta:
-        managed         = False
-        db_table        = 'earth_science'
-        unique_together = [['satellite', 'timestamp']]
+        managed  = False
+        db_table = 'earth_science'
 
     def __str__(self):
-        return f"{self.satellite.name} LST @ {self.timestamp}"
+        return f"{self.satellite.name} — earth science"
 
 
 class OceanicScience(models.Model):
-    satellite   = models.ForeignKey(
-                      Satellite,
-                      on_delete=models.CASCADE,
-                      db_column='satellite_id'
-                  )
-    timestamp   = models.DateTimeField()
-    sst         = models.DecimalField(max_digits=8, decimal_places=4)
-    sst_anomaly = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True)
-    instrument  = models.CharField(max_length=50)
-    sst_unit    = models.CharField(max_length=10, default='Celsius')
+    # Corrected: OneToOne with satellite_id as PK; replaced SST-specific fields with SQL schema
+    satellite        = models.OneToOneField(
+                           Satellite,
+                           on_delete=models.CASCADE,
+                           primary_key=True,
+                           db_column='satellite_id'
+                       )
+    instrument       = models.CharField(max_length=100)
+    data_measured    = models.CharField(max_length=200)
+    wavelength_band  = models.CharField(max_length=100, null=True, blank=True)
+    resolution_m     = models.IntegerField(null=True, blank=True)
+    data_archive_url = models.CharField(max_length=500, null=True, blank=True)
+    mission_status   = models.CharField(max_length=20, null=True, blank=True)
 
     class Meta:
-        managed         = False
-        db_table        = 'oceanic_science'
-        unique_together = [['satellite', 'timestamp']]
+        managed  = False
+        db_table = 'oceanic_science'
 
     def __str__(self):
-        return f"{self.satellite.name} SST @ {self.timestamp}"
+        return f"{self.satellite.name} — oceanic science"
 
 
 class Research(models.Model):
@@ -205,9 +211,10 @@ class Research(models.Model):
                            primary_key=True,
                            db_column='satellite_id'
                        )
+    instrument       = models.CharField(max_length=100)
+    data_measured    = models.CharField(max_length=200)  # was missing
     research_field   = models.CharField(max_length=100)
-    instrument       = models.CharField(max_length=100, null=True, blank=True)
-    wavelength_band  = models.CharField(max_length=50, null=True, blank=True)
+    wavelength_band  = models.CharField(max_length=100, null=True, blank=True)
     data_archive_url = models.CharField(max_length=500, null=True, blank=True)
     mission_status   = models.CharField(max_length=20, null=True, blank=True)
 
@@ -220,15 +227,17 @@ class Research(models.Model):
 
 
 class Internet(models.Model):
-    satellite      = models.OneToOneField(
-                         Satellite,
-                         on_delete=models.CASCADE,
-                         primary_key=True,
-                         db_column='satellite_id'
-                     )
-    coverage       = models.TextField(null=True, blank=True)
-    frequency_band = models.CharField(max_length=20, null=True, blank=True)
-    service_type   = models.CharField(max_length=50, null=True, blank=True)
+    satellite       = models.OneToOneField(
+                          Satellite,
+                          on_delete=models.CASCADE,
+                          primary_key=True,
+                          db_column='satellite_id'
+                      )
+    coverage        = models.CharField(max_length=100)
+    frequency_band  = models.CharField(max_length=50)
+    service_type    = models.CharField(max_length=50)
+    throughput_gbps = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)  # was missing
+    altitude_km     = models.IntegerField(null=True, blank=True)  # was missing
 
     class Meta:
         managed  = False
@@ -245,10 +254,13 @@ class Weather(models.Model):
                            primary_key=True,
                            db_column='satellite_id'
                        )
+    instrument       = models.CharField(max_length=100)
+    data_measured    = models.CharField(max_length=200)   # was missing
     coverage_region  = models.CharField(max_length=100)
     imaging_channels = models.IntegerField(null=True, blank=True)
     repeat_cycle_min = models.IntegerField(null=True, blank=True)
-    instrument       = models.CharField(max_length=100, null=True, blank=True)
+    data_archive_url = models.CharField(max_length=500, null=True, blank=True)  # was missing
+    mission_status   = models.CharField(max_length=20, null=True, blank=True)
 
     class Meta:
         managed  = False
@@ -266,8 +278,10 @@ class Navigation(models.Model):
                         db_column='satellite_id'
                     )
     constellation = models.CharField(max_length=50)
-    signal_type   = models.CharField(max_length=50, null=True, blank=True)
-    accuracy      = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    signal_type   = models.CharField(max_length=100)
+    accuracy_m    = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)  # renamed from accuracy
+    orbital_slot  = models.CharField(max_length=20, null=True, blank=True)  # was missing
+    clock_type    = models.CharField(max_length=50, null=True, blank=True)  # was missing
 
     class Meta:
         managed  = False
@@ -300,17 +314,18 @@ class DeploysPayload(models.Model):
 
 
 class CommunicatesWith(models.Model):
-    location  = models.ForeignKey(
-                    CommunicationStation,
-                    on_delete=models.CASCADE,
-                    db_column='location',
-                    to_field='location'
-                )
-    satellite = models.ForeignKey(
-                    Satellite,
-                    on_delete=models.CASCADE,
-                    db_column='satellite_id'
-                )
+    location                = models.ForeignKey(
+                                  CommunicationStation,
+                                  on_delete=models.CASCADE,
+                                  db_column='location',
+                                  to_field='location'
+                              )
+    satellite               = models.ForeignKey(
+                                  Satellite,
+                                  on_delete=models.CASCADE,
+                                  db_column='satellite_id'
+                              )
+    communication_frequency = models.CharField(max_length=50, null=True, blank=True)  # moved here from CommunicationStation
 
     class Meta:
         managed         = False
