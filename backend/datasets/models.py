@@ -16,16 +16,16 @@ class User(models.Model):
 
 
 class Dataset(models.Model):
-    dataset_id    = models.AutoField(primary_key=True)
-    dataset_name  = models.CharField(max_length=150)
-    description   = models.TextField(null=True, blank=True)
-    creation_date = models.DateField()
-    file_size     = models.CharField(max_length=20, null=True, blank=True)
-    source        = models.CharField(max_length=50)
-    source_url    = models.CharField(max_length=500)
+    dataset_id     = models.AutoField(primary_key=True)
+    dataset_name   = models.CharField(max_length=150)
+    description    = models.TextField(null=True, blank=True)
+    creation_date  = models.DateField()
+    file_size      = models.CharField(max_length=20, null=True, blank=True)
+    source         = models.CharField(max_length=50)
+    source_url     = models.CharField(max_length=500)
     pull_frequency = models.CharField(max_length=20, null=True, blank=True)
-    last_pulled   = models.DateTimeField(null=True, blank=True)
-    review_status = models.CharField(max_length=10, default='pending')
+    last_pulled    = models.DateTimeField(null=True, blank=True)
+    review_status  = models.CharField(max_length=10, default='pending')
 
     class Meta:
         managed  = False
