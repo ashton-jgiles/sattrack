@@ -13,7 +13,7 @@ from config import (
     ORBIT_TYPE_MAP,
     NAME_MAP,
     HISTORY_DAYS,
-    INTERVAL_HOURS,
+    INTERVAL_MINUTES,
 )
 from db_helpers import (
     ensure_dataset,
@@ -261,9 +261,10 @@ def run():
 
     # build list of timestamps
     now = datetime.now(timezone.utc)
+    start = datetime.now(timezone.utc) - timedelta(days=HISTORY_DAYS)
     timestamps = [
-        now - timedelta(hours=h)
-        for h in range(0, HISTORY_DAYS * 24, INTERVAL_HOURS)
+        start + timedelta(minutes=m)
+        for m in range(0, HISTORY_DAYS * 24 * 60, INTERVAL_MINUTES)
     ]
     print(f"[CelesTrak] Computing {len(timestamps)} trajectory snapshots per satellite")
 

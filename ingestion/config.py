@@ -19,8 +19,8 @@ def get_connection():
     )
 
 # constants
-HISTORY_DAYS = 30
-INTERVAL_HOURS = 2
+HISTORY_DAYS = 7
+INTERVAL_MINUTES = 5
 
 # CelesTrak Datasource URLS
 CELESTRAK_SOURCES = [
