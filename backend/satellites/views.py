@@ -12,7 +12,7 @@ class SatelliteView(APIView):
         return Response(data)
     
 class SpecificSatelliteView(APIView):
-    def get(self, satellite_id):
+    def get(self, request, satellite_id):
         with connection.cursor() as cursor:
             cursor.execute("SELECT * FROM satellite WHERE satellite_id = %s", [satellite_id])
             columns = [col[0] for col in cursor.description]
@@ -106,3 +106,12 @@ class TotalResearchSatellites(APIView):
             return Response({'error': 'Total Research Satellites not computed'}, status=404)
         
         return Response(dict(zip(columns, row)));
+
+class AllTrajectory(APIView):
+    def get(self, request):
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT satellite_id, dataset_id, timestamp, latitude, longitude, altitude FROM trajectory")
+            columns = [col[0] for col in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return Response(data)
