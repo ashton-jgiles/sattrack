@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import HomePage from "../pages/HomePage";
+import Landing from "../pages/Landing";
 import LoginPage from "../pages/LoginPage";
 
 export default class App extends Component {
@@ -12,7 +12,7 @@ export default class App extends Component {
     return (
       <Router>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<LoginPage />} />
         </Routes>
       </Router>

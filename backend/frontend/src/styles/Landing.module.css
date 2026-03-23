@@ -1,0 +1,170 @@
+/* ── Landing Page Module ────────────────────────────────────── */
+
+.page {
+  min-height: 100vh;
+  background-color: #020917;
+  color: #ffffff;
+  width: 100%;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: rgba(2, 9, 23, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid #1e293b;
+}
+
+.headerInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logoIcon {
+  color: #3b82f6;
+}
+
+.logoText {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-medium);
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.loginButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.loginButton:hover {
+  background-color: #1d4ed8;
+}
+
+/* ── Hero Section ───────────────────────────────────────────── */
+
+.main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 1rem 0;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.heroTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: 1rem;
+}
+
+.heroSubtitle {
+  font-size: var(--text-xl);
+  color: #94a3b8;
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+/* ── Stats Section ──────────────────────────────────────────── */
+
+.statsSection {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+/* Responsive: 2 columns on medium screens */
+@media (max-width: 1024px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Responsive: 1 column on small screens */
+@media (max-width: 600px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statCard {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.statCard:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+}
+
+.statLabel {
+  font-size: var(--text-sm);
+  color: #94a3b8;
+  font-weight: var(--font-weight-normal);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: 600;
+  color: #22c55e;
+  line-height: 1;
+}
+
+.statLoading {
+  font-size: var(--text-sm);
+  color: #475569;
+  font-style: italic;
+}
+
+.globeSection {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+}
