@@ -3,6 +3,7 @@ from datetime import datetime
 import celestrak
 from config import get_connection
 from db_helpers import record_exists, get_satellite_id
+import bcrypt
 
 # import the static data
 from config import (
@@ -22,6 +23,14 @@ from config import (
     NAVIGATION_DATA
 )
 # data insertion functions
+
+# hash password function
+def hash_password(plain_password):
+    return bcrypt.hashpw(
+        plain_password.encode('utf-8'),
+        bcrypt.gensalt()
+    ).decode('utf-8')
+
 
 # seed the owners table
 def seed_owners(cursor):
@@ -97,11 +106,8 @@ def seed_users(cursor):
             continue
 
         cursor.execute(
-            """
-            INSERT INTO user (username, password, full_name, level_access)
-            VALUES (%s, %s, %s, %s)
-            """,
-            (user['username'], user['password'], user['full_name'], user['level_access'])
+            "INSERT INTO user (username, password, full_name, level_access) VALUES (%s, %s, %s, %s)",
+            (user['username'], hash_password(user['password']), user['full_name'], user['level_access'])
         )
 
         if user['type'] == 'administrator':
