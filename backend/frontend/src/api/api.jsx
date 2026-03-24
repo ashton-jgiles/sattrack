@@ -17,8 +17,16 @@ export const post = (endpoint, body) => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-  }).then((res) => {
-    if (!res.ok) throw new Error(`HTTP error status: ${res.status}`);
-    return res.json();
+  }).then(async (res) => {
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
+    if (!res.ok) {
+      throw new Error(data.error || `HTTP error status: ${res.status}`);
+    }
+    return data;
   });
 };

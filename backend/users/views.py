@@ -80,3 +80,46 @@ class LoginView(APIView):
             'role': role,
             'level_access': level_access,
         })
+
+class CreateAccountView(APIView):
+    def post(self, request):
+        # key values to insert into the users table
+        username = request.data.get('username')
+        full_name = request.data.get('full_name')
+        password = request.data.get('password')
+
+        # check for missing fields
+        if not username or not full_name or not password:
+            return Response(
+                {'error': 'Username, full name and password are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        with connection.cursor() as cursor:
+            # check for deuplicate username
+            cursor.execute("SELECT username FROM user WHERE username = %s", (username, ))
+            if cursor.fetchone():
+                return Response(
+                    {'error': 'Username already taken'},
+                    status=status.HTTP_409_CONFLICT
+                )
+            
+            # hash the pasword to insert into the database
+            hashed = bcrypt.hashpw(
+                password.encode('utf-8'),
+                bcrypt.gensalt()
+            ).decode('utf-8')
+
+            cursor.execute(
+                "INSERT INTO user (username, password, full_name, level_access) VALUES (%s, %s, %s, %s)",
+                (username, hashed, full_name, 1)
+            )
+            
+            # insert the new user
+            cursor.execute("INSERT INTO amateur (username, interests) VALUES (%s, %s)", (username, None))
+
+
+        return Response(
+            {'message': 'Account Created Successfully'},
+            status=status.HTTP_201_CREATED
+        )
