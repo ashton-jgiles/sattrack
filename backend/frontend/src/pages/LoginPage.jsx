@@ -1,37 +1,100 @@
-import React, { Component } from "react";
-import { getAllSatellites } from "../api/satelliteService";
+// react imports
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default class LoginPage extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      satellites: [],
-      error: null,
-    };
-  }
+// import authentication
+import { useAuth } from "../auth/useAuth";
 
-  componentDidMount() {
-    getAllSatellites()
-      .then((data) => this.setState({ satellites: data }))
-      .catch((err) => this.setState({ error: err.message }));
-  }
+// icon imports
+import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 
-  render() {
-    const { satellites, error } = this.state;
+// style imports
+import styles from "../styles/LoginPage.module.css";
 
-    if (error) return <p>Error: {error}</p>;
+export default function LoginPage() {
+  // component fields
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-    return (
-      <div>
-        <h1>Login Page</h1>
-        <ul>
-          {satellites.map((sat) => (
-            <li key={sat.satellite_id}>
-              {sat.name} — {sat.orbit_type}
-            </li>
-          ))}
-        </ul>
+  // handle submit method to verify credentials on the backend
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    try {
+      const user = await login(username, password);
+      navigate("/dashboard");
+    } catch (err) {
+      setError("Invalid username or password");
+    }
+  };
+
+  // main component structure
+  return (
+    <div className={styles.page}>
+      <div className={styles.container}>
+        <div className={styles.logo}>
+          <SatelliteAltIcon className={styles.logoIcon} sx={{ fontSize: 40 }} />
+          <h1 className={styles.logoText}>SatTrack Global</h1>
+        </div>
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <LockOutlinedIcon
+              className={styles.cardHeaderIcon}
+              sx={{ fontSize: 24 }}
+            />
+            <h2 className={styles.cardTitle}>Login</h2>
+          </div>
+
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.field}>
+              <label className={styles.label}>Username</label>
+              <input
+                type="text"
+                className={styles.input}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Password</label>
+              <input
+                type="password"
+                className={styles.input}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            {error && (
+              <div className={styles.error}>
+                <ErrorOutlineOutlinedIcon
+                  className={styles.errorIcon}
+                  sx={{ fontSize: 20 }}
+                />
+                <span className={styles.errorText}>{error}</span>
+              </div>
+            )}
+
+            <button type="submit" className={styles.submitButton}>
+              Sign In
+            </button>
+          </form>
+
+          <div className={styles.backWrapper}>
+            <button className={styles.backButton} onClick={() => navigate("/")}>
+              ← Back to Home
+            </button>
+          </div>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
 }
