@@ -151,20 +151,30 @@
 /* ── Back Link ──────────────────────────────────────────────── */
 
 .backWrapper {
-  margin-top: 1.5rem;
-  text-align: center;
+  margin-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
 }
 
 .backButton {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  background-color: transparent;
+  color: #94a3b8;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
   font-size: var(--text-sm);
-  color: #94a3b8; /* slate-400 */
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: color 0.2s ease;
   font-family: var(--font-body);
+  font-weight: var(--font-weight-normal);
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .backButton:hover {
+  border-color: #3b82f6;
   color: #ffffff;
 }
