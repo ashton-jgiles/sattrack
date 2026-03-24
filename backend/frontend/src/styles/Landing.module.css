@@ -6,7 +6,6 @@
   color: #ffffff;
   width: 100%;
   flex: 1;
-  overflow-y: auto;
 }
 
 /* ── Header ─────────────────────────────────────────────────── */
@@ -22,9 +21,9 @@
 }
 
 .headerInner {
-  max-width: 1280px;
+  max-width: 80%;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -68,60 +67,67 @@
   background-color: #1d4ed8;
 }
 
-/* ── Hero Section ───────────────────────────────────────────── */
+/* ── Main Two Column Layout ─────────────────────────────────── */
 
-.main {
-  max-width: 1280px;
+.content {
+  max-width: 80%;
   margin: 0 auto;
-  padding: 2rem 1rem 0;
+  padding: 2rem 2rem;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr; /* ✅ left and right columns */
+  gap: 2rem;
+  align-items: start; /* ✅ both columns start at the top */
 }
 
-.hero {
-  text-align: center;
-  margin-bottom: 2rem;
+/* ── Left Column: Hero Text + Globe ─────────────────────────── */
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .heroTitle {
   font-family: var(--font-display);
   font-size: var(--text-4xl);
   font-weight: var(--font-weight-medium);
-  margin-bottom: 1rem;
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
 }
 
 .heroSubtitle {
-  font-size: var(--text-xl);
+  font-size: var(--text-lg);
   color: #94a3b8;
-  max-width: 42rem;
-  margin: 0 auto;
+  line-height: 1.6;
 }
 
-/* ── Stats Section ──────────────────────────────────────────── */
+.globeWrapper {
+  width: 100%;
+}
 
-.statsSection {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+/* ── Right Column: Stats ────────────────────────────────────── */
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.statsTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+  color: #ffffff;
 }
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr); /* ✅ 2x4 grid */
   gap: 1rem;
 }
 
-/* Responsive: 2 columns on medium screens */
-@media (max-width: 1024px) {
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Responsive: 1 column on small screens */
-@media (max-width: 600px) {
-  .statsGrid {
-    grid-template-columns: 1fr;
-  }
-}
+/* ── Stat Cards ─────────────────────────────────────────────── */
 
 .statCard {
   background-color: #0f172a;
@@ -163,8 +169,10 @@
   font-style: italic;
 }
 
-.globeSection {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 0 1rem 2rem;
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr; /* ✅ stack on smaller screens */
+  }
 }

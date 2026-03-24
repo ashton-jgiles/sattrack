@@ -113,7 +113,7 @@ export default function Landing() {
               sx={{ fontSize: 32 }}
               className={styles.logoIcon}
             />
-            <h1 className={styles.logoText}>SatTrack</h1>
+            <h1 className={styles.logoText}>SatTrack Global</h1>
           </div>
           <div className={styles.headerActions}>
             <button
@@ -127,33 +127,35 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Hero */}
-      <div className={styles.main}>
-        <div className={styles.hero}>
-          <h2 className={styles.heroTitle}>Real-Time Satellite Tracking</h2>
-          <p className={styles.heroSubtitle}>
-            Monitor global satellite networks with live position data,
-            trajectory visualization, and comprehensive dataset management
-          </p>
+      {/* Two column layout */}
+      <div className={styles.content}>
+        {/* Left: Hero text + Globe */}
+        <div className={styles.leftColumn}>
+          <div>
+            <h2 className={styles.heroTitle}>Real-Time Satellite Tracking</h2>
+            <p className={styles.heroSubtitle}>
+              Monitor global satellite networks with live position data,
+              trajectory visualization, and comprehensive dataset management
+            </p>
+          </div>
+          <div className={styles.globeWrapper}>
+            <SatelliteGlobe />
+          </div>
         </div>
-      </div>
 
-      {/* Satellite Globe */}
-      <div className={styles.globeSection}>
-        <SatelliteGlobe />
-      </div>
-
-      {/* Stats */}
-      <div className={styles.statsSection}>
-        <div className={styles.statsGrid}>
-          {stats.map((stat) => (
-            <StatCard
-              key={stat.label}
-              label={stat.label}
-              value={stat.value}
-              loading={loading}
-            />
-          ))}
+        {/* Right: Stats */}
+        <div className={styles.rightColumn}>
+          <h2 className={styles.statsTitle}>Satellite Statistics</h2>
+          <div className={styles.statsGrid}>
+            {stats.map((stat) => (
+              <StatCard
+                key={stat.label}
+                label={stat.label}
+                value={stat.value}
+                loading={loading}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
