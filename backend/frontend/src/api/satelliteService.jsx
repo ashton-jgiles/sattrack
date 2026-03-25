@@ -44,3 +44,8 @@ export const getTotalResearchSatellites = async () => {
   const data = await get(`/satellite/totalResearchSatellites/`);
   return data.total;
 };
+
+export const getRecentDeployments = async () => {
+  const data = await get(`/satellite/recentDeployments/`);
+  return data;
+};

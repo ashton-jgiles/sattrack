@@ -113,7 +113,7 @@ export default function Landing() {
               sx={{ fontSize: 32 }}
               className={styles.logoIcon}
             />
-            <h1 className={styles.logoText}>SatTrack Global</h1>
+            <h1 className={styles.logoText}>SatTrack</h1>
           </div>
           <div className={styles.headerActions}>
             <button
