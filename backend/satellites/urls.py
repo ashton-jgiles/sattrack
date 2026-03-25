@@ -12,4 +12,5 @@ urlpatterns = [
     path('totalInternetSatellites/', views.TotalInternetSatellites.as_view()),
     path('totalResearchSatellites/', views.TotalResearchSatellites.as_view()),
     path('positions/', views.AllTrajectory.as_view()),
+    path('recentDeployments/', views.RecentDeployments.as_view()),
 ]
