@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Landing from "../pages/Landing";
 import LoginPage from "../pages/LoginPage";
 import CreateAccountPage from "../pages/CreateAccount";
-import { Dashboard } from "../pages/Dashboard";
+import Dashboard from "../pages/Dashboard";
 import ProtectedRoute from "../auth/ProtectedRoute";
 
 export default class App extends Component {
