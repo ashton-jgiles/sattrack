@@ -168,7 +168,7 @@ function OverviewPage() {
   }, []);
 
   return (
-    <>
+    <div className={styles.content}>
       <div>
         <h2 className={styles.pageTitle}>Dashboard Overview</h2>
         <p className={styles.pageSubtitle}>
@@ -283,7 +283,7 @@ function OverviewPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

@@ -532,11 +532,7 @@ def run():
     print("\n[16/16] Inserting navigation records...")
     seed_navigation(cursor)
     conn.commit()
-
-
-
     
-
     cursor.close()
     conn.close()
 
