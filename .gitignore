@@ -6,6 +6,7 @@ venv/
 db.sqlite3
 node_modules/
 backend/frontend/static/frontend/main.js
+backend/frontend/static/cesium
 .DS_Store
 
 # UV ignore

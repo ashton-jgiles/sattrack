@@ -1,0 +1,178 @@
+/* ── Landing Page Module ────────────────────────────────────── */
+
+.page {
+  min-height: 100vh;
+  background-color: #020917;
+  color: #ffffff;
+  width: 100%;
+  flex: 1;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: rgba(2, 9, 23, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid #1e293b;
+}
+
+.headerInner {
+  max-width: 80%;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logoIcon {
+  color: #3b82f6;
+}
+
+.logoText {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-medium);
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.loginButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.loginButton:hover {
+  background-color: #1d4ed8;
+}
+
+/* ── Main Two Column Layout ─────────────────────────────────── */
+
+.content {
+  max-width: 80%;
+  margin: 0 auto;
+  padding: 2rem 2rem;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr; /* ✅ left and right columns */
+  gap: 2rem;
+  align-items: start; /* ✅ both columns start at the top */
+}
+
+/* ── Left Column: Hero Text + Globe ─────────────────────────── */
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.heroTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+}
+
+.heroSubtitle {
+  font-size: var(--text-lg);
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.globeWrapper {
+  width: 100%;
+}
+
+/* ── Right Column: Stats ────────────────────────────────────── */
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.statsTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+  color: #ffffff;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* ✅ 2x4 grid */
+  gap: 1rem;
+}
+
+/* ── Stat Cards ─────────────────────────────────────────────── */
+
+.statCard {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.statCard:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+}
+
+.statLabel {
+  font-size: var(--text-sm);
+  color: #94a3b8;
+  font-weight: var(--font-weight-normal);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: 600;
+  color: #22c55e;
+  line-height: 1;
+}
+
+.statLoading {
+  font-size: var(--text-sm);
+  color: #475569;
+  font-style: italic;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr; /* ✅ stack on smaller screens */
+  }
+}

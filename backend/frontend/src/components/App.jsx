@@ -1,7 +1,10 @@
 import React, { Component } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import HomePage from "../pages/HomePage";
+import Landing from "../pages/Landing";
 import LoginPage from "../pages/LoginPage";
+import CreateAccountPage from "../pages/CreateAccount";
+import Dashboard from "../pages/Dashboard";
+import ProtectedRoute from "../auth/ProtectedRoute";
 
 export default class App extends Component {
   constructor(props) {
@@ -12,8 +15,17 @@ export default class App extends Component {
     return (
       <Router>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<CreateAccountPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute minLevel={1}>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </Router>
     );
