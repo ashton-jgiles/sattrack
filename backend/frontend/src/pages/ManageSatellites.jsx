@@ -8,6 +8,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 // component imports
 import SatelliteProfileModal from "../components/SatelliteProfileModal";
+import AddSatelliteModal from "../components/AddSatelliteModal";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import PopupMessage from "../components/PopupMessage";
 
@@ -21,6 +22,8 @@ import {
   deleteSatellite,
   modifySatellite,
 } from "../api/satelliteService";
+
+import { getAllDatasets } from "../api/datasetService";
 
 // style imports
 import styles from "../styles/ManageSatellites.module.css";
@@ -38,10 +41,12 @@ const SUBCLASS_FILTERS = [
 
 export default function ManageSatellites() {
   const [satellites, setSatellites] = useState([]);
+  const [datasets, setDatasets] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const { message, messageFading, messageVisible, showPopupMessage } =
     usePopupMessage();
@@ -53,6 +58,16 @@ export default function ManageSatellites() {
       .catch((err) => console.error("Failed to load satellites:", err))
       .finally(() => setLoading(false));
   }, []);
+
+  // load datasets list on mount
+  useEffect(() => {
+    getAllDatasets()
+      .then((data) => setDatasets(data))
+      .catch((err) => console.error("Failed to load datasets:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  console.log(datasets);
 
   // filter satellites by subclass type
   const filtered =
@@ -100,7 +115,10 @@ export default function ManageSatellites() {
             View, manage and remove satellites
           </p>
         </div>
-        <button className={styles.addButton}>
+        <button
+          className={styles.addButton}
+          onClick={() => setShowAddModal(true)}
+        >
           <AddIcon sx={{ fontSize: 18 }} />
           Add Satellite
         </button>
@@ -177,6 +195,18 @@ export default function ManageSatellites() {
           )}
         </div>
       </div>
+
+      {/* Add Satellite Modal */}
+      {showAddModal && (
+        <AddSatelliteModal
+          data={datasets}
+          onClose={() => setShowAddModal(false)}
+          onSave={async (payload) => {
+            console.log(payload);
+            showPopupMessage("New satellite successfully added");
+          }}
+        />
+      )}
 
       {/* Profile Modal */}
       {profileData && (
