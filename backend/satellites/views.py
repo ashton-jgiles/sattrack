@@ -176,7 +176,10 @@ class SpecificSatelliteAllData(APIView):
                 so.*,
                 dp.deploy_date_time,
                 lv.*,
-                ls.*,
+                ls.site_name,
+                ls.location,
+                ls.climate,
+                ls.country AS site_country,
                 es.*,
                 os.*,
                 n.*,
@@ -240,7 +243,7 @@ class SpecificSatelliteAllData(APIView):
 
         # Launch site fields 
         launch_site = {k: flat[k] for k in [
-            'site_name', 'location', 'climate', 'country',
+            'site_name', 'location', 'climate', 'site_country',
         ] if k in flat}
 
         # communication station fields
@@ -251,7 +254,8 @@ class SpecificSatelliteAllData(APIView):
         # Subclass fields — only non-null ones remain 
         known_keys = (
             set(satellite) | set(owner) | set(launch) |
-            set(launch_site) | {'owner_id', 'vehicle_id'}
+            set(launch_site) | set(communication) | {'owner_id', 'vehicle_id', 'communication_frequency', 
+    'station_location', 'station_name'}
         )
         type_data = {k: v for k, v in flat.items() if k not in known_keys}
 

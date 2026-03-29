@@ -51,7 +51,7 @@ export const getRecentDeployments = async () => {
 };
 
 export const getSatelliteProfile = async (id) => {
-  const data = await `/satellite/${id}/profile/`;
+  const data = await get(`/satellite/${id}/profile/`);
   return data;
 };
 
