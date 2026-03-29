@@ -2,6 +2,23 @@ from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
 import requests
+import time
+
+celestrak_cache = {}
+CACHE_TTL = 300  # 5 minutes
+
+def fetch_celestrak_cached(url):
+    now = time.time()
+    if url in celestrak_cache:
+        data, timestamp = celestrak_cache[url]
+        if now - timestamp < CACHE_TTL:
+            return data
+    
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    data = fetch_celestrak_cached(url)
+    celestrak_cache[url] = (data, now)
+    return data
 
 def derive_orbit_type(mean_motion, inclination):
     # Mean motion in revs/day
