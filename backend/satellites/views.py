@@ -16,7 +16,7 @@ def fetch_celestrak_cached(url):
     
     response = requests.get(url, timeout=30)
     response.raise_for_status()
-    data = fetch_celestrak_cached(url)
+    data = response.json()
     celestrak_cache[url] = (data, now)
     return data
 
@@ -400,9 +400,7 @@ class NewSatellitesFromDataset(APIView):
 
         # fetch data from celestrak
         try:
-            response = requests.get(url, timeout=30)
-            response.raise_for_status()
-            all_sats = response.json()
+            all_sats = fetch_celestrak_cached(url)
         except Exception as e:
             return Response({'error': f'Failed to fetch CelesTrak data: {str(e)}'}, status=502)
         
@@ -449,3 +447,4 @@ class NewSatellitesFromDataset(APIView):
             'pages': pages,
             'limit': limit,
         })
+    
