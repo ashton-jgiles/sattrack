@@ -5,6 +5,9 @@ import { useNavigate } from "react-router-dom";
 // auth import
 import { useAuth } from "../auth/useAuth";
 
+// page imports
+import ManageSatellites from "./ManageSatellites";
+
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -329,7 +332,7 @@ export default function Dashboard() {
       case "reviews":
         return <PlaceholderPage title="Reviews" />;
       case "manageSatellites":
-        return <PlaceholderPage title="Manage Satellites" />;
+        return <ManageSatellites />;
       case "manageDatasets":
         return <PlaceholderPage title="Manage Datasets" />;
       case "admin":
