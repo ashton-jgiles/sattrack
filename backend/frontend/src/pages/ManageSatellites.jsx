@@ -175,6 +175,10 @@ export default function ManageSatellites() {
         <SatelliteProfileModal
           data={profileData}
           onClose={() => setProfileData(null)}
+          onSave={async (payload) => {
+            // wire to backend update endpoint later
+            console.log("payload:", payload);
+          }}
         />
       )}
 
