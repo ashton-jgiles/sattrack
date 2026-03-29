@@ -129,7 +129,14 @@ class TotalResearchSatellites(APIView):
 class AllTrajectory(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
-            cursor.execute("SELECT satellite_id, dataset_id, timestamp, latitude, longitude, altitude FROM trajectory WHERE timestamp >= NOW() - INTERVAL 2 DAY ORDER BY satellite_id, timestamp ASC")
+            cursor.execute("""
+                SELECT satellite_id, dataset_id, timestamp, latitude, longitude, altitude 
+                FROM trajectory 
+                WHERE timestamp >= (
+                    SELECT MAX(timestamp) - INTERVAL 2 DAY FROM trajectory
+                )
+                ORDER BY satellite_id, timestamp ASC
+            """)
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
