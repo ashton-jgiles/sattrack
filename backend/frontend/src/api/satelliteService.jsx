@@ -62,3 +62,13 @@ export const deleteSatellite = async (id) => {
 export const modifySatellite = async (payload) => {
   return await post(`/satellite/modify/`, payload);
 };
+
+export const getNewSatellitesFromDataset = async (
+  datasetId,
+  search = "",
+  page = 1,
+  limit = 50,
+) => {
+  const params = new URLSearchParams({ search, page, limit });
+  return await get(`/satellite/dataset/${datasetId}/new/?${params}`);
+};
