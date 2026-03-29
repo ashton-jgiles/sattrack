@@ -164,6 +164,9 @@ class SpecificSatelliteAllData(APIView):
                 i.*,
                 r.*,
                 w.*,
+                cw.communication_frequency,
+                cw.location AS station_location,
+                cs.name AS station_name,
                 CASE
                     WHEN es.satellite_id IS NOT NULL THEN 'Earth Science'
                     WHEN os.satellite_id IS NOT NULL THEN 'Oceanic Science'
@@ -178,6 +181,8 @@ class SpecificSatelliteAllData(APIView):
                 INNER JOIN launch_vehicle lv ON dp.vehicle_id = lv.vehicle_id 
                 INNER JOIN launched_from lf ON lf.launch_date = dp.deploy_date_time 
                 INNER JOIN launch_site ls ON lf.site_name = ls.site_name
+                INNER JOIN communicates_with cw ON s.satellite_id = cw.satellite_id
+                INNER JOIN communication_station cs ON cw.location = cs.location 
                 LEFT JOIN earth_science es ON s.satellite_id = es.satellite_id 
                 LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id 
                 LEFT JOIN navigation n ON s.satellite_id = n.satellite_id 
@@ -195,31 +200,36 @@ class SpecificSatelliteAllData(APIView):
         # strip nulls from non matching subclasses
         flat = {k: v for k, v in zip(columns, row) if v is not None}
 
-        # ── Satellite fields ──
+        # Satellite fields 
         satellite = {k: flat[k] for k in [
             'satellite_id', 'name', 'description', 'orbit_type',
             'norad_id', 'object_id', 'classification', 'last_contact_time',
             'dataset_id', 'username', 'satellite_type',
         ] if k in flat}
 
-        # ── Owner fields ──
+        # Owner fields 
         owner = {k: flat[k] for k in [
             'owner_id', 'owner_name', 'owner_phone', 'owner_address',
             'country', 'operator', 'owner_type',
         ] if k in flat}
 
-        # ── Launch fields ──
+        # Launch fields 
         launch = {k: flat[k] for k in [
             'deploy_date_time', 'vehicle_id', 'vehicle_name', 'manufacturer',
             'reusable', 'payload_capacity',
         ] if k in flat}
 
-        # ── Launch site fields ──
+        # Launch site fields 
         launch_site = {k: flat[k] for k in [
             'site_name', 'location', 'climate', 'country',
         ] if k in flat}
 
-        # ── Subclass fields — only non-null ones remain ──
+        # communication station fields
+        communication = {k: flat[k] for k in [
+           'communication_frequency', 'station_location', 'station_name' 
+        ] if k in flat}
+
+        # Subclass fields — only non-null ones remain 
         known_keys = (
             set(satellite) | set(owner) | set(launch) |
             set(launch_site) | {'owner_id', 'vehicle_id'}
@@ -231,6 +241,7 @@ class SpecificSatelliteAllData(APIView):
             'owner':       owner,
             'launch':      launch,
             'launch_site': launch_site,
+            'communication': communication,
             'type_data':   type_data,
         })
         
