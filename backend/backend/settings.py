@@ -41,7 +41,10 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'satellites',
     'datasets',
-    'admin_panel',
+    'manage_satellites',
+    'manage_datasets',
+    'settings',
+    'lookups',
     'users',
     'frontend',
 ]
