@@ -1,4 +1,4 @@
-import { get } from "./api";
+import { get, del } from "./api";
 
 export const getAllSatellites = async () => {
   const data = await get(`/satellite/satellites/`);
@@ -53,4 +53,8 @@ export const getRecentDeployments = async () => {
 export const getSatelliteProfile = async (id) => {
   const data = await `/satellite/${id}/profile/`;
   return data;
+};
+
+export const deleteSatellite = async (id) => {
+  return await del(`/satellite/${id}/delete/`);
 };

@@ -30,3 +30,20 @@ export const post = (endpoint, body) => {
     return data;
   });
 };
+
+export const del = (endpoint) => {
+  return fetch(`${BASE_URL}${endpoint}`, {
+    method: "DELETE",
+  }).then(async (res) => {
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
+    if (!res.ok) {
+      throw new Error(data.error || `HTTP error status: ${res.status}`);
+    }
+    return data;
+  });
+};

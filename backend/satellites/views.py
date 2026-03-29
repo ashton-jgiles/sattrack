@@ -234,3 +234,26 @@ class SpecificSatelliteAllData(APIView):
             'type_data':   type_data,
         })
         
+class DeleteSatellite(APIView):
+    def delete(self, request, satellite_id):
+        with connection.cursor() as cursor:
+            # check satellite exists
+            cursor.execute("SELECT satellite_id FROM satellite WHERE satellite_id = %s", [satellite_id])
+
+            if not cursor.fetchone():
+                return Response({'error': 'Satellite not found'}, status=404)
+            
+            # Delete in order — child tables first
+            cursor.execute("DELETE FROM trajectory WHERE satellite_id = %s", (satellite_id,))
+            cursor.execute("DELETE FROM communicates_with WHERE satellite_id = %s", (satellite_id,))
+            cursor.execute("DELETE FROM deploys_payload WHERE satellite_id = %s", (satellite_id,))
+            cursor.execute("DELETE FROM earth_science WHERE satellite_id = %s", (satellite_id,))
+            cursor.execute("DELETE FROM oceanic_science WHERE satellite_id = %s", (satellite_id,))
+            cursor.execute("DELETE FROM weather WHERE satellite_id = %s", (satellite_id,))
+            cursor.execute("DELETE FROM navigation WHERE satellite_id = %s", (satellite_id,))
+            cursor.execute("DELETE FROM internet WHERE satellite_id = %s", (satellite_id,))
+            cursor.execute("DELETE FROM research WHERE satellite_id = %s", (satellite_id,))
+            cursor.execute("DELETE FROM satellite WHERE satellite_id = %s", (satellite_id,))
+
+        return Response({'message': 'Satellite deleted successfully'})
+    
