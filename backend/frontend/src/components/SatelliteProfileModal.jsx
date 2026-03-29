@@ -301,7 +301,12 @@ export default function SatelliteProfileModal({ data, onClose, onSave }) {
   const satellite = editData.satellite || {};
 
   return ReactDOM.createPortal(
-    <div className={styles.backdrop} onClick={onClose}>
+    <div
+      className={styles.backdrop}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.modalHeader}>

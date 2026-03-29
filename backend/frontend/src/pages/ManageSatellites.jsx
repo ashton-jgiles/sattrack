@@ -9,6 +9,10 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 // component imports
 import SatelliteProfileModal from "../components/SatelliteProfileModal";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
+import PopupMessage from "../components/PopupMessage";
+
+// hooks
+import usePopupMessage from "../hooks/usePopupMessage";
 
 // api imports
 import {
@@ -39,6 +43,8 @@ export default function ManageSatellites() {
   const [profileData, setProfileData] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const { message, messageFading, messageVisible, showPopupMessage } =
+    usePopupMessage();
 
   // Load satellite list on mount
   useEffect(() => {
@@ -53,7 +59,6 @@ export default function ManageSatellites() {
     filter === "all"
       ? satellites
       : satellites.filter((s) => s.satellite_type === filter);
-
   // handle edit click
   const handleEditClick = async (satelliteID) => {
     setProfileLoading(true);
@@ -78,8 +83,10 @@ export default function ManageSatellites() {
         prev.filter((s) => s.satellite_id !== deleteTarget.satellite_id),
       );
       setDeleteTarget(null);
+      showPopupMessage("Satellite deleted successfully");
     } catch (err) {
       console.error("Failed to delete satellite:", err);
+      showPopupMessage("Failed to delete satellite", "error");
     }
   };
 
@@ -178,6 +185,7 @@ export default function ManageSatellites() {
           onClose={() => setProfileData(null)}
           onSave={async (payload) => {
             modifySatellite(payload);
+            showPopupMessage("Satellite updated sucessfully");
           }}
         />
       )}
@@ -188,6 +196,15 @@ export default function ManageSatellites() {
           satellite={deleteTarget}
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {message && (
+        <PopupMessage
+          message={message.message}
+          type={message.type}
+          fading={messageFading}
+          visible={messageVisible}
         />
       )}
     </div>
