@@ -9,6 +9,9 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SaveIcon from "@mui/icons-material/Save";
 import CheckIcon from "@mui/icons-material/Check";
 
+// api imports
+import { getNewSatellitesFromDataset } from "../api/satelliteService";
+
 // style imports
 import styles from "../styles/AddSatelliteModal.module.css";
 
@@ -94,20 +97,42 @@ function StepDataset({ datasets, selectedDataset, onSelect }) {
 }
 
 // Step 2: Satellite Selection
-function StepSatellite({ satellites, loading, selectedSatellite, onSelect }) {
-  if (loading) {
-    return <div className={styles.emptyState}>Loading satellites...</div>;
-  }
-
+function StepSatellite({
+  satellites,
+  loading,
+  selectedSatellite,
+  onSelect,
+  search,
+  onSearch,
+  page,
+  pages,
+  total,
+  onPageChange,
+}) {
   return (
     <div>
       <h3 className={styles.stepTitle}>Select a Satellite</h3>
       <p className={styles.stepSubtitle}>
-        These satellites are in the dataset but not yet in the database.
+        Showing satellites in this dataset not yet in the database.
       </p>
-      {satellites.length === 0 ? (
+
+      {/* Search */}
+      <input
+        className={styles.searchInput}
+        type="text"
+        placeholder="Search by name or NORAD ID..."
+        value={search}
+        onChange={(e) => onSearch(e.target.value)}
+      />
+
+      {/* List */}
+      {loading ? (
+        <div className={styles.emptyState}>Loading satellites...</div>
+      ) : satellites.length === 0 ? (
         <div className={styles.emptyState}>
-          All satellites in this dataset are already in the database
+          {search
+            ? "No satellites match your search"
+            : "All satellites in this dataset are already in the database"}
         </div>
       ) : (
         <div className={styles.selectList}>
@@ -123,11 +148,32 @@ function StepSatellite({ satellites, loading, selectedSatellite, onSelect }) {
                   NORAD {sat.norad_id} · {sat.object_id}
                 </div>
               </div>
-              <span className={styles.selectItemBadge}>
-                {sat.orbit_type ?? "LEO"}
-              </span>
+              <span className={styles.selectItemBadge}>{sat.orbit_type}</span>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && total > 0 && (
+        <div className={styles.pagination}>
+          <button
+            className={styles.pageButton}
+            onClick={() => onPageChange(page - 1)}
+            disabled={page <= 1}
+          >
+            ‹
+          </button>
+          <span className={styles.pageInfo}>
+            Page {page} of {pages} · {total} satellites
+          </span>
+          <button
+            className={styles.pageButton}
+            onClick={() => onPageChange(page + 1)}
+            disabled={page >= pages}
+          >
+            ›
+          </button>
         </div>
       )}
     </div>
@@ -164,17 +210,38 @@ export default function AddSatelliteModal({
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [search, setSearch] = useState("");
+  const [satPage, setSatPage] = useState(1);
+  const [satTotal, setSatTotal] = useState(0);
+  const [satPages, setSatPages] = useState(1);
+
+  useEffect(() => {
+    if (!selectedDataset) return;
+    const timeout = setTimeout(() => {
+      loadSatellitesForDataset(selectedDataset, 1, search);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [search]);
 
   // Fetch new satellites when dataset is selected and user moves to step 2
-  const loadSatellitesForDataset = async (dataset) => {
+  const loadSatellitesForDataset = async (
+    dataset,
+    page = 1,
+    searchTerm = "",
+  ) => {
     setSatLoading(true);
     setSatellites([]);
     setSelectedSatellite(null);
     try {
-      // API call will be wired in next step
-      // const data = await getNewSatellitesFromDataset(dataset.dataset_id);
-      // setSatellites(data);
-      setSatellites([]); // placeholder
+      const data = await getNewSatellitesFromDataset(
+        dataset.dataset_id,
+        searchTerm,
+        page,
+      );
+      setSatellites(data.results);
+      setSatTotal(data.total);
+      setSatPages(data.pages);
+      setSatPage(data.page);
     } catch (err) {
       console.error("Failed to load satellites:", err);
     } finally {
@@ -238,6 +305,15 @@ export default function AddSatelliteModal({
             loading={satLoading}
             selectedSatellite={selectedSatellite}
             onSelect={setSelectedSatellite}
+            search={search}
+            onSearch={setSearch}
+            page={satPage}
+            pages={satPages}
+            total={satTotal}
+            onPageChange={(p) => {
+              setSatPage(p);
+              loadSatellitesForDataset(selectedDataset, p, search);
+            }}
           />
         );
       case 3:
