@@ -147,3 +147,90 @@ class RecentDeployments(APIView):
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
         return Response(data)
+    
+class SpecificSatelliteAllData(APIView):
+    def get(self, request, satellite_id):
+        with connection.cursor() as cursor:
+            cursor.execute(""" 
+            SELECT 
+                s.*,
+                so.*,
+                dp.deploy_date_time,
+                lv.*,
+                ls.*,
+                es.*,
+                os.*,
+                n.*,
+                i.*,
+                r.*,
+                w.*,
+                CASE
+                    WHEN es.satellite_id IS NOT NULL THEN 'Earth Science'
+                    WHEN os.satellite_id IS NOT NULL THEN 'Oceanic Science'
+                    WHEN w.satellite_id  IS NOT NULL THEN 'Weather'
+                    WHEN n.satellite_id  IS NOT NULL THEN 'Navigation'
+                    WHEN i.satellite_id  IS NOT NULL THEN 'Internet'
+                    WHEN r.satellite_id  IS NOT NULL THEN 'Research'
+                END AS satellite_type
+            FROM satellite s 
+                INNER JOIN satellite_owner so ON s.owner_id = so.owner_id 
+                INNER JOIN deploys_payload dp ON s.satellite_id = dp.satellite_id 
+                INNER JOIN launch_vehicle lv ON dp.vehicle_id = lv.vehicle_id 
+                INNER JOIN launched_from lf ON lf.launch_date = dp.deploy_date_time 
+                INNER JOIN launch_site ls ON lf.site_name = ls.site_name
+                LEFT JOIN earth_science es ON s.satellite_id = es.satellite_id 
+                LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id 
+                LEFT JOIN navigation n ON s.satellite_id = n.satellite_id 
+                LEFT JOIN internet i ON s.satellite_id = i.satellite_id 
+                LEFT JOIN research r ON s.satellite_id = r.satellite_id 
+                LEFT JOIN weather w ON s.satellite_id = w.satellite_id 
+            WHERE s.satellite_id = %s
+        """, [satellite_id])
+            columns = [col[0] for col in cursor.description]
+            row = cursor.fetchone()
+
+        if not row:
+            return Response({'error': 'Satellite data not found'}, status=404)
+        
+        # strip nulls from non matching subclasses
+        flat = {k: v for k, v in zip(columns, row) if v is not None}
+
+        # ── Satellite fields ──
+        satellite = {k: flat[k] for k in [
+            'satellite_id', 'name', 'description', 'orbit_type',
+            'norad_id', 'object_id', 'classification', 'last_contact_time',
+            'dataset_id', 'username', 'satellite_type',
+        ] if k in flat}
+
+        # ── Owner fields ──
+        owner = {k: flat[k] for k in [
+            'owner_id', 'owner_name', 'owner_phone', 'owner_address',
+            'country', 'operator', 'owner_type',
+        ] if k in flat}
+
+        # ── Launch fields ──
+        launch = {k: flat[k] for k in [
+            'deploy_date_time', 'vehicle_id', 'vehicle_name', 'manufacturer',
+            'reusable', 'payload_capacity',
+        ] if k in flat}
+
+        # ── Launch site fields ──
+        launch_site = {k: flat[k] for k in [
+            'site_name', 'location', 'climate', 'country',
+        ] if k in flat}
+
+        # ── Subclass fields — only non-null ones remain ──
+        known_keys = (
+            set(satellite) | set(owner) | set(launch) |
+            set(launch_site) | {'owner_id', 'vehicle_id'}
+        )
+        type_data = {k: v for k, v in flat.items() if k not in known_keys}
+
+        return Response({
+            'satellite':   satellite,
+            'owner':       owner,
+            'launch':      launch,
+            'launch_site': launch_site,
+            'type_data':   type_data,
+        })
+        
