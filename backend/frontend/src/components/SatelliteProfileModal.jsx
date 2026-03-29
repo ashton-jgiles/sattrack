@@ -271,7 +271,6 @@ export default function SatelliteProfileModal({ data, onClose, onSave }) {
         },
         type_data: editData.type_data,
       };
-      console.log("Save payload:", payload);
       if (onSave) await onSave(payload);
       onClose();
     } catch (err) {

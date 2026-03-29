@@ -15,6 +15,7 @@ import {
   getAllSatellites,
   getSatelliteProfile,
   deleteSatellite,
+  modifySatellite,
 } from "../api/satelliteService";
 
 // style imports
@@ -176,8 +177,7 @@ export default function ManageSatellites() {
           data={profileData}
           onClose={() => setProfileData(null)}
           onSave={async (payload) => {
-            // wire to backend update endpoint later
-            console.log("payload:", payload);
+            modifySatellite(payload);
           }}
         />
       )}
