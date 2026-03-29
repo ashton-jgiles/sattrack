@@ -1,11 +1,11 @@
 import { get, post, del } from "./api";
 
 export const deleteSatellite = async (id) => {
-  return await del(`/admin/satellite/${id}/delete/`);
+  return await del(`/manage/satellite/${id}/delete/`);
 };
 
 export const modifySatellite = async (payload) => {
-  return await post(`/admin/satellite/modify/`, payload);
+  return await post(`/manage/satellite/modify/`, payload);
 };
 
 export const getNewSatellitesFromDataset = async (
@@ -15,5 +15,5 @@ export const getNewSatellitesFromDataset = async (
   limit = 50,
 ) => {
   const params = new URLSearchParams({ search, page, limit });
-  return await get(`/admin/satellite/dataset/${datasetId}/new/?${params}`);
+  return await get(`/manage/satellite/dataset/${datasetId}/new/?${params}`);
 };

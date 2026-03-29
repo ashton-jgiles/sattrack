@@ -10,7 +10,7 @@ import SaveIcon from "@mui/icons-material/Save";
 import CheckIcon from "@mui/icons-material/Check";
 
 // api imports
-import { getNewSatellitesFromDataset } from "../api/adminService";
+import { getNewSatellitesFromDataset } from "../api/manageSatellitesService";
 
 // style imports
 import styles from "../styles/AddSatelliteModal.module.css";

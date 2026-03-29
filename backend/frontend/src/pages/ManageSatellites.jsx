@@ -17,7 +17,10 @@ import usePopupMessage from "../hooks/usePopupMessage";
 
 // api imports
 import { getAllSatellites, getSatelliteProfile } from "../api/satelliteService";
-import { modifySatellite, deleteSatellite } from "../api/adminService";
+import {
+  modifySatellite,
+  deleteSatellite,
+} from "../api/manageSatellitesService";
 
 import { getAllDatasets } from "../api/datasetService";
 
