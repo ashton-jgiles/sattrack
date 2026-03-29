@@ -123,6 +123,7 @@ export default function ManageSatellites() {
           <span className={styles.listHeaderCell}>Orbit</span>
           <span className={styles.listHeaderCell}>NORAD ID</span>
           <span className={styles.listHeaderCell}></span>
+          <span className={styles.listHeaderCell}></span>
         </div>
 
         {/* List Body */}
@@ -136,7 +137,7 @@ export default function ManageSatellites() {
               <div key={sat.satellite_id} className={styles.listRow}>
                 <div className={styles.listRowName}>
                   <div className={styles.listDot} />
-                  {sat.name}
+                  {sat.name} - {sat.object_id}
                 </div>
                 <div className={styles.listCell}>
                   <span className={styles.typeBadge}>
