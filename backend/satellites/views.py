@@ -290,4 +290,62 @@ class DeleteSatellite(APIView):
             cursor.execute("DELETE FROM satellite WHERE satellite_id = %s", (satellite_id,))
 
         return Response({'message': 'Satellite deleted successfully'})
+
+class ModifySatellite(APIView):
+    def post(self, request):
+        satellite     = request.data.get('satellite', {})
+        communication = request.data.get('communication', {})
+        type_data     = request.data.get('type_data', {})
+
+        satellite_id = satellite.get('satellite_id')
+        if not satellite_id:
+            return Response({'error': 'satellite_id is required'}, status=400)
+
+        with connection.cursor() as cursor:
+
+            # Update satellite table 
+            cursor.execute("""
+                UPDATE satellite
+                SET description = %s, classification = %s
+                WHERE satellite_id = %s
+            """, (
+                satellite.get('description'),
+                satellite.get('classification'),
+                satellite_id,
+            ))
+
+            # Update communicates_with table 
+            if communication.get('communication_frequency'):
+                cursor.execute("""
+                    UPDATE communicates_with
+                    SET communication_frequency = %s
+                    WHERE satellite_id = %s
+                """, (
+                    communication.get('communication_frequency'),
+                    satellite_id,
+                ))
+
+            # Update subclass type table 
+            subclass_tables = [
+                'earth_science', 'oceanic_science', 'weather',
+                'navigation', 'internet', 'research'
+            ]
+
+            for table in subclass_tables:
+                cursor.execute(
+                    f"SELECT satellite_id FROM {table} WHERE satellite_id = %s",
+                    (satellite_id,)
+                )
+                if cursor.fetchone():
+                    # Build dynamic UPDATE from type_data keys
+                    if type_data:
+                        set_clause = ", ".join([f"{k} = %s" for k in type_data.keys()])
+                        values = list(type_data.values()) + [satellite_id]
+                        cursor.execute(
+                            f"UPDATE {table} SET {set_clause} WHERE satellite_id = %s",
+                            values
+                        )
+                    break
+
+        return Response({'message': 'Satellite updated successfully'})   
     

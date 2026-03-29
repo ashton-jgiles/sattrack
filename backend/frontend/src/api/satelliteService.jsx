@@ -60,8 +60,5 @@ export const deleteSatellite = async (id) => {
 };
 
 export const modifySatellite = async (payload) => {
-  return await post(
-    `/satellite/${payload.satellite.satellite_id}/modify/`,
-    payload,
-  );
+  return await post(`/satellite/modify/`, payload);
 };
