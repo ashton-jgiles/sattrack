@@ -5,7 +5,26 @@ from rest_framework.response import Response
 class SatelliteView(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM satellite")
+            cursor.execute("""
+                SELECT 
+                    s.*,
+                    CASE
+                        WHEN es.satellite_id IS NOT NULL THEN 'Earth Science'
+                        WHEN os.satellite_id IS NOT NULL THEN 'Oceanic Science'
+                        WHEN w.satellite_id  IS NOT NULL THEN 'Weather'
+                        WHEN n.satellite_id  IS NOT NULL THEN 'Navigation'
+                        WHEN i.satellite_id  IS NOT NULL THEN 'Internet'
+                        WHEN r.satellite_id  IS NOT NULL THEN 'Research'
+                        ELSE 'Unknown'
+                    END AS satellite_type
+                FROM satellite s
+                    LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
+                    LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
+                    LEFT JOIN weather w  ON s.satellite_id = w.satellite_id
+                    LEFT JOIN navigation n  ON s.satellite_id = n.satellite_id
+                    LEFT JOIN internet i  ON s.satellite_id = i.satellite_id
+                    LEFT JOIN research r  ON s.satellite_id = r.satellite_id
+            """)
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
         
