@@ -28,6 +28,8 @@
     "webpack-cli": "^7.0.0"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.9",
     "cesium": "^1.139.1",
     "recharts": "^3.8.0"
