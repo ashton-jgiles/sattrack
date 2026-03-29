@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 // auth import
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "../hooks/useAuth";
 
 // page imports
 import ManageSatellites from "./ManageSatellites";
