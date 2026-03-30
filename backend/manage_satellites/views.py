@@ -8,7 +8,7 @@ import json
 from datetime import datetime, timedelta
 
 CACHE_TTL_HOURS = 2
-_mem_cache = {}
+mem_cache = {}
 
 class RateLimitedError(Exception):
     pass
@@ -32,8 +32,8 @@ def fetch_celestrak_cached(url):
     now = datetime.now()
 
     # ── Layer 1: Memory cache ────────────────────────────────
-    if url in _mem_cache:
-        data, timestamp = _mem_cache[url]
+    if url in mem_cache:
+        data, timestamp = mem_cache[url]
         if now - timestamp < timedelta(hours=CACHE_TTL_HOURS):
             print(f"[Cache HIT - Memory] {url}")
             return data
@@ -51,7 +51,7 @@ def fetch_celestrak_cached(url):
         if now - cached_at < timedelta(hours=CACHE_TTL_HOURS):
             print(f"[Cache HIT - DB] {url}")
             data = json.loads(data_json)
-            _mem_cache[url] = (data, cached_at)
+            mem_cache[url] = (data, cached_at)
             return data
 
     # ── Layer 3: Fetch from CelesTrak ────────────────────────
@@ -67,7 +67,7 @@ def fetch_celestrak_cached(url):
         raise Exception(f"CelesTrak fetch failed: {str(e)}")
 
     # ── Save to both caches ──────────────────────────────────
-    _mem_cache[url] = (data, now)
+    mem_cache[url] = (data, now)
     with connection.cursor() as cursor:
         cursor.execute("""
             INSERT INTO celestrak_cache (url, data, cached_at)
