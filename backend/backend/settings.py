@@ -14,9 +14,6 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
 # empyu allowed hosts
 ALLOWED_HOSTS = []
 
@@ -39,6 +36,7 @@ INSTALLED_APPS = [
     'lookups',
     'users',
     'frontend',
+    'health',
 ]
 
 # middleware
@@ -76,6 +74,7 @@ REST_FRAMEWORK = {
         'user':       '5000/hour',  # authenticated general
         'celestrak':  '10/hour',    # CelesTrak fetches
         'positions':  '60/hour',    # trajectory positions
+        'register':   '5/hour',     # account registration
     }
 }
 

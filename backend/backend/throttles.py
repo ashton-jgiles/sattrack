@@ -7,3 +7,6 @@ class CelesTrakThrottle(UserRateThrottle):
 
 class PositionsThrottle(UserRateThrottle):
     scope = 'positions'
+
+class RegisterThrottle(UserRateThrottle):
+    scope = 'register'

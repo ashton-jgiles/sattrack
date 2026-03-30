@@ -11,5 +11,6 @@ urlpatterns = [
     path('api/settings/', include('settings.urls')),
     path('api/lookups/', include('lookups.urls')),
     path('api/auth/', include('users.urls')),
+    path('api/health/', include('health.urls')),
     path('', include('frontend.urls')),
 ]
