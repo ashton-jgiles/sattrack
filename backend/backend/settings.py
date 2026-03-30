@@ -64,15 +64,18 @@ SIMPLE_JWT = {
 
 # rest framework rate limiting setup
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'backend.authentication.CustomJWTAuthentication',
+    ],
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon':       '200/hour',   # unauthenticated
-        'user':       '1000/hour',  # authenticated general
+        'anon':       '1000/hour',   # unauthenticated
+        'user':       '5000/hour',  # authenticated general
         'celestrak':  '10/hour',    # CelesTrak fetches
-        'positions':  '30/hour',    # trajectory positions
+        'positions':  '60/hour',    # trajectory positions
     }
 }
 

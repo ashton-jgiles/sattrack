@@ -4,7 +4,6 @@ from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
 
 # check password method
 def check_password(plain, hashed):
