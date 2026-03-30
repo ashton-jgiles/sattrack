@@ -79,6 +79,32 @@ REST_FRAMEWORK = {
     }
 }
 
+# setup loggin
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '[{asctime}] {message}',
+            'style': '{',
+            'datefmt': '%H:%M:%S',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'sattrack': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
 # set the root url configuration
 ROOT_URLCONF = 'backend.urls'
 

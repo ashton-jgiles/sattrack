@@ -3,6 +3,7 @@ from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from backend.throttles import CelesTrakThrottle
+import logging
 
 # imports for creating trajectory after adding new satellite and caching celestrak data
 import threading
@@ -21,6 +22,9 @@ from manage_satellites.trajectory import (
 CACHE_TTL_HOURS = 2
 # create the cache dictionary
 celestrak_cache = {}
+
+# create the logger
+logger = logging.getLogger('sattrack')
 
 # if we hit the cesltrak rate limt we will continually run this exception
 class RateLimitedError(Exception):
@@ -53,7 +57,7 @@ def fetch_celestrak_cached(url):
     if url in celestrak_cache:
         data, timestamp = celestrak_cache[url]
         if now - timestamp < timedelta(hours=CACHE_TTL_HOURS):
-            print(f"[Cache HIT - Memory] {url}")
+            logger.info(f"[Cache HIT - Memory] {url}")
             return data
 
     # Layer 2: DB cache
@@ -67,13 +71,13 @@ def fetch_celestrak_cached(url):
     if row:
         data_json, cached_at = row
         if now - cached_at < timedelta(hours=CACHE_TTL_HOURS):
-            print(f"[Cache HIT - DB] {url}")
+            logger.info(f"[Cache HIT - DB] {url}")
             data = json.loads(data_json)
             celestrak_cache[url] = (data, cached_at)
             return data
 
     # Layer 3: Fetch from CelesTrak
-    print(f"[Cache MISS] Fetching from CelesTrak: {url}")
+    logger.info(f"[Cache MISS] Fetching from CelesTrak: {url}")
     try:
         response = requests.get(url, timeout=30)
         response.raise_for_status()
@@ -100,38 +104,38 @@ def fetch_celestrak_cached(url):
 # generate trajectory async function to generate trajectory for a new satellite in the background
 def generate_trajectory_async(satellite_id, dataset_id, tle_data):
     norad_id = tle_data.get('norad_id')
-    print(f"[Trajectory] Generating for NORAD {norad_id}...")
+    logger.info(f"[Trajectory] Generating for NORAD {norad_id}...")
 
     try:
         sat_data = {
-            'NORAD_CAT_ID':      norad_id,
-            'OBJECT_NAME':       tle_data.get('name'),
-            'OBJECT_ID':         tle_data.get('object_id'),
-            'INCLINATION':       tle_data.get('inclination'),
-            'ECCENTRICITY':      tle_data.get('eccentricity'),
-            'MEAN_MOTION':       tle_data.get('mean_motion'),
-            'EPOCH':             tle_data.get('epoch'),
-            'RA_OF_ASC_NODE':    tle_data.get('ra_of_asc_node'),
+            'NORAD_CAT_ID': norad_id,
+            'OBJECT_NAME': tle_data.get('name'),
+            'OBJECT_ID': tle_data.get('object_id'),
+            'INCLINATION': tle_data.get('inclination'),
+            'ECCENTRICITY': tle_data.get('eccentricity'),
+            'MEAN_MOTION': tle_data.get('mean_motion'),
+            'EPOCH': tle_data.get('epoch'),
+            'RA_OF_ASC_NODE': tle_data.get('ra_of_asc_node'),
             'ARG_OF_PERICENTER': tle_data.get('arg_of_pericenter'),
-            'MEAN_ANOMALY':      tle_data.get('mean_anomaly'),
-            'BSTAR':             tle_data.get('bstar'),
+            'MEAN_ANOMALY': tle_data.get('mean_anomaly'),
+            'BSTAR': tle_data.get('bstar'),
             'CLASSIFICATION_TYPE': tle_data.get('classification', 'U'),
-            'EPHEMERIS_TYPE':    0,
-            'ELEMENT_SET_NO':    999,
-            'MEAN_MOTION_DOT':   0,
-            'MEAN_MOTION_DDOT':  0,
-            'REV_AT_EPOCH':      0,
+            'EPHEMERIS_TYPE': 0,
+            'ELEMENT_SET_NO': 999,
+            'MEAN_MOTION_DOT': 0,
+            'MEAN_MOTION_DDOT': 0,
+            'REV_AT_EPOCH': 0,
         }
 
         try:
             sat_record = build_sat_record(sat_data)
         except Exception as e:
-            print(f"[Trajectory] SGP4 error for NORAD {norad_id}: {e}")
+            logger.info(f"[Trajectory] SGP4 error for NORAD {norad_id}: {e}")
             return
 
         # Build timestamps
         now_utc = datetime.now(timezone.utc)
-        start   = now_utc - timedelta(days=HISTORY_DAYS)
+        start = now_utc - timedelta(days=HISTORY_DAYS)
         timestamps = [
             start + timedelta(minutes=m)
             for m in range(0, HISTORY_DAYS * 24 * 60, INTERVAL_MINUTES)
@@ -142,7 +146,7 @@ def generate_trajectory_async(satellite_id, dataset_id, tle_data):
         with connection.cursor() as cursor:
             for ts in timestamps:
                 ts_naive = ts.replace(tzinfo=None)
-                jd, fr   = jday(
+                jd, fr = jday(
                     ts.year, ts.month, ts.day,
                     ts.hour, ts.minute, ts.second
                 )
@@ -151,7 +155,7 @@ def generate_trajectory_async(satellite_id, dataset_id, tle_data):
                     continue
 
                 lat, lon, alt = ecef_to_geodetic(r[0], r[1], r[2])
-                velocity      = compute_velocity(sat_record.no_kozai)
+                velocity = compute_velocity(sat_record.no_kozai)
 
                 cursor.execute("""
                     INSERT INTO trajectory (
@@ -178,10 +182,10 @@ def generate_trajectory_async(satellite_id, dataset_id, tle_data):
                     connection.commit()
 
             connection.commit()
-        print(f"[Trajectory] Done NORAD {norad_id} — {inserted} snapshots inserted")
+        logger.info(f"[Trajectory] Done NORAD {norad_id} — {inserted} snapshots inserted")
 
     except Exception as e:
-        print(f"[Trajectory] Unexpected error for NORAD {norad_id}: {e}")
+        logger.info(f"[Trajectory] Unexpected error for NORAD {norad_id}: {e}")
 
 # compute the orbit type from celestrak data
 def derive_orbit_type(mean_motion, inclination):
