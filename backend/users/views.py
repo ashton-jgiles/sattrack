@@ -4,6 +4,7 @@ from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from backend.throttles import RegisterThrottle
 
 # check password method
 def check_password(plain, hashed):
@@ -86,6 +87,8 @@ class LoginView(APIView):
 
 # create account view to create a users account and check for conflicts
 class CreateAccountView(APIView):
+    throttle_classes = [RegisterThrottle]
+
     def post(self, request):
         # key values to insert into the users table
         username = request.data.get('username')
