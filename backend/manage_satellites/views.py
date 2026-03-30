@@ -10,15 +10,12 @@ import json
 from datetime import datetime, timedelta, timezone
 from math import pi, degrees
 from sgp4.api import jday
-import sys, os
 import requests
-
-INGESTION_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', 'ingestion')
+from manage_satellites.trajectory import (
+    build_sat_record, ecef_to_geodetic, 
+    compute_velocity, build_timestamps,
+    HISTORY_DAYS, INTERVAL_MINUTES
 )
-sys.path.insert(0, INGESTION_PATH)
-from celestrak import build_sat_record, ecef_to_geodetic, compute_velocity
-from config import HISTORY_DAYS, INTERVAL_MINUTES
 
 # cache retention hours
 CACHE_TTL_HOURS = 2

@@ -1,25 +1,22 @@
+# imports
 import json
-import sys
-import os
 import requests
 from datetime import datetime, timedelta, timezone
 from math import pi, degrees
 from django.db import connection
 from django.core.management.base import BaseCommand
 from sgp4.api import jday
-
-# add ingestion directory to path
-INGESTION_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'ingestion')
+from manage_satellites.trajectory import (
+    build_sat_record, ecef_to_geodetic,
+    compute_velocity, build_timestamps,
+    HISTORY_DAYS, INTERVAL_MINUTES
 )
-sys.path.insert(0, INGESTION_PATH)
 
-from celestrak import build_sat_record, ecef_to_geodetic, compute_velocity
-from config import HISTORY_DAYS, INTERVAL_MINUTES
-
+# cache storage time in hours
 CACHE_TTL_HOURS = 2
 
 
+# command class which updates the trajectories of existing satellites
 class Command(BaseCommand):
     help = 'Update trajectory data for all satellites using celestrak_cache or fetching fresh data'
 
