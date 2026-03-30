@@ -28,6 +28,7 @@ const STEPS = [
   { number: 3, label: "Details" },
 ];
 
+// tabs
 const DETAIL_TABS = [
   { id: "info", label: "Satellite Info" },
   { id: "owner", label: "Owner" },
@@ -36,6 +37,7 @@ const DETAIL_TABS = [
   { id: "type", label: "Type Data" },
 ];
 
+// subclass tabs
 const SUBCLASS_TYPES = [
   "Earth Science",
   "Oceanic Science",
@@ -45,6 +47,7 @@ const SUBCLASS_TYPES = [
   "Research",
 ];
 
+// type fields for each subclass
 const TYPE_FIELDS = {
   "Earth Science": [
     "instrument",
@@ -95,8 +98,7 @@ const TYPE_FIELDS = {
   ],
 };
 
-// ── Field Components ─────────────────────────────────────────
-
+// Field Components
 function Field({ label, value, full }) {
   return (
     <div className={`${styles.field} ${full ? styles.fieldFull : ""}`}>
@@ -106,6 +108,7 @@ function Field({ label, value, full }) {
   );
 }
 
+// edit field function for editable fields while adding new satellite
 function EditField({
   label,
   value,
@@ -128,6 +131,7 @@ function EditField({
   );
 }
 
+// select field function for when a field is selected
 function SelectField({ label, value, onChange, options, full, placeholder }) {
   return (
     <div className={`${styles.field} ${full ? styles.fieldFull : ""}`}>
@@ -148,7 +152,7 @@ function SelectField({ label, value, onChange, options, full, placeholder }) {
   );
 }
 
-// ── Select or Create Component ───────────────────────────────
+// Select or Create Component
 function SelectOrCreate({
   label,
   items,
@@ -200,7 +204,7 @@ function SelectOrCreate({
   );
 }
 
-// ── Step Bar ─────────────────────────────────────────────────
+// Step Bar at the top of our modal
 function StepBar({ currentStep }) {
   return (
     <div className={styles.stepBar}>
@@ -233,7 +237,7 @@ function StepBar({ currentStep }) {
   );
 }
 
-// ── Step 1: Dataset Selection ────────────────────────────────
+// Step 1: Dataset Selection
 function StepDataset({ datasets, selectedDataset, onSelect }) {
   return (
     <div>
@@ -264,7 +268,7 @@ function StepDataset({ datasets, selectedDataset, onSelect }) {
   );
 }
 
-// ── Step 2: Satellite Selection ──────────────────────────────
+// Step 2: Satellite Selection
 function StepSatellite({
   satellites,
   loading,
@@ -342,7 +346,7 @@ function StepSatellite({
   );
 }
 
-// ── Step 3: Details Form ─────────────────────────────────────
+// Step 3: Details Form
 function StepDetails({
   formData,
   onChange,
@@ -416,7 +420,7 @@ function StepDetails({
   );
 }
 
-// ── Tab: Satellite Info ──────────────────────────────────────
+// Tab: Satellite Info
 function TabInfo({ formData, onChange, satellite }) {
   return (
     <div className={styles.fieldGrid}>
@@ -455,7 +459,7 @@ function TabInfo({ formData, onChange, satellite }) {
   );
 }
 
-// ── Tab: Owner ───────────────────────────────────────────────
+// Tab: Owner
 function TabOwner({ formData, onChange, owners }) {
   const isNew = formData.owner?.isNew || false;
   return (
@@ -515,7 +519,7 @@ function TabOwner({ formData, onChange, owners }) {
   );
 }
 
-// ── Tab: Launch & Site ───────────────────────────────────────
+// Tab: Launch & Site
 function TabLaunch({ formData, onChange, vehicles, sites }) {
   const vehicleIsNew = formData.launch?.vehicleIsNew || false;
   const siteIsNew = formData.launch?.siteIsNew || false;
@@ -617,7 +621,7 @@ function TabLaunch({ formData, onChange, vehicles, sites }) {
   );
 }
 
-// ── Tab: Communication ───────────────────────────────────────
+// Tab: Communication
 function TabComms({ formData, onChange, stations }) {
   const isNew = formData.communication?.stationIsNew || false;
   return (
@@ -661,7 +665,7 @@ function TabComms({ formData, onChange, stations }) {
   );
 }
 
-// ── Tab: Type Data ───────────────────────────────────────────
+// Tab: Type Data
 function TabType({ formData, onChange }) {
   const selectedType = formData.type?.subclass || null;
   const fields = selectedType ? TYPE_FIELDS[selectedType] || [] : [];
@@ -699,12 +703,13 @@ function TabType({ formData, onChange }) {
   );
 }
 
-// ── Main Modal ───────────────────────────────────────────────
+// Main Modal
 export default function AddSatelliteModal({
   data: datasets = [],
   onClose,
   onSave,
 }) {
+  // modal functions and variables
   const [step, setStep] = useState(1);
   const [selectedDataset, setSelectedDataset] = useState(null);
   const [satellites, setSatellites] = useState([]);
@@ -782,6 +787,7 @@ export default function AddSatelliteModal({
     }));
   };
 
+  // load satelites when a dataset is selected
   const loadSatellitesForDataset = async (
     dataset,
     page = 1,
@@ -808,6 +814,7 @@ export default function AddSatelliteModal({
     }
   };
 
+  // when next button is clicked
   const handleNext = async () => {
     setErrors([]);
     if (step === 1) {
@@ -826,6 +833,7 @@ export default function AddSatelliteModal({
     }
   };
 
+  // when back button is clicked
   const handleBack = () => {
     setErrors([]);
     setStep((prev) => prev - 1);
@@ -856,6 +864,7 @@ export default function AddSatelliteModal({
     return errs;
   };
 
+  // save button to add satellite to database
   const handleSave = async () => {
     const errs = validate();
     if (errs.length > 0) {
@@ -874,6 +883,7 @@ export default function AddSatelliteModal({
     }
   };
 
+  // render method for all tabs and steps
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -917,6 +927,7 @@ export default function AddSatelliteModal({
     }
   };
 
+  // create the react dom modal
   return ReactDOM.createPortal(
     <div
       className={styles.backdrop}

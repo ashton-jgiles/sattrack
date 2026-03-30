@@ -6,6 +6,7 @@ import { post } from "../api/api";
 const AuthContext = createContext(null);
 
 export default function AuthProvider({ children }) {
+  // function methods
   const [user, setUser] = useState(null); // { username, full_name, role, level_access }
   const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +22,7 @@ export default function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  // loging function
+  // login function
   const login = async (username, password) => {
     const data = await post("/auth/login/", { username, password });
     const {
@@ -35,7 +36,7 @@ export default function AuthProvider({ children }) {
 
     const userData = { username: uname, full_name, role, level_access };
 
-    // Store access token in memory + sessionStorage
+    // Store access token in memory and sessionStorage
     // Store refresh token in sessionStorage (use httpOnly cookie in production)
     setAccessToken(access);
     setUser(userData);
@@ -53,6 +54,7 @@ export default function AuthProvider({ children }) {
     sessionStorage.clear();
   };
 
+  // return the auth context
   return (
     <AuthContext.Provider value={{ user, accessToken, login, logout, loading }}>
       {children}

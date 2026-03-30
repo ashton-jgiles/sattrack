@@ -39,6 +39,7 @@ const SUBCLASS_FILTERS = [
 ];
 
 export default function ManageSatellites() {
+  // component fields
   const [satellites, setSatellites] = useState([]);
   const [datasets, setDatasets] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -65,8 +66,6 @@ export default function ManageSatellites() {
       .catch((err) => console.error("Failed to load datasets:", err))
       .finally(() => setLoading(false));
   }, []);
-
-  console.log(datasets);
 
   // filter satellites by subclass type
   const filtered =
@@ -104,6 +103,7 @@ export default function ManageSatellites() {
     }
   };
 
+  // main component structure
   return (
     <div className={styles.page}>
       {/* Page Header */}
@@ -226,7 +226,9 @@ export default function ManageSatellites() {
       {/* Confirm Delete Modal */}
       {deleteTarget && (
         <ConfirmDeleteModal
-          satellite={deleteTarget}
+          title="Remove Satellite"
+          message="Removing this satellite will permanently remove it from the database."
+          confirmLabel="Delete"
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteTarget(null)}
         />

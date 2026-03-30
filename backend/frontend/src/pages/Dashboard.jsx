@@ -43,7 +43,7 @@ import { getTotalDatasets } from "../api/datasetService";
 // style imports
 import styles from "../styles/Dashboard.module.css";
 
-// ── Sidebar nav config ───────────────────────────────────────
+// Sidebar nav config
 const NAV_ITEMS = [
   {
     section: "General",
@@ -104,7 +104,7 @@ const NAV_ITEMS = [
   },
 ];
 
-// ── Stat Card ────────────────────────────────────────────────
+// Stat Card
 function StatCard({ label, value, icon, loading }) {
   return (
     <div className={styles.statCard}>
@@ -119,7 +119,7 @@ function StatCard({ label, value, icon, loading }) {
   );
 }
 
-// ── Page: Overview ───────────────────────────────────────────
+// Page: Overview
 function OverviewPage() {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -290,7 +290,7 @@ function OverviewPage() {
   );
 }
 
-// ── Placeholder pages ────────────────────────────────────────
+// Placeholder pages (remove when all pages are done)
 function PlaceholderPage({ title }) {
   return (
     <>
@@ -303,12 +303,14 @@ function PlaceholderPage({ title }) {
   );
 }
 
-// ── Dashboard ────────────────────────────────────────────────
+// Dashboard
 export default function Dashboard() {
+  // component fields
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [activePage, setActivePage] = useState("overview");
 
+  // handle logout for logging a user out
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -342,6 +344,7 @@ export default function Dashboard() {
     }
   };
 
+  // main component code
   return (
     <div className={styles.page}>
       {/* Header */}

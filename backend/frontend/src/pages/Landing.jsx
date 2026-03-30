@@ -40,8 +40,8 @@ function StatCard({ label, value, loading }) {
 
 // default function
 export default function Landing() {
+  // component fields
   const navigate = useNavigate();
-
   const [totalSatellites, setTotalSatellites] = useState(null);
   const [totalEarthSatellites, setTotalEarthSatellites] = useState(null);
   const [totalOceanicSatellites, setTotalOceanicSatellites] = useState(null);
@@ -53,6 +53,7 @@ export default function Landing() {
   const [totalDatasets, setTotalDatasets] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // use effect to get all the data in our frontend fields from the apis
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -92,6 +93,7 @@ export default function Landing() {
     fetchStats();
   }, []);
 
+  // stats list for stat cards on the landing page
   const stats = [
     { label: "Total Satellites", value: totalSatellites },
     { label: "Total Datasets", value: totalDatasets },
@@ -103,6 +105,7 @@ export default function Landing() {
     { label: "Weather Satellites", value: totalWeatherSatellites },
   ];
 
+  // main component structure
   return (
     <div className={styles.page}>
       {/* Header */}

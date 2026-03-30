@@ -1,5 +1,7 @@
+// import get for the lookup services
 import { get } from "./api";
 
+// get interfaces for satellite owners, launch vehicles, launch sites and communication stations
 export const getAllOwners = async () => {
   const data = await get("/lookups/owners/");
   return data;

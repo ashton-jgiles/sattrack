@@ -28,6 +28,7 @@ function Field({ label, value, full }) {
   );
 }
 
+// edit field component
 function EditField({ label, value, onChange, full, type = "text" }) {
   return (
     <div className={`${styles.field} ${full ? styles.fieldFull : ""}`}>
@@ -42,6 +43,7 @@ function EditField({ label, value, onChange, full, type = "text" }) {
   );
 }
 
+// select field component
 function SelectField({ label, value, onChange, options, full }) {
   return (
     <div className={`${styles.field} ${full ? styles.fieldFull : ""}`}>
@@ -61,7 +63,7 @@ function SelectField({ label, value, onChange, options, full }) {
   );
 }
 
-// tab components
+// satellite info tab
 function TabInfo({ editData, handleChange }) {
   const s = editData.satellite || {};
   return (
@@ -93,6 +95,7 @@ function TabInfo({ editData, handleChange }) {
   );
 }
 
+// owner tab
 function TabOwner({ editData }) {
   const o = editData.owner || {};
   return (
@@ -107,6 +110,7 @@ function TabOwner({ editData }) {
   );
 }
 
+// launch tab
 function TabLaunch({ editData }) {
   const l = editData.launch || {};
   const ls = editData.launch_site || {};
@@ -132,6 +136,7 @@ function TabLaunch({ editData }) {
   );
 }
 
+// communication tab
 function TabComms({ editData, handleChange }) {
   const c = editData.communication || {};
   return (
@@ -163,6 +168,7 @@ const READ_ONLY_TYPE_FIELDS = new Set([
   "altitude_km",
 ]);
 
+// type tab
 function TabType({ editData, handleChange }) {
   const t = editData.type_data || {};
 
@@ -225,10 +231,12 @@ function validate(editData) {
 
 // modal component
 export default function SatelliteProfileModal({ data, onClose, onSave }) {
+  // functions and variables
   const [activeTab, setActiveTab] = useState("info");
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState([]);
 
+  // edito data which is all the data returned from the profile endpoint
   const [editData, setEditData] = useState({
     satellite: { ...(data.satellite || {}) },
     owner: { ...(data.owner || {}) },
@@ -281,6 +289,7 @@ export default function SatelliteProfileModal({ data, onClose, onSave }) {
     }
   };
 
+  // render the current active tab
   const renderTab = () => {
     switch (activeTab) {
       case "info":
@@ -298,8 +307,10 @@ export default function SatelliteProfileModal({ data, onClose, onSave }) {
     }
   };
 
+  // create the satellite array from the edit data
   const satellite = editData.satellite || {};
 
+  // create the react dom modal
   return ReactDOM.createPortal(
     <div
       className={styles.backdrop}

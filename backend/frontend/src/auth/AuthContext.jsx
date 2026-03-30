@@ -22,6 +22,7 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
+  // login method to call our login endpoint
   const login = async (username, password) => {
     const data = await post("/auth/login/", { username, password });
     const {
@@ -33,9 +34,10 @@ export function AuthProvider({ children }) {
       level_access,
     } = data;
 
+    // store the user data
     const userData = { username: uname, full_name, role, level_access };
 
-    // Store access token in memory + sessionStorage
+    // Store access token in memory and sessionStorage
     // Store refresh token in sessionStorage (use httpOnly cookie in production)
     setAccessToken(access);
     setUser(userData);
@@ -53,6 +55,7 @@ export function AuthProvider({ children }) {
     sessionStorage.clear();
   };
 
+  // return the auth context
   return (
     <AuthContext.Provider value={{ user, accessToken, login, logout, loading }}>
       {children}

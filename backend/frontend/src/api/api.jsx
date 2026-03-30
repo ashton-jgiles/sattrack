@@ -31,6 +31,7 @@ export const post = (endpoint, body) => {
   });
 };
 
+// del method for sending delete requests to the backend
 export const del = (endpoint) => {
   return fetch(`${BASE_URL}${endpoint}`, {
     method: "DELETE",
