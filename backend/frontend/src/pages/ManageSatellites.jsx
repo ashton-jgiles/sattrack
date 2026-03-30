@@ -117,8 +117,6 @@ export default function ManageSatellites() {
         <button
           className={styles.addButton}
           onClick={() => setShowAddModal(true)}
-          /* remove later */
-          disabled
         >
           <AddIcon sx={{ fontSize: 18 }} />
           Add Satellite
