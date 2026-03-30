@@ -4,10 +4,21 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from backend.throttles import CelesTrakThrottle
 
-# imports for caching celestrak data
-import requests
+# imports for creating trajectory after adding new satellite and caching celestrak data
+import threading
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from math import pi, degrees
+from sgp4.api import jday
+import sys, os
+import requests
+
+INGESTION_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', '..', 'ingestion')
+)
+sys.path.insert(0, INGESTION_PATH)
+from celestrak import build_sat_record, ecef_to_geodetic, compute_velocity
+from config import HISTORY_DAYS, INTERVAL_MINUTES
 
 # cache retention hours
 CACHE_TTL_HOURS = 2
@@ -88,6 +99,92 @@ def fetch_celestrak_cached(url):
         """, (url, json.dumps(data), now))
 
     return data
+
+# generate trajectory async function to generate trajectory for a new satellite in the background
+def generate_trajectory_async(satellite_id, dataset_id, tle_data):
+    norad_id = tle_data.get('norad_id')
+    print(f"[Trajectory] Generating for NORAD {norad_id}...")
+
+    try:
+        sat_data = {
+            'NORAD_CAT_ID':      norad_id,
+            'OBJECT_NAME':       tle_data.get('name'),
+            'OBJECT_ID':         tle_data.get('object_id'),
+            'INCLINATION':       tle_data.get('inclination'),
+            'ECCENTRICITY':      tle_data.get('eccentricity'),
+            'MEAN_MOTION':       tle_data.get('mean_motion'),
+            'EPOCH':             tle_data.get('epoch'),
+            'RA_OF_ASC_NODE':    tle_data.get('ra_of_asc_node'),
+            'ARG_OF_PERICENTER': tle_data.get('arg_of_pericenter'),
+            'MEAN_ANOMALY':      tle_data.get('mean_anomaly'),
+            'BSTAR':             tle_data.get('bstar'),
+            'CLASSIFICATION_TYPE': tle_data.get('classification', 'U'),
+            'EPHEMERIS_TYPE':    0,
+            'ELEMENT_SET_NO':    999,
+            'MEAN_MOTION_DOT':   0,
+            'MEAN_MOTION_DDOT':  0,
+            'REV_AT_EPOCH':      0,
+        }
+
+        try:
+            sat_record = build_sat_record(sat_data)
+        except Exception as e:
+            print(f"[Trajectory] SGP4 error for NORAD {norad_id}: {e}")
+            return
+
+        # Build timestamps
+        now_utc = datetime.now(timezone.utc)
+        start   = now_utc - timedelta(days=HISTORY_DAYS)
+        timestamps = [
+            start + timedelta(minutes=m)
+            for m in range(0, HISTORY_DAYS * 24 * 60, INTERVAL_MINUTES)
+        ]
+
+        # Insert trajectory rows
+        inserted = 0
+        with connection.cursor() as cursor:
+            for ts in timestamps:
+                ts_naive = ts.replace(tzinfo=None)
+                jd, fr   = jday(
+                    ts.year, ts.month, ts.day,
+                    ts.hour, ts.minute, ts.second
+                )
+                e, r, v = sat_record.sgp4(jd, fr)
+                if e != 0:
+                    continue
+
+                lat, lon, alt = ecef_to_geodetic(r[0], r[1], r[2])
+                velocity      = compute_velocity(sat_record.no_kozai)
+
+                cursor.execute("""
+                    INSERT INTO trajectory (
+                        dataset_id, satellite_id, timestamp, velocity,
+                        inclination, eccentricity, ra_of_asc_node,
+                        arg_of_pericenter, mean_anomaly, mean_motion,
+                        bstar, altitude, latitude, longitude
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    dataset_id, satellite_id,
+                    ts_naive.strftime('%Y-%m-%d %H:%M:%S'),
+                    velocity,
+                    round(degrees(sat_record.inclo), 4),
+                    round(sat_record.ecco, 7),
+                    round(degrees(sat_record.nodeo), 4),
+                    round(degrees(sat_record.argpo), 4),
+                    round(degrees(sat_record.mo), 4),
+                    round(sat_record.no_kozai / (2 * pi) * 86400, 8),
+                    round(sat_record.bstar, 8),
+                    alt, lat, lon,
+                ))
+                inserted += 1
+                if inserted % 50 == 0:
+                    connection.commit()
+
+            connection.commit()
+        print(f"[Trajectory] Done NORAD {norad_id} — {inserted} snapshots inserted")
+
+    except Exception as e:
+        print(f"[Trajectory] Unexpected error for NORAD {norad_id}: {e}")
 
 # compute the orbit type from celestrak data
 def derive_orbit_type(mean_motion, inclination):
@@ -251,11 +348,15 @@ class NewSatellitesFromDataset(APIView):
                 'norad_id': str(sat.get('NORAD_CAT_ID')),
                 'object_id': sat.get('OBJECT_ID'),
                 'classification': sat.get('CLASSIFICATION_TYPE', 'U'),
+                'orbit_type':  derive_orbit_type(sat.get('MEAN_MOTION', 0), sat.get('INCLINATION', 0)),
                 'inclination': sat.get('INCLINATION'),
                 'eccentricity': sat.get('ECCENTRICITY'),
                 'mean_motion': sat.get('MEAN_MOTION'),
                 'epoch': sat.get('EPOCH'),
-                'orbit_type':  derive_orbit_type(sat.get('MEAN_MOTION', 0), sat.get('INCLINATION', 0)),
+                'ra_of_asc_node': sat.get('RA_OF_ASC_NODE'),
+                'arg_of_pericenter': sat.get('ARG_OF_PERICENTER'),
+                'mean_anomaly': sat.get('MEAN_ANOMALY'),
+                'bstar': sat.get('BSTAR'),
             }
             for sat in results
         ]
@@ -409,6 +510,15 @@ class CreateSatellite(APIView):
                         f"INSERT INTO {table} (satellite_id, {cols}) VALUES (%s, {placeholders})",
                         [satellite_id] + values
                     )
+
+        # create a thread to generate the trajectory for this new satellite in the background
+        thread = threading.Thread(
+            target=generate_trajectory_async,
+            args=(satellite_id, satellite.get('dataset_id'), satellite),
+            daemon=True
+        )
+        # start the thread
+        thread.start()
 
         return Response({
             'message': 'Satellite created successfully',

@@ -766,6 +766,14 @@ export default function AddSatelliteModal({
         orbit_type: selectedSatellite.orbit_type,
         description: "",
         dataset_id: selectedDataset?.dataset_id,
+        inclination: selectedSatellite.inclination,
+        eccentricity: selectedSatellite.eccentricity,
+        mean_motion: selectedSatellite.mean_motion,
+        epoch: selectedSatellite.epoch,
+        ra_of_asc_node: selectedSatellite.ra_of_asc_node,
+        arg_of_pericenter: selectedSatellite.arg_of_pericenter,
+        mean_anomaly: selectedSatellite.mean_anomaly,
+        bstar: selectedSatellite.bstar,
       },
     }));
   }, [selectedSatellite]);
