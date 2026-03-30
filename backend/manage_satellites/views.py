@@ -252,3 +252,149 @@ class NewSatellitesFromDataset(APIView):
             'limit': limit,
         })
     
+class CreateSatellite(APIView):
+    def post(self, request):
+        satellite     = request.data.get('satellite', {})
+        owner         = request.data.get('owner', {})
+        launch        = request.data.get('launch', {})
+        communication = request.data.get('communication', {})
+        type_data     = request.data.get('type', {})
+
+        # ── Validate required fields ─────────────────────────
+        if not satellite.get('norad_id'):
+            return Response({'error': 'norad_id is required'}, status=400)
+        if not satellite.get('name'):
+            return Response({'error': 'name is required'}, status=400)
+        if not type_data.get('subclass'):
+            return Response({'error': 'satellite type is required'}, status=400)
+
+        with connection.cursor() as cursor:
+
+            # ── 1. Owner — use existing or create new ────────
+            if owner.get('isNew'):
+                cursor.execute("""
+                    INSERT INTO satellite_owner 
+                        (owner_name, owner_phone, owner_address, country, operator, owner_type)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    owner.get('owner_name'),
+                    owner.get('owner_phone'),
+                    owner.get('owner_address'),
+                    owner.get('country'),
+                    owner.get('operator'),
+                    owner.get('owner_type'),
+                ))
+                owner_id = cursor.lastrowid
+            else:
+                owner_id = owner.get('owner_id')
+
+            # ── 2. Insert satellite ──────────────────────────
+            cursor.execute("""
+                INSERT INTO satellite 
+                    (name, description, orbit_type, norad_id, object_id, classification, dataset_id, owner_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                satellite.get('name'),
+                satellite.get('description', ''),
+                satellite.get('orbit_type'),
+                satellite.get('norad_id'),
+                satellite.get('object_id'),
+                satellite.get('classification', 'U'),
+                satellite.get('dataset_id'),
+                owner_id,
+            ))
+            satellite_id = cursor.lastrowid
+
+            # ── 3. Launch vehicle — use existing or create ───
+            if launch.get('vehicleIsNew'):
+                cursor.execute("""
+                    INSERT INTO launch_vehicle 
+                        (vehicle_name, manufacturer, reusable, payload_capacity, country)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (
+                    launch.get('vehicle_name'),
+                    launch.get('manufacturer'),
+                    launch.get('reusable', 0),
+                    launch.get('payload_capacity'),
+                    launch.get('vehicle_country'),
+                ))
+                vehicle_id = cursor.lastrowid
+            else:
+                vehicle_id = launch.get('vehicle_id')
+
+            # ── 4. Launch site — use existing or create ──────
+            if launch.get('siteIsNew'):
+                cursor.execute("""
+                    INSERT INTO launch_site (site_name, location, climate, country)
+                    VALUES (%s, %s, %s, %s)
+                """, (
+                    launch.get('site_name'),
+                    launch.get('site_location'),
+                    launch.get('site_climate'),
+                    launch.get('site_country'),
+                ))
+            site_name = launch.get('site_name')
+
+            # ── 5. deploys_payload ───────────────────────────
+            deploy_date = launch.get('deploy_date_time')
+            cursor.execute("""
+                INSERT INTO deploys_payload (vehicle_id, satellite_id, deploy_date_time)
+                VALUES (%s, %s, %s)
+            """, (vehicle_id, satellite_id, deploy_date))
+
+            # ── 6. launched_from ─────────────────────────────
+            cursor.execute("""
+                INSERT INTO launched_from (vehicle_id, site_name, launch_date)
+                VALUES (%s, %s, %s)
+            """, (vehicle_id, site_name, deploy_date))
+
+            # ── 7. Communication station — use existing or create
+            if communication.get('stationIsNew'):
+                cursor.execute("""
+                    INSERT INTO communication_station (name, location)
+                    VALUES (%s, %s)
+                """, (
+                    communication.get('station_name'),
+                    communication.get('station_location'),
+                ))
+            station_location = communication.get('station_location')
+
+            # ── 8. communicates_with ─────────────────────────
+            cursor.execute("""
+                INSERT INTO communicates_with (satellite_id, location, communication_frequency)
+                VALUES (%s, %s, %s)
+            """, (
+                satellite_id,
+                station_location,
+                communication.get('communication_frequency'),
+            ))
+
+            # ── 9. Subclass type table ───────────────────────
+            subclass = type_data.get('subclass')
+            subclass_table_map = {
+                'Earth Science':   'earth_science',
+                'Oceanic Science': 'oceanic_science',
+                'Weather':         'weather',
+                'Navigation':      'navigation',
+                'Internet':        'internet',
+                'Research':        'research',
+            }
+            table = subclass_table_map.get(subclass)
+
+            if table:
+                # Remove subclass key — only insert actual fields
+                fields = {k: v for k, v in type_data.items() if k != 'subclass'}
+                if fields:
+                    cols = ', '.join(fields.keys())
+                    placeholders = ', '.join(['%s'] * len(fields))
+                    values = list(fields.values())
+                    cursor.execute(
+                        f"INSERT INTO {table} (satellite_id, {cols}) VALUES (%s, {placeholders})",
+                        [satellite_id] + values
+                    )
+
+        return Response({
+            'message': 'Satellite created successfully',
+            'satellite_id': satellite_id,
+        }, status=201)
+    
