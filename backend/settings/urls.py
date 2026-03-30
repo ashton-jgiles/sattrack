@@ -1,6 +1,8 @@
+# path imports
 from django.urls import path
-from .views import main
+from . import views
 
+# lookups app urls
 urlpatterns = [
-    path('test/', main)
+    path('trajectory/update/', views.UpdateTrajectories.as_view()),
 ]
