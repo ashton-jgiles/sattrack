@@ -17,3 +17,7 @@ export const getNewSatellitesFromDataset = async (
   const params = new URLSearchParams({ search, page, limit });
   return await get(`/manage/satellite/dataset/${datasetId}/new/?${params}`);
 };
+
+export const createSatellite = async (payload) => {
+  return await post("/manage/satellite/create/", payload);
+};

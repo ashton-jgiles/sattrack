@@ -21,8 +21,8 @@ import {
   modifySatellite,
   deleteSatellite,
 } from "../api/manageSatellitesService";
-
 import { getAllDatasets } from "../api/datasetService";
+import { createSatellite } from "../api/manageSatellitesService";
 
 // style imports
 import styles from "../styles/ManageSatellites.module.css";
@@ -203,7 +203,9 @@ export default function ManageSatellites() {
           data={datasets}
           onClose={() => setShowAddModal(false)}
           onSave={async (payload) => {
-            console.log(payload);
+            await createSatellite(payload);
+            const data = await getAllSatellites();
+            setSatellites(data);
             showPopupMessage("New satellite successfully added");
           }}
         />
