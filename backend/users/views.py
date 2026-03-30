@@ -1,3 +1,4 @@
+# connection and api imports, jwt, and hashing imports
 import bcrypt
 from django.db import connection
 from rest_framework.views import APIView
@@ -5,12 +6,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 
+# check password method
 def check_password(plain, hashed):
     return bcrypt.checkpw(
         plain.encode('utf-8'),
         hashed.encode('utf-8')
     )
 
+# get user role method to get the role subclass of a user
 def get_user_role(cursor, username):
     # Check each sub-table to determine role
     for role, table in [
@@ -24,6 +27,7 @@ def get_user_role(cursor, username):
             return role
     return None
 
+# login view class to log the user in and generate the JWT token
 class LoginView(APIView):
     def post(self, request):
         username = request.data.get('username')
@@ -81,6 +85,7 @@ class LoginView(APIView):
             'level_access': level_access,
         })
 
+# create account view to create a users account and check for conflicts
 class CreateAccountView(APIView):
     def post(self, request):
         # key values to insert into the users table

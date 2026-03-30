@@ -1,20 +1,26 @@
+# connection and api imports and rate limiting imports
 from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from backend.throttles import CelesTrakThrottle
 
+# imports for caching celestrak data
 import requests
 import json
 from datetime import datetime, timedelta
 
+# cache retention hours
 CACHE_TTL_HOURS = 2
-mem_cache = {}
+# create the cache dictionary
+celestrak_cache = {}
 
+# if we hit the cesltrak rate limt we will continually run this exception
 class RateLimitedError(Exception):
     pass
 
+# get stale cache method will return the caeche of data from the database if our celestrak cache in memory has expired
 def get_stale_cache(url):
-    """Return stale DB cache regardless of age."""
+    # try select the data from the database cache from the celestrak url we are using
     try:
         with connection.cursor() as cursor:
             cursor.execute(
@@ -24,21 +30,25 @@ def get_stale_cache(url):
             row = cursor.fetchone()
             if row:
                 return json.loads(row[0])
+    # if no data just pass
     except Exception:
         pass
+    # return none
     return None
 
+# if our memory cache is still valid
 def fetch_celestrak_cached(url):
+    # get the current time
     now = datetime.now()
 
-    # ── Layer 1: Memory cache ────────────────────────────────
-    if url in mem_cache:
-        data, timestamp = mem_cache[url]
+    # Layer 1: Memory cache
+    if url in celestrak_cache:
+        data, timestamp = celestrak_cache[url]
         if now - timestamp < timedelta(hours=CACHE_TTL_HOURS):
             print(f"[Cache HIT - Memory] {url}")
             return data
 
-    # ── Layer 2: DB cache ────────────────────────────────────
+    # Layer 2: DB cache
     with connection.cursor() as cursor:
         cursor.execute(
             "SELECT data, cached_at FROM celestrak_cache WHERE url = %s",
@@ -51,10 +61,10 @@ def fetch_celestrak_cached(url):
         if now - cached_at < timedelta(hours=CACHE_TTL_HOURS):
             print(f"[Cache HIT - DB] {url}")
             data = json.loads(data_json)
-            mem_cache[url] = (data, cached_at)
+            celestrak_cache[url] = (data, cached_at)
             return data
 
-    # ── Layer 3: Fetch from CelesTrak ────────────────────────
+    # Layer 3: Fetch from CelesTrak
     print(f"[Cache MISS] Fetching from CelesTrak: {url}")
     try:
         response = requests.get(url, timeout=30)
@@ -66,8 +76,8 @@ def fetch_celestrak_cached(url):
     except Exception as e:
         raise Exception(f"CelesTrak fetch failed: {str(e)}")
 
-    # ── Save to both caches ──────────────────────────────────
-    mem_cache[url] = (data, now)
+    # Save to both caches
+    celestrak_cache[url] = (data, now)
     with connection.cursor() as cursor:
         cursor.execute("""
             INSERT INTO celestrak_cache (url, data, cached_at)
@@ -79,6 +89,7 @@ def fetch_celestrak_cached(url):
 
     return data
 
+# compute the orbit type from celestrak data
 def derive_orbit_type(mean_motion, inclination):
     # Mean motion in revs/day
     # GEO: ~1 rev/day, MEO: 2-6, LEO: 11-16, HEO: highly elliptical
@@ -91,6 +102,7 @@ def derive_orbit_type(mean_motion, inclination):
     else:
         return 'LEO'
 
+# delete satellite data which takes a satellite id and removes all associated data from the database
 class DeleteSatellite(APIView):
     def delete(self, request, satellite_id):
         with connection.cursor() as cursor:
@@ -114,11 +126,12 @@ class DeleteSatellite(APIView):
 
         return Response({'message': 'Satellite deleted successfully'})
 
+# modify satellite class which updates all associated satellite data in the database
 class ModifySatellite(APIView):
     def post(self, request):
-        satellite     = request.data.get('satellite', {})
+        satellite = request.data.get('satellite', {})
         communication = request.data.get('communication', {})
-        type_data     = request.data.get('type_data', {})
+        type_data = request.data.get('type_data', {})
 
         satellite_id = satellite.get('satellite_id')
         if not satellite_id:
@@ -171,10 +184,13 @@ class ModifySatellite(APIView):
                     break
 
         return Response({'message': 'Satellite updated successfully'})   
-    
+
+# new satellite from dataset takes a dataset id and return the satellites from celetrak that arent already in our database
 class NewSatellitesFromDataset(APIView):
+    # apply rate limit
     throttle_classes = [CelesTrakThrottle]
 
+    # get method taking the dataset id and computing values for pages and search for our frontend later
     def get(self, request, dataset_id):
         search = request.GET.get('search', '').strip()
         page = int(request.GET.get('page', 1))
@@ -251,16 +267,17 @@ class NewSatellitesFromDataset(APIView):
             'pages': pages,
             'limit': limit,
         })
-    
+
+# create satellite takes all the data from our frontend as a payload and adds new rows to all associated tables in the database
 class CreateSatellite(APIView):
     def post(self, request):
-        satellite     = request.data.get('satellite', {})
-        owner         = request.data.get('owner', {})
-        launch        = request.data.get('launch', {})
+        satellite = request.data.get('satellite', {})
+        owner = request.data.get('owner', {})
+        launch = request.data.get('launch', {})
         communication = request.data.get('communication', {})
-        type_data     = request.data.get('type', {})
+        type_data = request.data.get('type', {})
 
-        # ── Validate required fields ─────────────────────────
+        # Validate required fields
         if not satellite.get('norad_id'):
             return Response({'error': 'norad_id is required'}, status=400)
         if not satellite.get('name'):
@@ -270,7 +287,7 @@ class CreateSatellite(APIView):
 
         with connection.cursor() as cursor:
 
-            # ── 1. Owner — use existing or create new ────────
+            # 1. Owner — use existing or create new
             if owner.get('isNew'):
                 cursor.execute("""
                     INSERT INTO satellite_owner 
@@ -288,7 +305,7 @@ class CreateSatellite(APIView):
             else:
                 owner_id = owner.get('owner_id')
 
-            # ── 2. Insert satellite ──────────────────────────
+            # 2. Insert satellite 
             cursor.execute("""
                 INSERT INTO satellite 
                     (name, description, orbit_type, norad_id, object_id, classification, dataset_id, owner_id)
@@ -305,7 +322,7 @@ class CreateSatellite(APIView):
             ))
             satellite_id = cursor.lastrowid
 
-            # ── 3. Launch vehicle — use existing or create ───
+            # 3. Launch vehicle — use existing or create
             if launch.get('vehicleIsNew'):
                 cursor.execute("""
                     INSERT INTO launch_vehicle 
@@ -322,7 +339,7 @@ class CreateSatellite(APIView):
             else:
                 vehicle_id = launch.get('vehicle_id')
 
-            # ── 4. Launch site — use existing or create ──────
+            # 4. Launch site — use existing or create 
             if launch.get('siteIsNew'):
                 cursor.execute("""
                     INSERT INTO launch_site (site_name, location, climate, country)
@@ -335,20 +352,20 @@ class CreateSatellite(APIView):
                 ))
             site_name = launch.get('site_name')
 
-            # ── 5. deploys_payload ───────────────────────────
+            # 5. deploys_payload
             deploy_date = launch.get('deploy_date_time')
             cursor.execute("""
                 INSERT INTO deploys_payload (vehicle_id, satellite_id, deploy_date_time)
                 VALUES (%s, %s, %s)
             """, (vehicle_id, satellite_id, deploy_date))
 
-            # ── 6. launched_from ─────────────────────────────
+            # 6. launched_from 
             cursor.execute("""
                 INSERT INTO launched_from (vehicle_id, site_name, launch_date)
                 VALUES (%s, %s, %s)
             """, (vehicle_id, site_name, deploy_date))
 
-            # ── 7. Communication station — use existing or create
+            # 7. Communication station — use existing or create
             if communication.get('stationIsNew'):
                 cursor.execute("""
                     INSERT INTO communication_station (name, location)
@@ -359,7 +376,7 @@ class CreateSatellite(APIView):
                 ))
             station_location = communication.get('station_location')
 
-            # ── 8. communicates_with ─────────────────────────
+            # 8. communicates_with
             cursor.execute("""
                 INSERT INTO communicates_with (satellite_id, location, communication_frequency)
                 VALUES (%s, %s, %s)
@@ -369,7 +386,7 @@ class CreateSatellite(APIView):
                 communication.get('communication_frequency'),
             ))
 
-            # ── 9. Subclass type table ───────────────────────
+            # 9. Subclass type table
             subclass = type_data.get('subclass')
             subclass_table_map = {
                 'Earth Science':   'earth_science',

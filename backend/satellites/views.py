@@ -1,8 +1,10 @@
+# connection and api imports and rate limiting imports
 from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from backend.throttles import PositionsThrottle
 
+# satllite view to list all satellites and their subclass type
 class SatelliteView(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
@@ -31,6 +33,7 @@ class SatelliteView(APIView):
         
         return Response(data)
     
+# specific satellite gets a satellite by its id and return it
 class SpecificSatelliteView(APIView):
     def get(self, request, satellite_id):
         with connection.cursor() as cursor:
@@ -43,6 +46,7 @@ class SpecificSatelliteView(APIView):
         
         return Response(dict(zip(columns, row)))
 
+# total satellites computes to total number of satellites in the sateliites table
 class TotalSatellites(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
@@ -55,6 +59,7 @@ class TotalSatellites(APIView):
         
         return Response(dict(zip(columns, row)));
 
+# total earth satellites computes to total number of satellites in the earth sateliites table
 class TotalEarthSatellites(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
@@ -67,6 +72,7 @@ class TotalEarthSatellites(APIView):
         
         return Response(dict(zip(columns, row)));
 
+# total oceanic satellites computes to total number of oceanic satellites in the sateliites table
 class TotalOceanicSatellites(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
@@ -79,6 +85,7 @@ class TotalOceanicSatellites(APIView):
         
         return Response(dict(zip(columns, row)));
 
+# total navigation satellites computes to total number of satellites in the  navigation sateliites table
 class TotalNavigationSatellites(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
@@ -91,6 +98,7 @@ class TotalNavigationSatellites(APIView):
         
         return Response(dict(zip(columns, row)));
 
+# total internet satellites computes to total number of satellites in the internet sateliites table
 class TotalInternetSatellites(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
@@ -103,6 +111,7 @@ class TotalInternetSatellites(APIView):
         
         return Response(dict(zip(columns, row)));
 
+# # total weather satellites computes to total number of satellites in the weatehr sateliites table
 class TotalWeatherSatellites(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
@@ -115,6 +124,7 @@ class TotalWeatherSatellites(APIView):
         
         return Response(dict(zip(columns, row)));
 
+# total research satellites computes to total number of satellites in the research sateliites table
 class TotalResearchSatellites(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
@@ -127,6 +137,7 @@ class TotalResearchSatellites(APIView):
         
         return Response(dict(zip(columns, row)));
 
+# all trajectory gets all trajectory rows for each satellite with 2 days with of data for each
 class AllTrajectory(APIView):
     throttle_classes = [PositionsThrottle]
 
@@ -145,6 +156,7 @@ class AllTrajectory(APIView):
 
         return Response(data)
 
+# recent deployments gets all satelites deployed in the last 5 years
 class RecentDeployments(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
@@ -177,6 +189,7 @@ class RecentDeployments(APIView):
 
         return Response(data)
 
+# specific satellite view gets all associated data with a satellite id
 class SpecificSatelliteAllData(APIView):
     def get(self, request, satellite_id):
         with connection.cursor() as cursor:
