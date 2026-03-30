@@ -66,7 +66,7 @@ class Command(BaseCommand):
 
         # Step 4: Get all satellites from DB
         with connection.cursor() as cursor:
-            cursor.execute("SELECT satellite_id, norad_id, dataset_id FROM satellite")
+            cursor.execute("SELECT satellite_id, norad_id, dataset_id FROM satellite WHERE deleted_at IS NULL")
             satellites = cursor.fetchall()
         self.stdout.write(f'[Trajectory] Found {len(satellites)} satellites in DB')
 
