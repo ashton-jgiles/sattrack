@@ -68,6 +68,19 @@ SIMPLE_JWT = {
     'SIGNING_KEY': SECRET_KEY,
 }
 
+REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon':       '200/hour',   # unauthenticated
+        'user':       '1000/hour',  # authenticated general
+        'celestrak':  '10/hour',    # CelesTrak fetches
+        'positions':  '30/hour',    # trajectory positions
+    }
+}
+
 ROOT_URLCONF = 'backend.urls'
 
 TEMPLATES = [

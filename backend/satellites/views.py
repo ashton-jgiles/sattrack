@@ -1,6 +1,7 @@
 from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from backend.throttles import PositionsThrottle
 
 class SatelliteView(APIView):
     def get(self, request):
@@ -127,6 +128,8 @@ class TotalResearchSatellites(APIView):
         return Response(dict(zip(columns, row)));
 
 class AllTrajectory(APIView):
+    throttle_classes = [PositionsThrottle]
+
     def get(self, request):
         with connection.cursor() as cursor:
             cursor.execute("""
