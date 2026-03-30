@@ -13,15 +13,7 @@ import SatelliteGlobe from "../components/SatelliteGlobe";
 import styles from "../styles/Landing.module.css";
 
 // api imports
-import {
-  getTotalSatellites,
-  getTotalEarthSatellites,
-  getTotalOceanicSatellites,
-  getTotalNavigationSatellites,
-  getTotalInternetSatellites,
-  getTotalResearchSatellites,
-  getTotalWeatherSatellites,
-} from "../api/satelliteService";
+import { getSatelliteCounts } from "../api/satelliteService";
 import { getTotalDatasets } from "../api/datasetService";
 
 // stat card component
@@ -57,33 +49,18 @@ export default function Landing() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [
-          satellites,
-          datasets,
-          earthSatellites,
-          oceanicSatellites,
-          navigationSatellites,
-          internetSatellites,
-          weatherSatellites,
-          researchSatellites,
-        ] = await Promise.all([
-          getTotalSatellites(),
+        const [counts, datasets] = await Promise.all([
+          getSatelliteCounts(),
           getTotalDatasets(),
-          getTotalEarthSatellites(),
-          getTotalOceanicSatellites(),
-          getTotalNavigationSatellites(),
-          getTotalInternetSatellites(),
-          getTotalWeatherSatellites(),
-          getTotalResearchSatellites(),
         ]);
-        setTotalSatellites(satellites);
+        setTotalSatellites(counts.total);
         setTotalDatasets(datasets);
-        setTotalEarthSatellites(earthSatellites);
-        setTotalOceanicSatellites(oceanicSatellites);
-        setTotalNavigationSatellites(navigationSatellites);
-        setTotalInternetSatellites(internetSatellites);
-        setTotalWeatherSatellites(weatherSatellites);
-        setTotalResearchSatellites(researchSatellites);
+        setTotalEarthSatellites(counts.earth_science);
+        setTotalOceanicSatellites(counts.oceanic_science);
+        setTotalNavigationSatellites(counts.navigation);
+        setTotalInternetSatellites(counts.internet);
+        setTotalWeatherSatellites(counts.weather);
+        setTotalResearchSatellites(counts.research);
       } catch (error) {
         console.error("Failed to fetch stats:", error);
       } finally {

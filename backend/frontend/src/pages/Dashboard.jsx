@@ -29,13 +29,7 @@ import SatelliteGlobe from "../components/SatelliteGlobe";
 
 // api imports
 import {
-  getTotalSatellites,
-  getTotalEarthSatellites,
-  getTotalOceanicSatellites,
-  getTotalNavigationSatellites,
-  getTotalInternetSatellites,
-  getTotalResearchSatellites,
-  getTotalWeatherSatellites,
+  getSatelliteCounts,
   getRecentDeployments,
 } from "../api/satelliteService";
 import { getTotalDatasets } from "../api/datasetService";
@@ -127,37 +121,21 @@ function OverviewPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [
-          total,
-          datasets,
-          earth,
-          oceanic,
-          navigation,
-          internet,
-          research,
-          weather,
-          recentDeployments,
-        ] = await Promise.all([
-          getTotalSatellites(),
+        const [counts, datasets, recentDeployments] = await Promise.all([
+          getSatelliteCounts(),
           getTotalDatasets(),
-          getTotalEarthSatellites(),
-          getTotalOceanicSatellites(),
-          getTotalNavigationSatellites(),
-          getTotalInternetSatellites(),
-          getTotalResearchSatellites(),
-          getTotalWeatherSatellites(),
           getRecentDeployments(),
         ]);
 
         setStats({
-          total,
+          total: counts.total,
           datasets,
-          earth,
-          oceanic,
-          navigation,
-          internet,
-          research,
-          weather,
+          earth: counts.earth_science,
+          oceanic: counts.oceanic_science,
+          navigation: counts.navigation,
+          internet: counts.internet,
+          research: counts.research,
+          weather: counts.weather,
           recentDeployments,
         });
       } catch (err) {

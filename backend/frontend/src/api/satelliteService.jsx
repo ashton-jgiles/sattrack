@@ -13,40 +13,11 @@ export const getOneSatellite = async (id) => {
   return data;
 };
 
-// get total satellites and each subclass satellites call the associated endpoits
-export const getTotalSatellites = async () => {
-  const data = await get(`/satellite/totalSatellites/`);
-  return data.total;
-};
-
-export const getTotalEarthSatellites = async () => {
-  const data = await get(`/satellite/totalEarthSatellites/`);
-  return data.total;
-};
-
-export const getTotalOceanicSatellites = async () => {
-  const data = await get(`/satellite/totalOceanicSatellites/`);
-  return data.total;
-};
-
-export const getTotalNavigationSatellites = async () => {
-  const data = await get(`/satellite/totalNavigationSatellites/`);
-  return data.total;
-};
-
-export const getTotalInternetSatellites = async () => {
-  const data = await get(`/satellite/totalInternetSatellites/`);
-  return data.total;
-};
-
-export const getTotalWeatherSatellites = async () => {
-  const data = await get(`/satellite/totalWeatherSatellites/`);
-  return data.total;
-};
-
-export const getTotalResearchSatellites = async () => {
-  const data = await get(`/satellite/totalResearchSatellites/`);
-  return data.total;
+// get satellite counts returns total and per-type counts in a single request
+// { total, earth_science, oceanic_science, weather, navigation, internet, research }
+export const getSatelliteCounts = async () => {
+  const data = await get(`/satellite/counts/`);
+  return data;
 };
 
 // get recent deployments interface gets all satellites deployed in last 5 years
