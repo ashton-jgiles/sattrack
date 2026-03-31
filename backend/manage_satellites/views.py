@@ -1,5 +1,5 @@
 # connection and api imports and rate limiting imports
-from django.db import connection
+from django.db import connection, transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from backend.throttles import CelesTrakThrottle
@@ -383,7 +383,7 @@ class CreateSatellite(APIView):
         if not type_data.get('subclass'):
             return Response({'error': 'satellite type is required'}, status=400)
 
-        with connection.cursor() as cursor:
+        with transaction.atomic(), connection.cursor() as cursor:
 
             # 1. Owner — use existing or create new
             if owner.get('isNew'):
@@ -457,9 +457,9 @@ class CreateSatellite(APIView):
                 VALUES (%s, %s, %s)
             """, (vehicle_id, satellite_id, deploy_date))
 
-            # 6. launched_from 
+            # 6. launched_from — ignore if this vehicle/site/date combo already exists
             cursor.execute("""
-                INSERT INTO launched_from (vehicle_id, site_name, launch_date)
+                INSERT IGNORE INTO launched_from (vehicle_id, site_name, launch_date)
                 VALUES (%s, %s, %s)
             """, (vehicle_id, site_name, deploy_date))
 

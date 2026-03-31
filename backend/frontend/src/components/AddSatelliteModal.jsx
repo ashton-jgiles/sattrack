@@ -47,6 +47,12 @@ const SUBCLASS_TYPES = [
   "Research",
 ];
 
+// numeric fields that must be a valid number if filled in
+const NUMERIC_TYPE_FIELDS = new Set([
+  'resolution_m', 'imaging_channels', 'repeat_cycle_min',
+  'altitude_km', 'accuracy_m', 'throughput_gbps',
+]);
+
 // type fields for each subclass
 const TYPE_FIELDS = {
   "Earth Science": [
@@ -869,6 +875,14 @@ export default function AddSatelliteModal({
     if (!formData.communication?.communication_frequency)
       errs.push("Communication frequency is required.");
     if (!formData.type?.subclass) errs.push("Please select a satellite type.");
+    const typeFields = formData.type || {};
+    Object.entries(typeFields).forEach(([field, value]) => {
+      if (NUMERIC_TYPE_FIELDS.has(field) && value !== '' && value != null) {
+        if (isNaN(Number(value))) {
+          errs.push(`"${field.replace(/_/g, ' ')}" must be a number.`);
+        }
+      }
+    });
     return errs;
   };
 
