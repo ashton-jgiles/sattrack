@@ -12,6 +12,7 @@ import ManageSatellites from "./ManageSatellites";
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
 import LogoutIcon from "@mui/icons-material/Logout";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import EqualizerIcon from "@mui/icons-material/Equalizer";
 import StorageIcon from "@mui/icons-material/Storage";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import ManageSearchIcon from "@mui/icons-material/ManageSearch";
@@ -63,7 +64,18 @@ const NAV_ITEMS = [
     ],
   },
   {
-    section: "Management",
+    section: "Scientific Analysis",
+    items: [
+      {
+        id: "visualizations",
+        label: "Visualizations",
+        icon: <EqualizerIcon sx={{ fontSize: 18 }} />,
+        minLevel: 1,
+      },
+    ],
+  },
+  {
+    section: "Dataset Review",
     items: [
       {
         id: "reviews",
@@ -71,23 +83,23 @@ const NAV_ITEMS = [
         icon: <RateReviewIcon sx={{ fontSize: 18 }} />,
         minLevel: 3,
       },
-      {
-        id: "manageSatellites",
-        label: "Manage Satellites",
-        icon: <ManageSearchIcon sx={{ fontSize: 18 }} />,
-        minLevel: 3,
-      },
-      {
-        id: "manageDatasets",
-        label: "Manage Datasets",
-        icon: <DatasetIcon sx={{ fontSize: 18 }} />,
-        minLevel: 3,
-      },
     ],
   },
   {
     section: "Admin",
     items: [
+      {
+        id: "manageSatellites",
+        label: "Manage Satellites",
+        icon: <ManageSearchIcon sx={{ fontSize: 18 }} />,
+        minLevel: 4,
+      },
+      {
+        id: "manageDatasets",
+        label: "Manage Datasets",
+        icon: <DatasetIcon sx={{ fontSize: 18 }} />,
+        minLevel: 4,
+      },
       {
         id: "admin",
         label: "Admin Panel",
@@ -309,6 +321,8 @@ export default function Dashboard() {
         return <PlaceholderPage title="Satellites" />;
       case "datasets":
         return <PlaceholderPage title="Datasets" />;
+      case "visualizations":
+        return <PlaceholderPage title="Visualizations" />;
       case "reviews":
         return <PlaceholderPage title="Reviews" />;
       case "manageSatellites":
