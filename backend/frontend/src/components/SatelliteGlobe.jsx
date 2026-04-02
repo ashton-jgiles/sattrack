@@ -6,7 +6,7 @@ import * as Cesium from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
 // api imports
-import { getAllSatellitePositions } from "../api/trajectoryService";
+import { getSatellitePositionsPage } from "../api/trajectoryService";
 
 // styles
 import styles from "../styles/SatelliteGlobe.module.css";
@@ -105,8 +105,17 @@ export default function SatelliteGlobe() {
   useEffect(() => {
     const fetchPositions = async () => {
       try {
-        const data = await getAllSatellitePositions();
-        const groups = groupBySatellite(data);
+        const first = await getSatellitePositionsPage(1);
+        const remaining =
+          first.total_pages > 1
+            ? await Promise.all(
+                Array.from({ length: first.total_pages - 1 }, (_, i) =>
+                  getSatellitePositionsPage(i + 2)
+                )
+              )
+            : [];
+        const allPositions = [first, ...remaining].flatMap((p) => p.results);
+        const groups = groupBySatellite(allPositions);
         satelliteGroupsRef.current = groups;
 
         const collection = pointCollectionRef.current;

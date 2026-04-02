@@ -3,12 +3,16 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 // auth import
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "../hooks/useAuth";
+
+// page imports
+import ManageSatellites from "./ManageSatellites";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
 import LogoutIcon from "@mui/icons-material/Logout";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import EqualizerIcon from "@mui/icons-material/Equalizer";
 import StorageIcon from "@mui/icons-material/Storage";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import ManageSearchIcon from "@mui/icons-material/ManageSearch";
@@ -26,13 +30,7 @@ import SatelliteGlobe from "../components/SatelliteGlobe";
 
 // api imports
 import {
-  getTotalSatellites,
-  getTotalEarthSatellites,
-  getTotalOceanicSatellites,
-  getTotalNavigationSatellites,
-  getTotalInternetSatellites,
-  getTotalResearchSatellites,
-  getTotalWeatherSatellites,
+  getSatelliteCounts,
   getRecentDeployments,
 } from "../api/satelliteService";
 import { getTotalDatasets } from "../api/datasetService";
@@ -40,7 +38,7 @@ import { getTotalDatasets } from "../api/datasetService";
 // style imports
 import styles from "../styles/Dashboard.module.css";
 
-// ── Sidebar nav config ───────────────────────────────────────
+// Sidebar nav config
 const NAV_ITEMS = [
   {
     section: "General",
@@ -66,7 +64,18 @@ const NAV_ITEMS = [
     ],
   },
   {
-    section: "Management",
+    section: "Scientific Analysis",
+    items: [
+      {
+        id: "visualizations",
+        label: "Visualizations",
+        icon: <EqualizerIcon sx={{ fontSize: 18 }} />,
+        minLevel: 1,
+      },
+    ],
+  },
+  {
+    section: "Dataset Review",
     items: [
       {
         id: "reviews",
@@ -74,23 +83,23 @@ const NAV_ITEMS = [
         icon: <RateReviewIcon sx={{ fontSize: 18 }} />,
         minLevel: 3,
       },
-      {
-        id: "manageSatellites",
-        label: "Manage Satellites",
-        icon: <ManageSearchIcon sx={{ fontSize: 18 }} />,
-        minLevel: 3,
-      },
-      {
-        id: "manageDatasets",
-        label: "Manage Datasets",
-        icon: <DatasetIcon sx={{ fontSize: 18 }} />,
-        minLevel: 3,
-      },
     ],
   },
   {
     section: "Admin",
     items: [
+      {
+        id: "manageSatellites",
+        label: "Manage Satellites",
+        icon: <ManageSearchIcon sx={{ fontSize: 18 }} />,
+        minLevel: 4,
+      },
+      {
+        id: "manageDatasets",
+        label: "Manage Datasets",
+        icon: <DatasetIcon sx={{ fontSize: 18 }} />,
+        minLevel: 4,
+      },
       {
         id: "admin",
         label: "Admin Panel",
@@ -101,7 +110,7 @@ const NAV_ITEMS = [
   },
 ];
 
-// ── Stat Card ────────────────────────────────────────────────
+// Stat Card
 function StatCard({ label, value, icon, loading }) {
   return (
     <div className={styles.statCard}>
@@ -116,7 +125,7 @@ function StatCard({ label, value, icon, loading }) {
   );
 }
 
-// ── Page: Overview ───────────────────────────────────────────
+// Page: Overview
 function OverviewPage() {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -124,37 +133,21 @@ function OverviewPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [
-          total,
-          datasets,
-          earth,
-          oceanic,
-          navigation,
-          internet,
-          research,
-          weather,
-          recentDeployments,
-        ] = await Promise.all([
-          getTotalSatellites(),
+        const [counts, datasets, recentDeployments] = await Promise.all([
+          getSatelliteCounts(),
           getTotalDatasets(),
-          getTotalEarthSatellites(),
-          getTotalOceanicSatellites(),
-          getTotalNavigationSatellites(),
-          getTotalInternetSatellites(),
-          getTotalResearchSatellites(),
-          getTotalWeatherSatellites(),
           getRecentDeployments(),
         ]);
 
         setStats({
-          total,
+          total: counts.total,
           datasets,
-          earth,
-          oceanic,
-          navigation,
-          internet,
-          research,
-          weather,
+          earth: counts.earth_science,
+          oceanic: counts.oceanic_science,
+          navigation: counts.navigation,
+          internet: counts.internet,
+          research: counts.research,
+          weather: counts.weather,
           recentDeployments,
         });
       } catch (err) {
@@ -287,7 +280,7 @@ function OverviewPage() {
   );
 }
 
-// ── Placeholder pages ────────────────────────────────────────
+// Placeholder pages (remove when all pages are done)
 function PlaceholderPage({ title }) {
   return (
     <>
@@ -300,12 +293,14 @@ function PlaceholderPage({ title }) {
   );
 }
 
-// ── Dashboard ────────────────────────────────────────────────
+// Dashboard
 export default function Dashboard() {
+  // component fields
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [activePage, setActivePage] = useState("overview");
 
+  // handle logout for logging a user out
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -326,10 +321,12 @@ export default function Dashboard() {
         return <PlaceholderPage title="Satellites" />;
       case "datasets":
         return <PlaceholderPage title="Datasets" />;
+      case "visualizations":
+        return <PlaceholderPage title="Visualizations" />;
       case "reviews":
         return <PlaceholderPage title="Reviews" />;
       case "manageSatellites":
-        return <PlaceholderPage title="Manage Satellites" />;
+        return <ManageSatellites />;
       case "manageDatasets":
         return <PlaceholderPage title="Manage Datasets" />;
       case "admin":
@@ -339,6 +336,7 @@ export default function Dashboard() {
     }
   };
 
+  // main component code
   return (
     <div className={styles.page}>
       {/* Header */}

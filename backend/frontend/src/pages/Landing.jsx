@@ -13,15 +13,7 @@ import SatelliteGlobe from "../components/SatelliteGlobe";
 import styles from "../styles/Landing.module.css";
 
 // api imports
-import {
-  getTotalSatellites,
-  getTotalEarthSatellites,
-  getTotalOceanicSatellites,
-  getTotalNavigationSatellites,
-  getTotalInternetSatellites,
-  getTotalResearchSatellites,
-  getTotalWeatherSatellites,
-} from "../api/satelliteService";
+import { getSatelliteCounts } from "../api/satelliteService";
 import { getTotalDatasets } from "../api/datasetService";
 
 // stat card component
@@ -40,8 +32,8 @@ function StatCard({ label, value, loading }) {
 
 // default function
 export default function Landing() {
+  // component fields
   const navigate = useNavigate();
-
   const [totalSatellites, setTotalSatellites] = useState(null);
   const [totalEarthSatellites, setTotalEarthSatellites] = useState(null);
   const [totalOceanicSatellites, setTotalOceanicSatellites] = useState(null);
@@ -53,36 +45,22 @@ export default function Landing() {
   const [totalDatasets, setTotalDatasets] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // use effect to get all the data in our frontend fields from the apis
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [
-          satellites,
-          datasets,
-          earthSatellites,
-          oceanicSatellites,
-          navigationSatellites,
-          internetSatellites,
-          weatherSatellites,
-          researchSatellites,
-        ] = await Promise.all([
-          getTotalSatellites(),
+        const [counts, datasets] = await Promise.all([
+          getSatelliteCounts(),
           getTotalDatasets(),
-          getTotalEarthSatellites(),
-          getTotalOceanicSatellites(),
-          getTotalNavigationSatellites(),
-          getTotalInternetSatellites(),
-          getTotalWeatherSatellites(),
-          getTotalResearchSatellites(),
         ]);
-        setTotalSatellites(satellites);
+        setTotalSatellites(counts.total);
         setTotalDatasets(datasets);
-        setTotalEarthSatellites(earthSatellites);
-        setTotalOceanicSatellites(oceanicSatellites);
-        setTotalNavigationSatellites(navigationSatellites);
-        setTotalInternetSatellites(internetSatellites);
-        setTotalWeatherSatellites(weatherSatellites);
-        setTotalResearchSatellites(researchSatellites);
+        setTotalEarthSatellites(counts.earth_science);
+        setTotalOceanicSatellites(counts.oceanic_science);
+        setTotalNavigationSatellites(counts.navigation);
+        setTotalInternetSatellites(counts.internet);
+        setTotalWeatherSatellites(counts.weather);
+        setTotalResearchSatellites(counts.research);
       } catch (error) {
         console.error("Failed to fetch stats:", error);
       } finally {
@@ -92,6 +70,7 @@ export default function Landing() {
     fetchStats();
   }, []);
 
+  // stats list for stat cards on the landing page
   const stats = [
     { label: "Total Satellites", value: totalSatellites },
     { label: "Total Datasets", value: totalDatasets },
@@ -103,6 +82,7 @@ export default function Landing() {
     { label: "Weather Satellites", value: totalWeatherSatellites },
   ];
 
+  // main component structure
   return (
     <div className={styles.page}>
       {/* Header */}

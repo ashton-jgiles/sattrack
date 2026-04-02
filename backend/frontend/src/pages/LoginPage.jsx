@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // import authentication
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "../hooks/useAuth";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
