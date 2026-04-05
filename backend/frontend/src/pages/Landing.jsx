@@ -73,7 +73,6 @@ export default function Landing() {
   // stats list for stat cards on the landing page
   const stats = [
     { label: "Total Satellites", value: totalSatellites },
-    { label: "Total Datasets", value: totalDatasets },
     { label: "Earth Satellites", value: totalEarthSatellites },
     { label: "Oceanic Satellites", value: totalOceanicSatellites },
     { label: "Navigation", value: totalNavigationSatellites },
@@ -115,7 +114,7 @@ export default function Landing() {
             <h2 className={styles.heroTitle}>Real-Time Satellite Tracking</h2>
             <p className={styles.heroSubtitle}>
               Monitor global satellite networks with live position data,
-              trajectory visualization, and comprehensive dataset management
+              trajectory visualization, and comprehensive dataset management{totalDatasets ? ` featuring ${totalDatasets} datasets` : ''}
             </p>
           </div>
           <div className={styles.globeWrapper}>

@@ -220,6 +220,15 @@
   gap: 0.5rem;
 }
 
+.clickable {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clickable:hover {
+  background-color: #1e293b;
+}
+
 .statCardHeader {
   display: flex;
   align-items: center;
