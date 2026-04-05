@@ -4,6 +4,7 @@ from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from backend.throttles import RegisterThrottle
 
 # check password method
@@ -29,6 +30,9 @@ def get_user_role(cursor, username):
 
 # login view class to log the user in and generate the JWT token
 class LoginView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -87,6 +91,8 @@ class LoginView(APIView):
 
 # create account view to create a users account and check for conflicts
 class CreateAccountView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
     throttle_classes = [RegisterThrottle]
 
     def post(self, request):
