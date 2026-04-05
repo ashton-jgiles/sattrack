@@ -195,7 +195,7 @@ function OverviewPage() {
       <div>
         <h2 className={styles.pageTitle}>Dashboard Overview</h2>
         <p className={styles.pageSubtitle}>
-          Real-time satellite tracking and monitoring
+          Real-time satellite tracking and monitoring{stats.datasets ? ` with ${stats.datasets} datasets available` : ''}
         </p>
       </div>
 
@@ -207,12 +207,6 @@ function OverviewPage() {
           icon={<SatelliteAltIcon sx={{ fontSize: 20 }} />}
           loading={loading}
           onClick={() => handleStatClick('total')}
-        />
-        <StatCard
-          label="Total Datasets"
-          value={stats.datasets}
-          icon={<StorageIcon sx={{ fontSize: 20 }} />}
-          loading={loading}
         />
         <StatCard
           label="Earth Satellites"
