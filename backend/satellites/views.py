@@ -2,6 +2,7 @@
 from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from backend.throttles import PositionsThrottle
 
 # satllite view to list all satellites and their subclass type
@@ -49,6 +50,9 @@ class SpecificSatelliteView(APIView):
 
 # satellite type counts returns total satellite count and a breakdown by subtype in a single query
 class SatelliteTypeCounts(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
     def get(self, request):
         with connection.cursor() as cursor:
             cursor.execute("""
@@ -76,6 +80,8 @@ class SatelliteTypeCounts(APIView):
 
 # all trajectory returns paginated trajectory rows, scoped to a satellite batch per page
 class AllTrajectory(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
     throttle_classes = [PositionsThrottle]
 
     PAGE_SIZE_DEFAULT = 100
