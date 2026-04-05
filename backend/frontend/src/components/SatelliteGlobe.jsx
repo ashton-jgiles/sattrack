@@ -56,7 +56,7 @@ function interpolatePosition(posA, posB, t) {
   );
 }
 
-export default function SatelliteGlobe() {
+export default function SatelliteGlobe({ highlightedSatellites = [] }) {
   const cesiumContainer = useRef(null);
   const viewerRef = useRef(null);
   const pointCollectionRef = useRef(null);
@@ -121,19 +121,23 @@ export default function SatelliteGlobe() {
         const collection = pointCollectionRef.current;
         if (!collection || collection.isDestroyed()) return;
 
-        const satelliteList = Object.values(groups);
-        const points = satelliteList.map((positions) => {
+        const satelliteList = Object.entries(groups);
+        const points = satelliteList.map(([satelliteId, positions]) => {
           const pos = positions[0];
+          const isHighlighted = highlightedSatellites.includes(parseInt(satelliteId));
           return collection.add({
             position: Cesium.Cartesian3.fromDegrees(
               pos.longitude,
               pos.latitude,
               pos.altitude * 1000,
             ),
-            color: Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9),
-            pixelSize: 6,
-            outlineColor:
-              Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4),
+            color: isHighlighted
+              ? Cesium.Color.fromCssColorString("#ff6b6b").withAlpha(0.9) // Red for highlighted
+              : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9), // Green for normal
+            pixelSize: isHighlighted ? 10 : 6, // Larger for highlighted
+            outlineColor: isHighlighted
+              ? Cesium.Color.fromCssColorString("#ff8e8e").withAlpha(0.4)
+              : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4),
             outlineWidth: 3,
           });
         });
@@ -149,6 +153,25 @@ export default function SatelliteGlobe() {
 
     fetchPositions();
   }, []);
+
+  // Update point colors when highlighted satellites change
+  useEffect(() => {
+    const collection = pointCollectionRef.current;
+    if (!collection || collection.isDestroyed()) return;
+
+    const satelliteList = Object.keys(satelliteGroupsRef.current);
+    pointsRef.current.forEach((point, index) => {
+      const satelliteId = parseInt(satelliteList[index]);
+      const isHighlighted = highlightedSatellites.includes(satelliteId);
+      point.color = isHighlighted
+        ? Cesium.Color.fromCssColorString("#ff6b6b").withAlpha(0.9)
+        : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9);
+      point.pixelSize = isHighlighted ? 10 : 6;
+      point.outlineColor = isHighlighted
+        ? Cesium.Color.fromCssColorString("#ff8e8e").withAlpha(0.4)
+        : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4);
+    });
+  }, [highlightedSatellites]);
 
   // Animation loop
   useEffect(() => {

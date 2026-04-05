@@ -29,11 +29,13 @@ import AirIcon from "@mui/icons-material/Air";
 
 // component imports
 import SatelliteGlobe from "../components/SatelliteGlobe";
+import SatelliteListModal from "../components/SatelliteListModal";
 
 // api imports
 import {
   getSatelliteCounts,
   getRecentDeployments,
+  getAllSatellites,
 } from "../api/satelliteService";
 import { getTotalDatasets } from "../api/datasetService";
 
@@ -113,9 +115,9 @@ const NAV_ITEMS = [
 ];
 
 // Stat Card
-function StatCard({ label, value, icon, loading }) {
+function StatCard({ label, value, icon, loading, onClick }) {
   return (
-    <div className={styles.statCard}>
+    <div className={`${styles.statCard} ${onClick ? styles.clickable : ''}`} onClick={onClick}>
       <div className={styles.statCardHeader}>
         <span className={styles.statCardLabel}>{label}</span>
         <span className={styles.statCardIcon}>{icon}</span>
@@ -131,6 +133,38 @@ function StatCard({ label, value, icon, loading }) {
 function OverviewPage() {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [categorySatellites, setCategorySatellites] = useState([]);
+  const [highlightedSatellites, setHighlightedSatellites] = useState([]);
+
+  const handleStatClick = async (category) => {
+    setSelectedCategory(category);
+    setLoading(true);
+    try {
+      const allSatellites = await getAllSatellites();
+      let filtered = [];
+      if (category === 'total') {
+        filtered = allSatellites;
+      } else {
+        const typeMap = {
+          earth: 'Earth Science',
+          oceanic: 'Oceanic Science',
+          navigation: 'Navigation',
+          internet: 'Internet',
+          research: 'Research',
+          weather: 'Weather',
+        };
+        filtered = allSatellites.filter(sat => sat.satellite_type === typeMap[category]);
+      }
+      setCategorySatellites(filtered);
+      setShowModal(true);
+    } catch (err) {
+      console.error("Failed to load satellites:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -178,6 +212,7 @@ function OverviewPage() {
           value={stats.total}
           icon={<SatelliteAltIcon sx={{ fontSize: 20 }} />}
           loading={loading}
+          onClick={() => handleStatClick('total')}
         />
         <StatCard
           label="Total Datasets"
@@ -190,36 +225,42 @@ function OverviewPage() {
           value={stats.earth}
           icon={<PublicIcon sx={{ fontSize: 20 }} />}
           loading={loading}
+          onClick={() => handleStatClick('earth')}
         />
         <StatCard
           label="Oceanic Satellites"
           value={stats.oceanic}
           icon={<WavesIcon sx={{ fontSize: 20 }} />}
           loading={loading}
+          onClick={() => handleStatClick('oceanic')}
         />
         <StatCard
           label="Navigation Satellites"
           value={stats.navigation}
           icon={<ExploreIcon sx={{ fontSize: 20 }} />}
           loading={loading}
+          onClick={() => handleStatClick('navigation')}
         />
         <StatCard
           label="Internet Satellites"
           value={stats.internet}
           icon={<WifiIcon sx={{ fontSize: 20 }} />}
           loading={loading}
+          onClick={() => handleStatClick('internet')}
         />
         <StatCard
           label="Research Satellites"
           value={stats.research}
           icon={<ScienceIcon sx={{ fontSize: 20 }} />}
           loading={loading}
+          onClick={() => handleStatClick('research')}
         />
         <StatCard
           label="Weather Satellites"
           value={stats.weather}
           icon={<AirIcon sx={{ fontSize: 20 }} />}
           loading={loading}
+          onClick={() => handleStatClick('weather')}
         />
       </div>
 
@@ -233,7 +274,7 @@ function OverviewPage() {
             </span>
           </div>
           <div className={styles.globeCardBody}>
-            <SatelliteGlobe />
+            <SatelliteGlobe highlightedSatellites={highlightedSatellites} />
           </div>
         </div>
 
@@ -278,6 +319,19 @@ function OverviewPage() {
           </div>
         </div>
       </div>
+
+      {/* Satellite List Modal */}
+      {showModal && (
+        <SatelliteListModal
+          category={selectedCategory}
+          satellites={categorySatellites}
+          onClose={() => setShowModal(false)}
+          onSatelliteClick={(satelliteId) => {
+            setHighlightedSatellites([satelliteId]);
+            setShowModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
