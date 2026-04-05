@@ -7,6 +7,7 @@ import { useAuth } from "../hooks/useAuth";
 
 // page imports
 import ManageSatellites from "./ManageSatellites";
+import ManageDatasets from "./ManageDatasets";
 import Datasets from "./Datasets";
 
 // icon imports
@@ -329,7 +330,7 @@ export default function Dashboard() {
       case "manageSatellites":
         return <ManageSatellites />;
       case "manageDatasets":
-        return <PlaceholderPage title="Manage Datasets" />;
+        return <ManageDatasets />;
       case "admin":
         return <PlaceholderPage title="Admin Panel" />;
       default:

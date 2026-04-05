@@ -1,6 +1,7 @@
 from django.urls import path
-from .views import main
+from . import views
 
 urlpatterns = [
-    path('test/', main)
+    path('<int:dataset_id>/modify/', views.ModifyDataset.as_view()),
+    path('<int:dataset_id>/delete/', views.DeleteDataset.as_view()),
 ]
