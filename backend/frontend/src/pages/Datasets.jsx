@@ -1,5 +1,5 @@
 // react imports
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 // icon imports
 import StorageIcon from "@mui/icons-material/Storage";
@@ -24,7 +24,8 @@ const STATUS_COLORS = {
 function DatasetCard({ dataset, onViewDetails }) {
   const [satellitesOpen, setSatellitesOpen] = useState(false);
 
-  const statusClass = STATUS_COLORS[dataset.review_status] ?? styles.statusPending;
+  const statusClass =
+    STATUS_COLORS[dataset.review_status] ?? styles.statusPending;
 
   return (
     <div className={styles.card}>
@@ -55,7 +56,9 @@ function DatasetCard({ dataset, onViewDetails }) {
         </div>
         <div className={styles.statItem}>
           <span className={styles.statLabel}>Pull Frequency</span>
-          <span className={styles.statValue}>{dataset.pull_frequency ?? "—"}</span>
+          <span className={styles.statValue}>
+            {dataset.pull_frequency ?? "—"}
+          </span>
         </div>
         <div className={styles.statItem}>
           <span className={styles.statLabel}>Last Pulled</span>
@@ -152,10 +155,15 @@ export default function Datasets() {
 
       {/* Dataset Viewer Modal */}
       {selectedDataset && (
-        <div className={styles.modalOverlay} onClick={() => setSelectedDataset(null)}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setSelectedDataset(null)}
+        >
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>{selectedDataset.dataset_name}</h2>
+              <h2 className={styles.modalTitle}>
+                {selectedDataset.dataset_name}
+              </h2>
               <button
                 className={styles.modalClose}
                 onClick={() => setSelectedDataset(null)}
@@ -170,19 +178,27 @@ export default function Datasets() {
               <div className={styles.modalStats}>
                 <div className={styles.modalStatRow}>
                   <span className={styles.modalStatLabel}>Source</span>
-                  <span className={styles.modalStatValue}>{selectedDataset.source}</span>
+                  <span className={styles.modalStatValue}>
+                    {selectedDataset.source}
+                  </span>
                 </div>
                 <div className={styles.modalStatRow}>
                   <span className={styles.modalStatLabel}>Source URL</span>
-                  <span className={styles.modalStatValue}>{selectedDataset.source_url}</span>
+                  <span className={styles.modalStatValue}>
+                    {selectedDataset.source_url}
+                  </span>
                 </div>
                 <div className={styles.modalStatRow}>
                   <span className={styles.modalStatLabel}>File Size</span>
-                  <span className={styles.modalStatValue}>{selectedDataset.file_size ?? "—"}</span>
+                  <span className={styles.modalStatValue}>
+                    {selectedDataset.file_size ?? "—"}
+                  </span>
                 </div>
                 <div className={styles.modalStatRow}>
                   <span className={styles.modalStatLabel}>Pull Frequency</span>
-                  <span className={styles.modalStatValue}>{selectedDataset.pull_frequency ?? "—"}</span>
+                  <span className={styles.modalStatValue}>
+                    {selectedDataset.pull_frequency ?? "—"}
+                  </span>
                 </div>
                 <div className={styles.modalStatRow}>
                   <span className={styles.modalStatLabel}>Last Pulled</span>
@@ -196,13 +212,17 @@ export default function Datasets() {
                   <span className={styles.modalStatLabel}>Created</span>
                   <span className={styles.modalStatValue}>
                     {selectedDataset.creation_date
-                      ? new Date(selectedDataset.creation_date).toLocaleDateString()
+                      ? new Date(
+                          selectedDataset.creation_date,
+                        ).toLocaleDateString()
                       : "—"}
                   </span>
                 </div>
                 <div className={styles.modalStatRow}>
                   <span className={styles.modalStatLabel}>Review Status</span>
-                  <span className={styles.modalStatValue}>{selectedDataset.review_status}</span>
+                  <span className={styles.modalStatValue}>
+                    {selectedDataset.review_status}
+                  </span>
                 </div>
               </div>
             </div>
