@@ -7,6 +7,7 @@ import { useAuth } from "../hooks/useAuth";
 
 // page imports
 import ManageSatellites from "./ManageSatellites";
+import Datasets from "./Datasets";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
@@ -320,7 +321,7 @@ export default function Dashboard() {
       case "satellites":
         return <PlaceholderPage title="Satellites" />;
       case "datasets":
-        return <PlaceholderPage title="Datasets" />;
+        return <Datasets />;
       case "visualizations":
         return <PlaceholderPage title="Visualizations" />;
       case "reviews":
