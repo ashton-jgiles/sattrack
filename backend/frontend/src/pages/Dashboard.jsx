@@ -54,12 +54,6 @@ const NAV_ITEMS = [
         minLevel: 1,
       },
       {
-        id: "satellites",
-        label: "Satellites",
-        icon: <SatelliteAltIcon sx={{ fontSize: 18 }} />,
-        minLevel: 1,
-      },
-      {
         id: "datasets",
         label: "Datasets",
         icon: <StorageIcon sx={{ fontSize: 18 }} />,
