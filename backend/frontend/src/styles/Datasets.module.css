@@ -222,6 +222,29 @@
   text-align: center;
 }
 
+.satelliteRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #1e293b;
+  font-size: var(--text-sm);
+}
+
+.satelliteRow:last-child {
+  border-bottom: none;
+}
+
+.satelliteName {
+  color: #cbd5e1;
+  font-weight: var(--font-weight-medium);
+}
+
+.satelliteMeta {
+  color: #64748b;
+  font-size: var(--text-xs);
+}
+
 /* ── Empty / Loading States ─────────────────────────────────── */
 
 .emptyState {

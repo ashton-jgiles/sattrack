@@ -1,5 +1,5 @@
 // react imports
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 // icon imports
 import StorageIcon from "@mui/icons-material/Storage";
@@ -8,7 +8,7 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
 // api imports
-import { getAllDatasets } from "../api/datasetService";
+import { getAllDatasets, getSatellitesInDataset } from "../api/datasetService";
 
 // style imports
 import styles from "../styles/Datasets.module.css";
@@ -23,6 +23,8 @@ const STATUS_COLORS = {
 // dataset card component
 function DatasetCard({ dataset, onViewDetails }) {
   const [satellitesOpen, setSatellitesOpen] = useState(false);
+  const [satellites, setSatellites] = useState([]);
+  const [satellitesLoading, setSatellitesLoading] = useState(false);
 
   const statusClass =
     STATUS_COLORS[dataset.review_status] ?? styles.statusPending;
@@ -82,7 +84,18 @@ function DatasetCard({ dataset, onViewDetails }) {
       <div className={styles.cardActions}>
         <button
           className={styles.toggleButton}
-          onClick={() => setSatellitesOpen((prev) => !prev)}
+          onClick={() => {
+            if (!satellitesOpen && satellites.length === 0) {
+              setSatellitesLoading(true);
+              getSatellitesInDataset(dataset.dataset_id)
+                .then((data) => setSatellites(data))
+                .catch((err) =>
+                  console.error("Failed to load satellites:", err),
+                )
+                .finally(() => setSatellitesLoading(false));
+            }
+            setSatellitesOpen((prev) => !prev);
+          }}
         >
           {satellitesOpen ? (
             <ExpandLessIcon sx={{ fontSize: 16 }} />
@@ -103,7 +116,20 @@ function DatasetCard({ dataset, onViewDetails }) {
       {/* Satellite Dropdown */}
       {satellitesOpen && (
         <div className={styles.satelliteDropdown}>
-          <p className={styles.comingSoon}>Satellite list coming soon</p>
+          {satellitesLoading ? (
+            <p className={styles.comingSoon}>Loading...</p>
+          ) : satellites.length === 0 ? (
+            <p className={styles.comingSoon}>No satellites in this dataset</p>
+          ) : (
+            satellites.map((sat) => (
+              <div key={sat.satellite_id} className={styles.satelliteRow}>
+                <span className={styles.satelliteName}>{sat.name}</span>
+                <span className={styles.satelliteMeta}>
+                  {[sat.object_id, sat.orbit_type, sat.classification].filter(Boolean).join(" · ")}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>

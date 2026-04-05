@@ -35,7 +35,7 @@ class SatellitesInDataset(APIView):
     def get(self, request, dataset_id):
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT satellite_id, name, orbit_type, norad_id, object_id
+                SELECT satellite_id, name, orbit_type, norad_id, object_id, classification
                 FROM satellite
                 WHERE dataset_id = %s AND deleted_at IS NULL
             """, [dataset_id])
