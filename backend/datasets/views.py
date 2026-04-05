@@ -23,6 +23,20 @@ class DatasetView(APIView):
             cursor.execute("SELECT * FROM dataset")
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        
+
+        return Response(data)
+
+# satellites in dataset view returns all satellites belonging to a given dataset
+class SatellitesInDataset(APIView):
+    def get(self, request, dataset_id):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT satellite_id, name, orbit_type, norad_id, object_id
+                FROM satellite
+                WHERE dataset_id = %s AND deleted_at IS NULL
+            """, [dataset_id])
+            columns = [col[0] for col in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
         return Response(data)
     

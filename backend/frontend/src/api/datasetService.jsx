@@ -12,3 +12,9 @@ export const getAllDatasets = async () => {
   const data = await get(`/dataset/datasets/`);
   return data;
 };
+
+// get satellites in dataset returns all satellites belonging to a given dataset
+export const getSatellitesInDataset = async (datasetId) => {
+  const data = await get(`/dataset/${datasetId}/satellites/`);
+  return data;
+};
