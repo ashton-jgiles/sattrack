@@ -47,7 +47,6 @@ function lerpLongitude(a, b, t) {
   return a + diff * t;
 }
 
-//
 function interpolatePosition(posA, posB, t) {
   return Cesium.Cartesian3.fromDegrees(
     lerpLongitude(posA.longitude, posB.longitude, t),
@@ -56,7 +55,11 @@ function interpolatePosition(posA, posB, t) {
   );
 }
 
-export default function SatelliteGlobe({ highlightedSatellites = [] }) {
+export default function SatelliteGlobe({
+  highlightedSatellites = [],
+  onSatelliteSelect,
+  selectedSatelliteId,
+}) {
   const cesiumContainer = useRef(null);
   const viewerRef = useRef(null);
   const pointCollectionRef = useRef(null);
@@ -64,6 +67,7 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
   const animRef = useRef(null);
   const startTimeRef = useRef(null);
   const satelliteGroupsRef = useRef({});
+  const satelliteIdsRef = useRef([]); // ordered list of satellite IDs matching pointsRef
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -83,6 +87,15 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
       infoBox: false,
       selectionIndicator: false,
       creditContainer: document.createElement("div"),
+      baseLayer: Cesium.ImageryLayer.fromProviderAsync(
+        Cesium.TileMapServiceImageryProvider.fromUrl(
+          Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
+          {
+            fileExtension: "jpg",
+            maximumLevel: 5,
+          },
+        ),
+      ),
     });
 
     // set the viewer reference
@@ -91,8 +104,43 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
       new Cesium.PointPrimitiveCollection(),
     );
 
+    // Click handler: find the nearest point within a pixel threshold
+    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    handler.setInputAction((click) => {
+      const points = pointsRef.current;
+      const satelliteIds = satelliteIdsRef.current;
+      if (!points.length || !satelliteIds.length) return;
+
+      const scene = viewer.scene;
+      const PICK_RADIUS = 8; // pixels
+      let closestIndex = -1;
+      let closestDist = Infinity;
+
+      points.forEach((point, index) => {
+        if (!point || !point.position) return;
+        const screenPos = Cesium.SceneTransforms.worldToWindowCoordinates(
+          scene,
+          point.position,
+        );
+        if (!screenPos) return;
+        const dx = screenPos.x - click.position.x;
+        const dy = screenPos.y - click.position.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < PICK_RADIUS && dist < closestDist) {
+          closestDist = dist;
+          closestIndex = index;
+        }
+      });
+
+      if (closestIndex >= 0 && onSatelliteSelect) {
+        const satelliteId = parseInt(satelliteIds[closestIndex]);
+        onSatelliteSelect(satelliteId);
+      }
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
     // return the component
     return () => {
+      handler.destroy();
       cancelAnimationFrame(animRef.current);
       if (viewerRef.current && !viewerRef.current.isDestroyed()) {
         viewerRef.current.destroy();
@@ -110,8 +158,8 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
           first.total_pages > 1
             ? await Promise.all(
                 Array.from({ length: first.total_pages - 1 }, (_, i) =>
-                  getSatellitePositionsPage(i + 2)
-                )
+                  getSatellitePositionsPage(i + 2),
+                ),
               )
             : [];
         const allPositions = [first, ...remaining].flatMap((p) => p.results);
@@ -122,22 +170,32 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
         if (!collection || collection.isDestroyed()) return;
 
         const satelliteList = Object.entries(groups);
+        // Store the ordered satellite IDs for click lookup
+        satelliteIdsRef.current = satelliteList.map(([id]) => id);
+
         const points = satelliteList.map(([satelliteId, positions]) => {
           const pos = positions[0];
-          const isHighlighted = highlightedSatellites.includes(parseInt(satelliteId));
+          const isHighlighted = highlightedSatellites.includes(
+            parseInt(satelliteId),
+          );
+          const isSelected = selectedSatelliteId === parseInt(satelliteId);
           return collection.add({
             position: Cesium.Cartesian3.fromDegrees(
               pos.longitude,
               pos.latitude,
               pos.altitude * 1000,
             ),
-            color: isHighlighted
-              ? Cesium.Color.fromCssColorString("#ff6b6b").withAlpha(0.9) // Red for highlighted
-              : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9), // Green for normal
-            pixelSize: isHighlighted ? 10 : 6, // Larger for highlighted
-            outlineColor: isHighlighted
-              ? Cesium.Color.fromCssColorString("#ff8e8e").withAlpha(0.4)
-              : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4),
+            color: isSelected
+              ? Cesium.Color.fromCssColorString("#facc15").withAlpha(1.0)
+              : isHighlighted
+                ? Cesium.Color.fromCssColorString("#ff6b6b").withAlpha(0.9)
+                : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9),
+            pixelSize: isSelected ? 12 : isHighlighted ? 10 : 6,
+            outlineColor: isSelected
+              ? Cesium.Color.fromCssColorString("#fde68a").withAlpha(0.6)
+              : isHighlighted
+                ? Cesium.Color.fromCssColorString("#ff8e8e").withAlpha(0.4)
+                : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4),
             outlineWidth: 3,
           });
         });
@@ -154,24 +212,30 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
     fetchPositions();
   }, []);
 
-  // Update point colors when highlighted satellites change
+  // Update point colors when highlighted or selected satellite changes
   useEffect(() => {
     const collection = pointCollectionRef.current;
     if (!collection || collection.isDestroyed()) return;
 
-    const satelliteList = Object.keys(satelliteGroupsRef.current);
+    const satelliteIds = satelliteIdsRef.current;
     pointsRef.current.forEach((point, index) => {
-      const satelliteId = parseInt(satelliteList[index]);
+      const satelliteId = parseInt(satelliteIds[index]);
       const isHighlighted = highlightedSatellites.includes(satelliteId);
-      point.color = isHighlighted
-        ? Cesium.Color.fromCssColorString("#ff6b6b").withAlpha(0.9)
-        : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9);
-      point.pixelSize = isHighlighted ? 10 : 6;
-      point.outlineColor = isHighlighted
-        ? Cesium.Color.fromCssColorString("#ff8e8e").withAlpha(0.4)
-        : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4);
+      const isSelected = selectedSatelliteId === satelliteId;
+
+      point.color = isSelected
+        ? Cesium.Color.fromCssColorString("#facc15").withAlpha(1.0)
+        : isHighlighted
+          ? Cesium.Color.fromCssColorString("#ff6b6b").withAlpha(0.9)
+          : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9);
+      point.pixelSize = isSelected ? 12 : isHighlighted ? 10 : 6;
+      point.outlineColor = isSelected
+        ? Cesium.Color.fromCssColorString("#fde68a").withAlpha(0.6)
+        : isHighlighted
+          ? Cesium.Color.fromCssColorString("#ff8e8e").withAlpha(0.4)
+          : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4);
     });
-  }, [highlightedSatellites]);
+  }, [highlightedSatellites, selectedSatelliteId]);
 
   // Animation loop
   useEffect(() => {
