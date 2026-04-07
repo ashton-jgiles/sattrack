@@ -9,6 +9,7 @@ import { useAuth } from "../hooks/useAuth";
 import ManageSatellites from "./ManageSatellites";
 import ManageDatasets from "./ManageDatasets";
 import Datasets from "./Datasets";
+import Settings from "./Settings";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
@@ -18,7 +19,7 @@ import EqualizerIcon from "@mui/icons-material/Equalizer";
 import StorageIcon from "@mui/icons-material/Storage";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import ManageSearchIcon from "@mui/icons-material/ManageSearch";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import SettingsIcon from "@mui/icons-material/Settings";
 import PublicIcon from "@mui/icons-material/Public";
 import DatasetIcon from "@mui/icons-material/Dataset";
 import WavesIcon from "@mui/icons-material/Waves";
@@ -99,9 +100,9 @@ const NAV_ITEMS = [
         minLevel: 4,
       },
       {
-        id: "admin",
-        label: "Admin Panel",
-        icon: <AdminPanelSettingsIcon sx={{ fontSize: 18 }} />,
+        id: "settings",
+        label: "Settings",
+        icon: <SettingsIcon sx={{ fontSize: 18 }} />,
         minLevel: 4,
       },
     ],
@@ -111,7 +112,10 @@ const NAV_ITEMS = [
 // Stat Card
 function StatCard({ label, value, icon, loading, onClick }) {
   return (
-    <div className={`${styles.statCard} ${onClick ? styles.clickable : ''}`} onClick={onClick}>
+    <div
+      className={`${styles.statCard} ${onClick ? styles.clickable : ""}`}
+      onClick={onClick}
+    >
       <div className={styles.statCardHeader}>
         <span className={styles.statCardLabel}>{label}</span>
         <span className={styles.statCardIcon}>{icon}</span>
@@ -128,7 +132,7 @@ function OverviewPage() {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [categorySatellites, setCategorySatellites] = useState([]);
   const [highlightedSatellites, setHighlightedSatellites] = useState([]);
 
@@ -138,18 +142,20 @@ function OverviewPage() {
     try {
       const allSatellites = await getAllSatellites();
       let filtered = [];
-      if (category === 'total') {
+      if (category === "total") {
         filtered = allSatellites;
       } else {
         const typeMap = {
-          earth: 'Earth Science',
-          oceanic: 'Oceanic Science',
-          navigation: 'Navigation',
-          internet: 'Internet',
-          research: 'Research',
-          weather: 'Weather',
+          earth: "Earth Science",
+          oceanic: "Oceanic Science",
+          navigation: "Navigation",
+          internet: "Internet",
+          research: "Research",
+          weather: "Weather",
         };
-        filtered = allSatellites.filter(sat => sat.satellite_type === typeMap[category]);
+        filtered = allSatellites.filter(
+          (sat) => sat.satellite_type === typeMap[category],
+        );
       }
       setCategorySatellites(filtered);
       setShowModal(true);
@@ -195,7 +201,8 @@ function OverviewPage() {
       <div>
         <h2 className={styles.pageTitle}>Dashboard Overview</h2>
         <p className={styles.pageSubtitle}>
-          Real-time satellite tracking and monitoring{stats.datasets ? ` with ${stats.datasets} datasets available` : ''}
+          Real-time satellite tracking and monitoring
+          {stats.datasets ? ` with ${stats.datasets} datasets available` : ""}
         </p>
       </div>
 
@@ -206,49 +213,49 @@ function OverviewPage() {
           value={stats.total}
           icon={<SatelliteAltIcon sx={{ fontSize: 20 }} />}
           loading={loading}
-          onClick={() => handleStatClick('total')}
+          onClick={() => handleStatClick("total")}
         />
         <StatCard
           label="Earth Satellites"
           value={stats.earth}
           icon={<PublicIcon sx={{ fontSize: 20 }} />}
           loading={loading}
-          onClick={() => handleStatClick('earth')}
+          onClick={() => handleStatClick("earth")}
         />
         <StatCard
           label="Oceanic Satellites"
           value={stats.oceanic}
           icon={<WavesIcon sx={{ fontSize: 20 }} />}
           loading={loading}
-          onClick={() => handleStatClick('oceanic')}
+          onClick={() => handleStatClick("oceanic")}
         />
         <StatCard
           label="Navigation Satellites"
           value={stats.navigation}
           icon={<ExploreIcon sx={{ fontSize: 20 }} />}
           loading={loading}
-          onClick={() => handleStatClick('navigation')}
+          onClick={() => handleStatClick("navigation")}
         />
         <StatCard
           label="Internet Satellites"
           value={stats.internet}
           icon={<WifiIcon sx={{ fontSize: 20 }} />}
           loading={loading}
-          onClick={() => handleStatClick('internet')}
+          onClick={() => handleStatClick("internet")}
         />
         <StatCard
           label="Research Satellites"
           value={stats.research}
           icon={<ScienceIcon sx={{ fontSize: 20 }} />}
           loading={loading}
-          onClick={() => handleStatClick('research')}
+          onClick={() => handleStatClick("research")}
         />
         <StatCard
           label="Weather Satellites"
           value={stats.weather}
           icon={<AirIcon sx={{ fontSize: 20 }} />}
           loading={loading}
-          onClick={() => handleStatClick('weather')}
+          onClick={() => handleStatClick("weather")}
         />
       </div>
 
@@ -373,8 +380,8 @@ export default function Dashboard() {
         return <ManageSatellites />;
       case "manageDatasets":
         return <ManageDatasets />;
-      case "admin":
-        return <PlaceholderPage title="Admin Panel" />;
+      case "settings":
+        return <Settings />;
       default:
         return <OverviewPage />;
     }
