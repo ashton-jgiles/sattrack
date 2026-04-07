@@ -200,7 +200,7 @@ export default function ManageDatasets() {
       {deleteTarget && (
         <ConfirmDeleteModal
           title="Remove Dataset"
-          message="Removing this dataset will also permanently remove all associated satellites."
+          message="Removing this dataset will also remove all associated satellites."
           confirmLabel="Delete"
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteTarget(null)}
