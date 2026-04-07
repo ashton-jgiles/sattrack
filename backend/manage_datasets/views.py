@@ -46,13 +46,16 @@ class DeleteDataset(APIView):
             if not cursor.fetchone():
                 return Response({'error': 'Dataset not found'}, status=404)
 
+            cursor.execute("SELECT NOW()")
+            deleted_at = cursor.fetchone()[0]
+
             cursor.execute(
-                "UPDATE dataset SET deleted_at = NOW() WHERE dataset_id = %s",
-                [dataset_id]
+                "UPDATE dataset SET deleted_at = %s WHERE dataset_id = %s",
+                [deleted_at, dataset_id]
             )
             cursor.execute(
-                "UPDATE satellite SET deleted_at = NOW() WHERE dataset_id = %s AND deleted_at IS NULL",
-                [dataset_id]
+                "UPDATE satellite SET deleted_at = %s WHERE dataset_id = %s AND deleted_at IS NULL",
+                [deleted_at, dataset_id]
             )
 
         return Response({'message': 'Dataset deleted successfully'})
@@ -72,14 +75,29 @@ class DatasetSources(APIView):
             cursor.execute("SELECT source_url FROM dataset WHERE deleted_at IS NULL")
             existing_urls = {row[0] for row in cursor.fetchall()}
 
-        available = [
-            {
-                'group': group,
-                'source_url': f"{CELESTRAK_BASE}?GROUP={group}&FORMAT=json",
+            cursor.execute("""
+                SELECT source_url, dataset_name, description, pull_frequency
+                FROM dataset WHERE deleted_at IS NOT NULL
+            """)
+            deleted_datasets = {
+                row[0]: {
+                    'dataset_name': row[1],
+                    'description': row[2],
+                    'pull_frequency': row[3],
+                }
+                for row in cursor.fetchall()
             }
-            for group in groups
-            if f"{CELESTRAK_BASE}?GROUP={group}&FORMAT=json" not in existing_urls
-        ]
+
+        available = []
+        for group in groups:
+            url = f"{CELESTRAK_BASE}?GROUP={group}&FORMAT=json"
+            if url in existing_urls:
+                continue
+            entry = {'group': group, 'source_url': url}
+            if url in deleted_datasets:
+                entry['previously_deleted'] = True
+                entry.update(deleted_datasets[url])
+            available.append(entry)
 
         return Response(available)
 
@@ -98,7 +116,38 @@ class AddDataset(APIView):
 
         source_url = f"{CELESTRAK_BASE}?GROUP={group}&FORMAT=json"
 
-        # validate the group by hitting CelesTrak
+        with connection.cursor() as cursor:
+            # restore a soft-deleted dataset — no CelesTrak validation needed
+            cursor.execute(
+                "SELECT dataset_id FROM dataset WHERE source_url = %s AND deleted_at IS NOT NULL",
+                [source_url]
+            )
+            existing = cursor.fetchone()
+            if existing:
+                dataset_id = existing[0]
+                cursor.execute(
+                    "UPDATE dataset SET deleted_at = NULL, dataset_name = %s, description = %s, pull_frequency = %s WHERE dataset_id = %s",
+                    [dataset_name, description, pull_frequency, dataset_id]
+                )
+                cursor.execute(
+                    """
+                    UPDATE satellite SET deleted_at = NULL
+                    WHERE dataset_id = %s
+                    AND deleted_at = (SELECT deleted_at FROM dataset WHERE dataset_id = %s)
+                    """,
+                    [dataset_id, dataset_id]
+                )
+                return Response({'message': 'Dataset restored successfully', 'dataset_id': dataset_id}, status=200)
+
+            # reject if an active dataset with this url already exists
+            cursor.execute(
+                "SELECT dataset_id FROM dataset WHERE source_url = %s AND deleted_at IS NULL",
+                [source_url]
+            )
+            if cursor.fetchone():
+                return Response({'error': 'A dataset for this group already exists'}, status=400)
+
+        # new dataset — validate the group against CelesTrak
         try:
             response = requests.get(source_url, timeout=30)
             response.raise_for_status()

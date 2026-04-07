@@ -68,7 +68,7 @@ export default function ManageDatasets() {
     const result = await addDataset(payload);
     const updated = await getAllDatasets();
     setDatasets(updated);
-    showPopupMessage("Dataset created successfully");
+    showPopupMessage(result.message ?? "Dataset created successfully");
     return result;
   };
 

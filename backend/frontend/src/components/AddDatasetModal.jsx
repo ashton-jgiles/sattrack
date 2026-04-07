@@ -38,7 +38,7 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
   const inputRef = useRef(null);
 
   const filteredSources = sources.filter((s) =>
-    s.group.toLowerCase().includes(form.group.toLowerCase())
+    s.group.toLowerCase().includes(form.group.toLowerCase()),
   );
 
   const handleChange = (field, value) => {
@@ -51,16 +51,28 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
   };
 
   const handleGroupSelect = (group) => {
-    const namePart = group.charAt(0).toUpperCase() + group.slice(1);
-    setForm((prev) => ({
-      ...prev,
-      group,
-      dataset_name: `CelesTrak ${namePart}`,
-      description: `TLE orbital elements for ${namePart} satellites`,
-      pull_frequency: "6h",
-    }));
+    const match = sources.find((s) => s.group === group);
+    if (match?.previously_deleted) {
+      setForm({
+        group,
+        dataset_name: match.dataset_name ?? "",
+        description: match.description ?? "",
+        pull_frequency: match.pull_frequency ?? "6h",
+      });
+    } else {
+      const namePart = group.charAt(0).toUpperCase() + group.slice(1);
+      setForm((prev) => ({
+        ...prev,
+        group,
+        dataset_name: `CelesTrak ${namePart}`,
+        description: `TLE orbital elements for ${namePart} satellites`,
+        pull_frequency: "6h",
+      }));
+    }
     setDropdownOpen(false);
   };
+
+  const isRestore = sources.find((s) => s.group === form.group)?.previously_deleted ?? false;
 
   const handleSave = async () => {
     const errs = [];
@@ -77,7 +89,9 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
       await onSave(form);
       onClose();
     } catch (err) {
-      const msg = err?.response?.data?.error ?? "Failed to create dataset. Please try again.";
+      const msg =
+        err?.response?.data?.error ??
+        "Failed to create dataset. Please try again.";
       setErrors([msg]);
     } finally {
       setIsSaving(false);
@@ -87,14 +101,18 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
   return ReactDOM.createPortal(
     <div
       className={styles.backdrop}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.modalHeader}>
           <div>
-            <div className={styles.modalTitle}>Add Dataset</div>
-            <div className={styles.modalSubtitle}>Create a new CelesTrak dataset</div>
+            <div className={styles.modalTitle}>{isRestore ? "Restore Dataset" : "Add Dataset"}</div>
+            <div className={styles.modalSubtitle}>
+              {isRestore ? "Restore a previously deleted CelesTrak dataset" : "Create a new CelesTrak dataset"}
+            </div>
           </div>
           <button className={styles.closeButton} onClick={onClose}>
             <CloseIcon sx={{ fontSize: 18 }} />
@@ -104,9 +122,10 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
         {/* Fields */}
         <div className={styles.tabContent}>
           <div className={styles.fieldGrid}>
-
             {/* Group with custom dropdown */}
-            <div className={`${styles.field} ${styles.fieldFull} ${dropdownStyles.groupWrapper}`}>
+            <div
+              className={`${styles.field} ${styles.fieldFull} ${dropdownStyles.groupWrapper}`}
+            >
               <span className={styles.fieldLabel}>CelesTrak Group</span>
               <input
                 ref={inputRef}
@@ -127,6 +146,9 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
                       onMouseDown={() => handleGroupSelect(s.group)}
                     >
                       {s.group}
+                      {s.previously_deleted && (
+                        <span style={{ marginLeft: "0.5rem", fontSize: "0.7rem", color: "#a78bfa" }}>restore</span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -158,7 +180,9 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
         {errors.length > 0 && (
           <div className={styles.errorBanner}>
             {errors.map((e, i) => (
-              <span key={i} className={styles.errorItem}>• {e}</span>
+              <span key={i} className={styles.errorItem}>
+                • {e}
+              </span>
             ))}
           </div>
         )}
@@ -174,11 +198,11 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
             disabled={isSaving}
           >
             <AddIcon sx={{ fontSize: 16 }} />
-            {isSaving ? "Creating..." : "Add Dataset"}
+            {isSaving ? (isRestore ? "Restoring..." : "Creating...") : (isRestore ? "Restore Dataset" : "Add Dataset")}
           </button>
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
