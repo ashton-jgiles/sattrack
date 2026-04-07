@@ -32,6 +32,8 @@ import AirIcon from "@mui/icons-material/Air";
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
 import PersonIcon from "@mui/icons-material/Person";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 // component imports
 import SatelliteGlobe from "../components/SatelliteGlobe";
@@ -46,6 +48,36 @@ import { getTotalDatasets } from "../api/datasetService";
 
 // style imports
 import styles from "../styles/Dashboard.module.css";
+
+function NumInput({ placeholder, value, onChange, step = 1000 }) {
+  const adjust = (dir) => {
+    const current = parseInt(value) || 0;
+    const next = Math.max(0, current + dir * step);
+    onChange(String(next));
+  };
+  return (
+    <div className={styles.numberInputWrapper}>
+      <input
+        className={styles.numberInput}
+        type="text"
+        inputMode="numeric"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => {
+          if (e.target.value === "" || /^\d*$/.test(e.target.value)) onChange(e.target.value);
+        }}
+      />
+      <div className={styles.numberInputSpinners}>
+        <button className={styles.spinnerBtn} onClick={() => adjust(1)} tabIndex={-1}>
+          <KeyboardArrowUpIcon sx={{ fontSize: 12 }} />
+        </button>
+        <button className={styles.spinnerBtn} onClick={() => adjust(-1)} tabIndex={-1}>
+          <KeyboardArrowDownIcon sx={{ fontSize: 12 }} />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // Sidebar nav config
 const NAV_ITEMS = [
@@ -268,7 +300,6 @@ function OverviewPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [satelliteTypeFilter, setSatelliteTypeFilter] = useState("");
   const [orbitTypeFilter, setOrbitTypeFilter] = useState("");
-  const [classificationFilter, setClassificationFilter] = useState("");
   const [minNoradId, setMinNoradId] = useState("");
   const [maxNoradId, setMaxNoradId] = useState("");
   const [keywords, setKeywords] = useState([]);
@@ -289,19 +320,12 @@ function OverviewPage() {
   const isFiltered =
     satelliteTypeFilter !== "" ||
     orbitTypeFilter !== "" ||
-    classificationFilter !== "" ||
     minNoradId !== "" ||
     maxNoradId !== "" ||
     keywords.length > 0;
 
   const activeFilterCount =
-    [
-      satelliteTypeFilter,
-      orbitTypeFilter,
-      classificationFilter,
-      minNoradId,
-      maxNoradId,
-    ].filter(Boolean).length + keywords.length;
+    [satelliteTypeFilter, orbitTypeFilter, minNoradId, maxNoradId].filter(Boolean).length + keywords.length;
 
   const addKeyword = (e) => {
     if (e.key === "Enter" && keywordInput.trim()) {
@@ -338,11 +362,6 @@ function OverviewPage() {
             return false;
           if (orbitTypeFilter && sat.orbit_type !== orbitTypeFilter)
             return false;
-          if (
-            classificationFilter &&
-            sat.classification !== classificationFilter
-          )
-            return false;
           const noradId = parseInt(sat.norad_id);
           if (
             minNoradId !== "" &&
@@ -366,7 +385,6 @@ function OverviewPage() {
     allSatellites,
     satelliteTypeFilter,
     orbitTypeFilter,
-    classificationFilter,
     minNoradId,
     maxNoradId,
     keywords,
@@ -391,7 +409,6 @@ function OverviewPage() {
   const clearFilters = () => {
     setSatelliteTypeFilter("");
     setOrbitTypeFilter("");
-    setClassificationFilter("");
     setMinNoradId("");
     setMaxNoradId("");
     setKeywords([]);
@@ -591,41 +608,8 @@ function OverviewPage() {
                 </select>
               </div>
               <div className={styles.panelFiltersRow}>
-                <select
-                  value={classificationFilter}
-                  onChange={(e) => setClassificationFilter(e.target.value)}
-                  style={selectStyle}
-                >
-                  <option value="">All Classifications</option>
-                  <option value="U">Unclassified (U)</option>
-                  <option value="C">Classified (C)</option>
-                  <option value="S">Secret (S)</option>
-                </select>
-                <div className={styles.noradRange}>
-                  <input
-                    className={styles.noradRangeInput}
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="Min NORAD ID"
-                    value={minNoradId}
-                    onChange={(e) => {
-                      if (e.target.value === "" || /^\d*$/.test(e.target.value))
-                        setMinNoradId(e.target.value);
-                    }}
-                  />
-                  <span className={styles.noradRangeSep}>—</span>
-                  <input
-                    className={styles.noradRangeInput}
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="Max NORAD ID"
-                    value={maxNoradId}
-                    onChange={(e) => {
-                      if (e.target.value === "" || /^\d*$/.test(e.target.value))
-                        setMaxNoradId(e.target.value);
-                    }}
-                  />
-                </div>
+                <NumInput placeholder="Min NORAD ID" value={minNoradId} onChange={setMinNoradId} />
+                <NumInput placeholder="Max NORAD ID" value={maxNoradId} onChange={setMaxNoradId} />
               </div>
               <div className={styles.keywordRow}>
                 {keywords.map((kw) => (
