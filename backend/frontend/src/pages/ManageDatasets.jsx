@@ -102,9 +102,11 @@ export default function ManageDatasets() {
         <button
           className={styles.addButton}
           onClick={() => {
-            getDatasetSources()
-              .then(setSources)
-              .catch((err) => console.error("Failed to load sources:", err));
+            if (sources.length === 0) {
+              getDatasetSources()
+                .then(setSources)
+                .catch((err) => console.error("Failed to load sources:", err));
+            }
             setShowAddModal(true);
           }}
         >
