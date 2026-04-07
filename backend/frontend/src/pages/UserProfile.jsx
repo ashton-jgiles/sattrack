@@ -134,7 +134,10 @@ export default function UserProfile() {
             type="text"
             className={styles.fieldInput}
             value={subtypeData.profession || ""}
-            disabled
+            onChange={(e) =>
+              setSubtypeData({ ...subtypeData, profession: e.target.value })
+            }
+            placeholder="Your profession..."
           />
         </div>
       );

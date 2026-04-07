@@ -233,6 +233,7 @@ class ModifyUser(APIView):
         original_username = request.data.get('original_username')
         level_access      = request.data.get('level_access')
         user_type         = request.data.get('user_type')
+        subtype_data      = request.data.get('subtype_data', {})
 
         if not original_username:
             return Response({'error': 'original_username is required'}, status=400)
@@ -264,6 +265,18 @@ class ModifyUser(APIView):
                     cursor.execute(f"DELETE FROM {current_table} WHERE username = %s", [original_username])
                 sql, default_val = self.TYPE_INSERT[new_table]
                 cursor.execute(sql, [original_username, default_val])
+
+            # Update subtype-specific fields if provided
+            if new_table in ('administrator', 'data_analyst') and 'employee_id' in subtype_data:
+                cursor.execute(
+                    f"UPDATE {new_table} SET employee_id = %s WHERE username = %s",
+                    [subtype_data['employee_id'], original_username]
+                )
+            elif new_table == 'scientist' and 'profession' in subtype_data:
+                cursor.execute(
+                    "UPDATE scientist SET profession = %s WHERE username = %s",
+                    [subtype_data['profession'], original_username]
+                )
 
         return Response({'message': 'User updated successfully'})
 
