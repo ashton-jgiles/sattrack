@@ -72,6 +72,7 @@ export default function ManageSatellites() {
     filter === "all"
       ? satellites
       : satellites.filter((s) => s.satellite_type === filter);
+
   // handle edit click
   const handleEditClick = async (satelliteID) => {
     setProfileLoading(true);
@@ -115,7 +116,7 @@ export default function ManageSatellites() {
           </p>
         </div>
         <button
-          className={styles.addButton}
+          className={styles.refreshButton}
           onClick={() => setShowAddModal(true)}
         >
           <AddIcon sx={{ fontSize: 18 }} />

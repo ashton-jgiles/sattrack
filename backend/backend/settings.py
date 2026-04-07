@@ -14,8 +14,8 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# empyu allowed hosts
-ALLOWED_HOSTS = []
+# allowed hosts — reads from env var (comma-separated), falls back to localhost for dev
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # Application definition
 INSTALLED_APPS = [

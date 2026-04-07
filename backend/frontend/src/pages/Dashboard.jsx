@@ -9,6 +9,7 @@ import { useAuth } from "../hooks/useAuth";
 import ManageSatellites from "./ManageSatellites";
 import ManageDatasets from "./ManageDatasets";
 import Datasets from "./Datasets";
+import Settings from "./Settings";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
@@ -18,7 +19,7 @@ import EqualizerIcon from "@mui/icons-material/Equalizer";
 import StorageIcon from "@mui/icons-material/Storage";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import ManageSearchIcon from "@mui/icons-material/ManageSearch";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import SettingsIcon from "@mui/icons-material/Settings";
 import PublicIcon from "@mui/icons-material/Public";
 import DatasetIcon from "@mui/icons-material/Dataset";
 import WavesIcon from "@mui/icons-material/Waves";
@@ -102,9 +103,9 @@ const NAV_ITEMS = [
         minLevel: 4,
       },
       {
-        id: "admin",
-        label: "Admin Panel",
-        icon: <AdminPanelSettingsIcon sx={{ fontSize: 18 }} />,
+        id: "settings",
+        label: "Settings",
+        icon: <SettingsIcon sx={{ fontSize: 18 }} />,
         minLevel: 4,
       },
     ],
@@ -707,8 +708,8 @@ export default function Dashboard() {
         return <ManageSatellites />;
       case "manageDatasets":
         return <ManageDatasets />;
-      case "admin":
-        return <PlaceholderPage title="Admin Panel" />;
+      case "settings":
+        return <Settings />;
       default:
         return <OverviewPage />;
     }
