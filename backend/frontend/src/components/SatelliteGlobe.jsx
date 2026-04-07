@@ -26,10 +26,8 @@ function groupBySatellite(positions) {
     return acc;
   }, {});
 
-  // Sort each satellite's positions by timestamp ascending
   Object.keys(groups).forEach((id) => {
     groups[id].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    // Slice to first TOTAL_FRAMES for a clean loop
     groups[id] = groups[id].slice(0, TOTAL_FRAMES);
   });
 
@@ -47,7 +45,6 @@ function lerpLongitude(a, b, t) {
   return a + diff * t;
 }
 
-//
 function interpolatePosition(posA, posB, t) {
   return Cesium.Cartesian3.fromDegrees(
     lerpLongitude(posA.longitude, posB.longitude, t),
@@ -56,7 +53,12 @@ function interpolatePosition(posA, posB, t) {
   );
 }
 
-export default function SatelliteGlobe({ highlightedSatellites = [] }) {
+export default function SatelliteGlobe({
+  highlightedSatellites = [],
+  // When set, only satellites whose IDs are in this Set/array are shown.
+  // When null/undefined, all satellites are shown.
+  visibleSatelliteIds = null,
+}) {
   const cesiumContainer = useRef(null);
   const viewerRef = useRef(null);
   const pointCollectionRef = useRef(null);
@@ -64,6 +66,7 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
   const animRef = useRef(null);
   const startTimeRef = useRef(null);
   const satelliteGroupsRef = useRef({});
+  const satelliteIdsRef = useRef([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -83,15 +86,22 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
       infoBox: false,
       selectionIndicator: false,
       creditContainer: document.createElement("div"),
+      baseLayer: Cesium.ImageryLayer.fromProviderAsync(
+        Cesium.TileMapServiceImageryProvider.fromUrl(
+          Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
+          {
+            fileExtension: "jpg",
+            maximumLevel: 5,
+          },
+        ),
+      ),
     });
 
-    // set the viewer reference
     viewerRef.current = viewer;
     pointCollectionRef.current = viewer.scene.primitives.add(
       new Cesium.PointPrimitiveCollection(),
     );
 
-    // return the component
     return () => {
       cancelAnimationFrame(animRef.current);
       if (viewerRef.current && !viewerRef.current.isDestroyed()) {
@@ -101,7 +111,7 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
     };
   }, []);
 
-  // Fetch positions, sort, slice to TOTAL_FRAMES, create one point per satellite
+  // Fetch positions and create one point per satellite
   useEffect(() => {
     const fetchPositions = async () => {
       try {
@@ -110,8 +120,8 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
           first.total_pages > 1
             ? await Promise.all(
                 Array.from({ length: first.total_pages - 1 }, (_, i) =>
-                  getSatellitePositionsPage(i + 2)
-                )
+                  getSatellitePositionsPage(i + 2),
+                ),
               )
             : [];
         const allPositions = [first, ...remaining].flatMap((p) => p.results);
@@ -122,9 +132,14 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
         if (!collection || collection.isDestroyed()) return;
 
         const satelliteList = Object.entries(groups);
+        satelliteIdsRef.current = satelliteList.map(([id]) => id);
+
         const points = satelliteList.map(([satelliteId, positions]) => {
           const pos = positions[0];
-          const isHighlighted = highlightedSatellites.includes(parseInt(satelliteId));
+          const id = parseInt(satelliteId);
+          const isHighlighted = highlightedSatellites.includes(id);
+          const isVisible =
+            visibleSatelliteIds === null || visibleSatelliteIds.has(id);
           return collection.add({
             position: Cesium.Cartesian3.fromDegrees(
               pos.longitude,
@@ -132,13 +147,14 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
               pos.altitude * 1000,
             ),
             color: isHighlighted
-              ? Cesium.Color.fromCssColorString("#ff6b6b").withAlpha(0.9) // Red for highlighted
-              : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9), // Green for normal
-            pixelSize: isHighlighted ? 10 : 6, // Larger for highlighted
+              ? Cesium.Color.fromCssColorString("#ff6b6b").withAlpha(0.9)
+              : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9),
+            pixelSize: isHighlighted ? 10 : 6,
             outlineColor: isHighlighted
               ? Cesium.Color.fromCssColorString("#ff8e8e").withAlpha(0.4)
               : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4),
             outlineWidth: 3,
+            show: isVisible,
           });
         });
 
@@ -154,15 +170,19 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
     fetchPositions();
   }, []);
 
-  // Update point colors when highlighted satellites change
+  // Update visibility and colours when filters or highlights change
   useEffect(() => {
     const collection = pointCollectionRef.current;
     if (!collection || collection.isDestroyed()) return;
 
-    const satelliteList = Object.keys(satelliteGroupsRef.current);
+    const satelliteIds = satelliteIdsRef.current;
     pointsRef.current.forEach((point, index) => {
-      const satelliteId = parseInt(satelliteList[index]);
-      const isHighlighted = highlightedSatellites.includes(satelliteId);
+      const id = parseInt(satelliteIds[index]);
+      const isHighlighted = highlightedSatellites.includes(id);
+      const isVisible =
+        visibleSatelliteIds === null || visibleSatelliteIds.has(id);
+
+      point.show = isVisible;
       point.color = isHighlighted
         ? Cesium.Color.fromCssColorString("#ff6b6b").withAlpha(0.9)
         : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9);
@@ -171,7 +191,7 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
         ? Cesium.Color.fromCssColorString("#ff8e8e").withAlpha(0.4)
         : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4);
     });
-  }, [highlightedSatellites]);
+  }, [highlightedSatellites, visibleSatelliteIds]);
 
   // Animation loop
   useEffect(() => {
@@ -204,7 +224,6 @@ export default function SatelliteGlobe({ highlightedSatellites = [] }) {
     return () => cancelAnimationFrame(animRef.current);
   }, []);
 
-  // return the component
   return (
     <div className={styles.globeWrapper}>
       {loading && (
