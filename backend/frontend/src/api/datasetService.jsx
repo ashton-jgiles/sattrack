@@ -38,3 +38,13 @@ export const getDatasetSources = async () => {
 export const addDataset = async (payload) => {
   return await post(`/manage/dataset/add/`, payload);
 };
+
+// get review datasets returns datasets for the reviews page
+export const getReviewDatasets = async (showClosed = false) => {
+  return await get(`/manage/dataset/reviews/?closed=${showClosed}`);
+};
+
+// review dataset approves or rejects a dataset with an optional comment
+export const reviewDataset = async (datasetId, payload) => {
+  return await post(`/manage/dataset/${datasetId}/review/`, payload);
+};
