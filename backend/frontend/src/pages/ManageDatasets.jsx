@@ -3,12 +3,14 @@ import React, { useEffect, useState } from "react";
 
 // icon imports
 import EditIcon from "@mui/icons-material/Edit";
+import AddIcon from "@mui/icons-material/Add";
 
 // api imports
-import { getAllDatasets, modifyDataset } from "../api/datasetService";
+import { getAllDatasets, modifyDataset, addDataset, getDatasetSources } from "../api/datasetService";
 
 // component imports
 import DatasetProfileModal from "../components/DatasetProfileModal";
+import AddDatasetModal from "../components/AddDatasetModal";
 import PopupMessage from "../components/PopupMessage";
 
 // hooks
@@ -27,6 +29,8 @@ export default function ManageDatasets() {
   const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editTarget, setEditTarget] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [sources, setSources] = useState([]);
 
   const { message, messageFading, messageVisible, showPopupMessage } = usePopupMessage();
 
@@ -49,6 +53,15 @@ export default function ManageDatasets() {
     showPopupMessage("Dataset updated successfully");
   };
 
+  // handle add dataset
+  const handleAdd = async (payload) => {
+    const result = await addDataset(payload);
+    const updated = await getAllDatasets();
+    setDatasets(updated);
+    showPopupMessage("Dataset created successfully");
+    return result;
+  };
+
 // main component structure
   return (
     <div className={styles.page}>
@@ -58,6 +71,18 @@ export default function ManageDatasets() {
           <h2 className={styles.pageTitle}>Manage Datasets</h2>
           <p className={styles.pageSubtitle}>Review and manage satellite datasets</p>
         </div>
+        <button
+          className={styles.addButton}
+          onClick={() => {
+            getDatasetSources()
+              .then(setSources)
+              .catch((err) => console.error("Failed to load sources:", err));
+            setShowAddModal(true);
+          }}
+        >
+          <AddIcon sx={{ fontSize: 18 }} />
+          Add Dataset
+        </button>
       </div>
 
       {/* Dataset Table */}
@@ -122,7 +147,16 @@ export default function ManageDatasets() {
         />
       )}
 
-{message && (
+      {/* Add Modal */}
+      {showAddModal && (
+        <AddDatasetModal
+          sources={sources}
+          onClose={() => setShowAddModal(false)}
+          onSave={handleAdd}
+        />
+      )}
+
+      {message && (
         <PopupMessage
           message={message.message}
           type={message.type}

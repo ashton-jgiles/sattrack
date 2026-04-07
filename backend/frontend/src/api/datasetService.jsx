@@ -28,3 +28,13 @@ export const modifyDataset = async (datasetId, payload) => {
 export const deleteDataset = async (datasetId) => {
   return await del(`/manage/dataset/${datasetId}/delete/`);
 };
+
+// get dataset sources returns available CelesTrak groups not yet in the database
+export const getDatasetSources = async () => {
+  return await get(`/manage/dataset/sources/`);
+};
+
+// add dataset creates a new dataset from a CelesTrak group
+export const addDataset = async (payload) => {
+  return await post(`/manage/dataset/add/`, payload);
+};
