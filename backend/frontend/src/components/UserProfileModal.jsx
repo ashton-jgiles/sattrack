@@ -98,7 +98,7 @@ export default function UserProfileModal({ data, onClose, onSave }) {
         </div>
 
         {/* Fields */}
-        <div className={styles.tabContent}>
+        <div className={styles.fieldContent}>
           <div className={styles.fieldGrid}>
             <Field label="Full Name" value={data.full_name} />
             <EditField
