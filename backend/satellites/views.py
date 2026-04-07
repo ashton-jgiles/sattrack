@@ -10,7 +10,7 @@ class SatelliteView(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT 
+                SELECT
                     s.*,
                     CASE
                         WHEN es.satellite_id IS NOT NULL THEN 'Earth Science'
@@ -22,6 +22,7 @@ class SatelliteView(APIView):
                         ELSE 'Unknown'
                     END AS satellite_type
                 FROM satellite s
+                    INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status != 'rejected'
                     LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
                     LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
                     LEFT JOIN weather w  ON s.satellite_id = w.satellite_id
@@ -32,7 +33,7 @@ class SatelliteView(APIView):
             """)
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        
+
         return Response(data)
     
 # specific satellite gets a satellite by its id and return it
@@ -50,7 +51,6 @@ class SpecificSatelliteView(APIView):
 
 # satellite type counts returns total satellite count and a breakdown by subtype in a single query
 class SatelliteTypeCounts(APIView):
-    authentication_classes = []
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -65,6 +65,7 @@ class SatelliteTypeCounts(APIView):
                     COUNT(i.satellite_id)  AS internet,
                     COUNT(r.satellite_id)  AS research
                 FROM satellite s
+                    INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status != 'rejected'
                     LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
                     LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
                     LEFT JOIN weather         w  ON s.satellite_id = w.satellite_id
@@ -96,17 +97,20 @@ class AllTrajectory(APIView):
         offset = (page - 1) * page_size
 
         with connection.cursor() as cursor:
-            # total active satellites for pagination metadata
-            cursor.execute(
-                "SELECT COUNT(*) FROM satellite WHERE deleted_at IS NULL"
-            )
+            # total active satellites in non-rejected datasets for pagination metadata
+            cursor.execute("""
+                SELECT COUNT(*) FROM satellite s
+                INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status IN ('approved', 'pending')
+                WHERE s.deleted_at IS NULL
+            """)
             total_satellites = cursor.fetchone()[0]
 
             # satellite IDs for this page
-            cursor.execute(
-                "SELECT satellite_id FROM satellite WHERE deleted_at IS NULL ORDER BY satellite_id LIMIT %s OFFSET %s",
-                [page_size, offset]
-            )
+            cursor.execute("""
+                SELECT s.satellite_id FROM satellite s
+                INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status IN ('approved', 'pending')
+                WHERE s.deleted_at IS NULL ORDER BY s.satellite_id LIMIT %s OFFSET %s
+            """, [page_size, offset])
             sat_ids = [row[0] for row in cursor.fetchall()]
 
             if not sat_ids:
@@ -150,9 +154,12 @@ class AllTrajectory(APIView):
 # recent deployments gets all satelites deployed in the last 5 years
 class RecentDeployments(APIView):
     def get(self, request):
+        level = getattr(request.user, 'level_access', 1)
+        dataset_join = "" if level >= 3 else "INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status = 'approved'"
+
         with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT 
+            cursor.execute(f"""
+                SELECT
                     s.*,
                     dp.deploy_date_time,
                     CASE
@@ -165,6 +172,7 @@ class RecentDeployments(APIView):
                         ELSE 'Unknown'
                     END AS satellite_type
                 FROM satellite s
+                    {dataset_join}
                     INNER JOIN deploys_payload dp ON s.satellite_id = dp.satellite_id
                     LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
                     LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
