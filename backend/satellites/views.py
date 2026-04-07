@@ -8,8 +8,11 @@ from backend.throttles import PositionsThrottle
 # satllite view to list all satellites and their subclass type
 class SatelliteView(APIView):
     def get(self, request):
+        level = getattr(request.user, 'level_access', 1)
+        status_filter = "!= 'rejected'" if level >= 3 else "= 'approved'"
+
         with connection.cursor() as cursor:
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT
                     s.*,
                     CASE
@@ -22,7 +25,7 @@ class SatelliteView(APIView):
                         ELSE 'Unknown'
                     END AS satellite_type
                 FROM satellite s
-                    INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status != 'rejected'
+                    INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status {status_filter}
                     LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
                     LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
                     LEFT JOIN weather w  ON s.satellite_id = w.satellite_id
@@ -54,8 +57,11 @@ class SatelliteTypeCounts(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
+        level = getattr(request.user, 'level_access', 1)
+        status_filter = "!= 'rejected'" if level >= 3 else "= 'approved'"
+
         with connection.cursor() as cursor:
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT
                     COUNT(s.satellite_id)  AS total,
                     COUNT(es.satellite_id) AS earth_science,
@@ -65,7 +71,7 @@ class SatelliteTypeCounts(APIView):
                     COUNT(i.satellite_id)  AS internet,
                     COUNT(r.satellite_id)  AS research
                 FROM satellite s
-                    INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status != 'rejected'
+                    INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status {status_filter}
                     LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
                     LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
                     LEFT JOIN weather         w  ON s.satellite_id = w.satellite_id
@@ -81,7 +87,6 @@ class SatelliteTypeCounts(APIView):
 
 # all trajectory returns paginated trajectory rows, scoped to a satellite batch per page
 class AllTrajectory(APIView):
-    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [PositionsThrottle]
 
@@ -96,27 +101,33 @@ class AllTrajectory(APIView):
         )
         offset = (page - 1) * page_size
 
+        level = getattr(request.user, 'level_access', 1)
+        status_filter = "IN ('approved', 'pending')" if level >= 3 else "= 'approved'"
+
         with connection.cursor() as cursor:
-            # total active satellites in non-rejected datasets for pagination metadata
-            cursor.execute("""
+            # total active satellites in visible datasets for pagination metadata
+            cursor.execute(f"""
                 SELECT COUNT(*) FROM satellite s
-                INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status IN ('approved', 'pending')
+                INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status {status_filter}
                 WHERE s.deleted_at IS NULL
             """)
             total_satellites = cursor.fetchone()[0]
 
-            # satellite IDs for this page
-            cursor.execute("""
-                SELECT s.satellite_id FROM satellite s
-                INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status IN ('approved', 'pending')
+            # satellite IDs for this page, with review status to identify pending
+            cursor.execute(f"""
+                SELECT s.satellite_id, d.review_status FROM satellite s
+                INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status {status_filter}
                 WHERE s.deleted_at IS NULL ORDER BY s.satellite_id LIMIT %s OFFSET %s
             """, [page_size, offset])
-            sat_ids = [row[0] for row in cursor.fetchall()]
+            sat_rows = cursor.fetchall()
+            sat_ids = [row[0] for row in sat_rows]
+            pending_satellite_ids = [row[0] for row in sat_rows if row[1] == 'pending']
 
             if not sat_ids:
                 total_pages = max(1, -(-total_satellites // page_size))
                 return Response({
                     'results': [],
+                    'pending_satellite_ids': [],
                     'page': page,
                     'page_size': page_size,
                     'total_satellites': total_satellites,
@@ -145,6 +156,7 @@ class AllTrajectory(APIView):
 
         return Response({
             'results': results,
+            'pending_satellite_ids': pending_satellite_ids,
             'page': page,
             'page_size': page_size,
             'total_satellites': total_satellites,

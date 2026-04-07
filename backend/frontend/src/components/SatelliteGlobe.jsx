@@ -124,7 +124,11 @@ export default function SatelliteGlobe({
                 ),
               )
             : [];
-        const allPositions = [first, ...remaining].flatMap((p) => p.results);
+        const allPages = [first, ...remaining];
+        const allPositions = allPages.flatMap((p) => p.results);
+        const pendingSatelliteIds = new Set(
+          allPages.flatMap((p) => p.pending_satellite_ids ?? [])
+        );
         const groups = groupBySatellite(allPositions);
         satelliteGroupsRef.current = groups;
 
@@ -138,21 +142,30 @@ export default function SatelliteGlobe({
           const pos = positions[0];
           const id = parseInt(satelliteId);
           const isHighlighted = highlightedSatellites.includes(id);
+          const isPending = pendingSatelliteIds.has(id);
           const isVisible =
             visibleSatelliteIds === null || visibleSatelliteIds.has(id);
+
+          const baseColor = isHighlighted
+            ? "#ff6b6b"
+            : isPending
+            ? "#f59e0b"
+            : "#22c55e";
+          const outlineColor = isHighlighted
+            ? "#ff8e8e"
+            : isPending
+            ? "#fbbf24"
+            : "#4ade80";
+
           return collection.add({
             position: Cesium.Cartesian3.fromDegrees(
               pos.longitude,
               pos.latitude,
               pos.altitude * 1000,
             ),
-            color: isHighlighted
-              ? Cesium.Color.fromCssColorString("#ff6b6b").withAlpha(0.9)
-              : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9),
+            color: Cesium.Color.fromCssColorString(baseColor).withAlpha(0.9),
             pixelSize: isHighlighted ? 10 : 6,
-            outlineColor: isHighlighted
-              ? Cesium.Color.fromCssColorString("#ff8e8e").withAlpha(0.4)
-              : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4),
+            outlineColor: Cesium.Color.fromCssColorString(outlineColor).withAlpha(0.4),
             outlineWidth: 3,
             show: isVisible,
           });
