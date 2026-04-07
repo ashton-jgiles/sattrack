@@ -147,12 +147,12 @@ export default function SatelliteGlobe({
             visibleSatelliteIds === null || visibleSatelliteIds.has(id);
 
           const baseColor = isHighlighted
-            ? "#ff6b6b"
+            ? "#3b82f6"
             : isPending
             ? "#f59e0b"
             : "#22c55e";
           const outlineColor = isHighlighted
-            ? "#ff8e8e"
+            ? "#60a5fa"
             : isPending
             ? "#fbbf24"
             : "#4ade80";
@@ -164,9 +164,11 @@ export default function SatelliteGlobe({
               pos.altitude * 1000,
             ),
             color: Cesium.Color.fromCssColorString(baseColor).withAlpha(0.9),
-            pixelSize: isHighlighted ? 10 : 6,
-            outlineColor: Cesium.Color.fromCssColorString(outlineColor).withAlpha(0.4),
-            outlineWidth: 3,
+            pixelSize: isHighlighted ? 14 : 6,
+            outlineColor: isHighlighted
+              ? Cesium.Color.WHITE.withAlpha(0.4)
+              : Cesium.Color.fromCssColorString(outlineColor).withAlpha(0.4),
+            outlineWidth: isHighlighted ? 2 : 3,
             show: isVisible,
           });
         });
@@ -197,12 +199,13 @@ export default function SatelliteGlobe({
 
       point.show = isVisible;
       point.color = isHighlighted
-        ? Cesium.Color.fromCssColorString("#ff6b6b").withAlpha(0.9)
+        ? Cesium.Color.fromCssColorString("#3b82f6").withAlpha(0.9)
         : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9);
-      point.pixelSize = isHighlighted ? 10 : 6;
+      point.pixelSize = isHighlighted ? 14 : 6;
       point.outlineColor = isHighlighted
-        ? Cesium.Color.fromCssColorString("#ff8e8e").withAlpha(0.4)
+        ? Cesium.Color.WHITE.withAlpha(0.4)
         : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4);
+      point.outlineWidth = isHighlighted ? 2 : 3;
     });
   }, [highlightedSatellites, visibleSatelliteIds]);
 

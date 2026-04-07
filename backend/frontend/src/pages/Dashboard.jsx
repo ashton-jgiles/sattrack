@@ -35,12 +35,10 @@ import PersonIcon from "@mui/icons-material/Person";
 
 // component imports
 import SatelliteGlobe from "../components/SatelliteGlobe";
-import SatelliteListModal from "../components/SatelliteListModal";
 
 // api imports
 import {
   getSatelliteCounts,
-  getRecentDeployments,
   getAllSatellites,
   getSatelliteProfile,
 } from "../api/satelliteService";
@@ -258,9 +256,6 @@ function OverviewPage() {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [allSatellites, setAllSatellites] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [categorySatellites, setCategorySatellites] = useState([]);
   const [highlightedSatellites, setHighlightedSatellites] = useState([]);
   const [selectedSatelliteId, setSelectedSatelliteId] = useState(null);
 
@@ -273,11 +268,9 @@ function OverviewPage() {
   const [minVelocity, setMinVelocity] = useState("");
   const [maxVelocity, setMaxVelocity] = useState("");
 
-  // Derived option lists for the dropdowns
+  // Derived option lists
   const satelliteTypes = useMemo(
-    () => [
-      ...new Set(allSatellites.map((s) => s.satellite_type).filter(Boolean)),
-    ],
+    () => [...new Set(allSatellites.map((s) => s.satellite_type).filter(Boolean))],
     [allSatellites],
   );
   const orbitTypes = useMemo(
@@ -285,7 +278,6 @@ function OverviewPage() {
     [allSatellites],
   );
 
-  // Whether any filter is currently active
   const isFiltered =
     searchTerm.trim() !== "" ||
     satelliteTypeFilter !== "" ||
@@ -295,56 +287,41 @@ function OverviewPage() {
     minVelocity !== "" ||
     maxVelocity !== "";
 
-  // The set of satellite IDs that pass current filters.
-  // null means "show all" (no filter active).
-  const visibleSatelliteIds = useMemo(() => {
-    if (!isFiltered) return null;
-
+  const filteredSatellites = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
     const minAlt = parseFloat(minAltitude);
     const maxAlt = parseFloat(maxAltitude);
     const minVel = parseFloat(minVelocity);
     const maxVel = parseFloat(maxVelocity);
 
-    const filtered = allSatellites.filter((sat) => {
+    return allSatellites.filter((sat) => {
       if (search) {
         const matchesSearch =
           sat.name.toLowerCase().includes(search) ||
           (sat.norad_id && sat.norad_id.toString().includes(search));
         if (!matchesSearch) return false;
       }
-
-      if (satelliteTypeFilter && sat.satellite_type !== satelliteTypeFilter)
-        return false;
+      if (satelliteTypeFilter && sat.satellite_type !== satelliteTypeFilter) return false;
       if (orbitTypeFilter && sat.orbit_type !== orbitTypeFilter) return false;
-
       const altitude = Number(sat.altitude);
       if (!isNaN(minAlt) && !isNaN(altitude) && altitude < minAlt) return false;
       if (!isNaN(maxAlt) && !isNaN(altitude) && altitude > maxAlt) return false;
       if (!isNaN(minAlt) && isNaN(altitude) && minAltitude !== "") return false;
       if (!isNaN(maxAlt) && isNaN(altitude) && maxAltitude !== "") return false;
-
       const velocity = Number(sat.velocity);
       if (!isNaN(minVel) && !isNaN(velocity) && velocity < minVel) return false;
       if (!isNaN(maxVel) && !isNaN(velocity) && velocity > maxVel) return false;
       if (!isNaN(minVel) && isNaN(velocity) && minVelocity !== "") return false;
       if (!isNaN(maxVel) && isNaN(velocity) && maxVelocity !== "") return false;
-
       return true;
     });
+  }, [allSatellites, searchTerm, satelliteTypeFilter, orbitTypeFilter, minAltitude, maxAltitude, minVelocity, maxVelocity]);
 
-    return new Set(filtered.map((s) => s.satellite_id));
-  }, [
-    isFiltered,
-    allSatellites,
-    searchTerm,
-    satelliteTypeFilter,
-    orbitTypeFilter,
-    minAltitude,
-    maxAltitude,
-    minVelocity,
-    maxVelocity,
-  ]);
+  // Satellite IDs visible on globe (null = show all)
+  const visibleSatelliteIds = useMemo(
+    () => isFiltered ? new Set(filteredSatellites.map((s) => s.satellite_id)) : null,
+    [isFiltered, filteredSatellites],
+  );
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -356,44 +333,19 @@ function OverviewPage() {
     setMaxVelocity("");
   };
 
-  const handleStatClick = async (category) => {
-    setSelectedCategory(category);
-    setLoading(true);
-    try {
-      const typeMap = {
-        earth: "Earth Science",
-        oceanic: "Oceanic Science",
-        navigation: "Navigation",
-        internet: "Internet",
-        research: "Research",
-        weather: "Weather",
-      };
-      const filtered =
-        category === "total"
-          ? allSatellites
-          : allSatellites.filter(
-              (sat) => sat.satellite_type === typeMap[category],
-            );
-      setCategorySatellites(filtered);
-      setShowModal(true);
-    } catch (err) {
-      console.error("Failed to load satellites:", err);
-    } finally {
-      setLoading(false);
-    }
+  const handleSelectSatellite = (satelliteId) => {
+    setHighlightedSatellites([satelliteId]);
+    setSelectedSatelliteId(satelliteId);
   };
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [counts, datasets, recentDeployments, satellites] =
-          await Promise.all([
-            getSatelliteCounts(),
-            getTotalDatasets(),
-            getRecentDeployments(),
-            getAllSatellites(),
-          ]);
-
+        const [counts, datasets, satellites] = await Promise.all([
+          getSatelliteCounts(),
+          getTotalDatasets(),
+          getAllSatellites(),
+        ]);
         setAllSatellites(satellites);
         setStats({
           total: counts.total,
@@ -404,7 +356,6 @@ function OverviewPage() {
           internet: counts.internet,
           research: counts.research,
           weather: counts.weather,
-          recentDeployments,
         });
       } catch (err) {
         console.error("Failed to fetch stats:", err);
@@ -412,12 +363,11 @@ function OverviewPage() {
         setLoading(false);
       }
     };
-
     fetchStats();
   }, []);
 
-  const inputStyle = {
-    padding: "0.45rem 0.75rem",
+  const selectStyle = {
+    padding: "0.4rem 0.6rem",
     border: "1px solid #1e293b",
     borderRadius: "0.375rem",
     backgroundColor: "#0a1628",
@@ -427,11 +377,6 @@ function OverviewPage() {
     outline: "none",
     width: "100%",
   };
-
-  const visibleCount =
-    visibleSatelliteIds === null
-      ? allSatellites.length
-      : visibleSatelliteIds.size;
 
   return (
     <div className={styles.content}>
@@ -443,168 +388,23 @@ function OverviewPage() {
         </p>
       </div>
 
-      {/* Stats row */}
+      {/* Stats row — static display only */}
       <div className={styles.statsRow}>
-        <StatCard
-          label="Total Satellites"
-          value={stats.total}
-          icon={<SatelliteAltIcon sx={{ fontSize: 20 }} />}
-          loading={loading}
-          onClick={() => handleStatClick("total")}
-        />
-        <StatCard
-          label="Earth Satellites"
-          value={stats.earth}
-          icon={<PublicIcon sx={{ fontSize: 20 }} />}
-          loading={loading}
-          onClick={() => handleStatClick("earth")}
-        />
-        <StatCard
-          label="Oceanic Satellites"
-          value={stats.oceanic}
-          icon={<WavesIcon sx={{ fontSize: 20 }} />}
-          loading={loading}
-          onClick={() => handleStatClick("oceanic")}
-        />
-        <StatCard
-          label="Navigation Satellites"
-          value={stats.navigation}
-          icon={<ExploreIcon sx={{ fontSize: 20 }} />}
-          loading={loading}
-          onClick={() => handleStatClick("navigation")}
-        />
-        <StatCard
-          label="Internet Satellites"
-          value={stats.internet}
-          icon={<WifiIcon sx={{ fontSize: 20 }} />}
-          loading={loading}
-          onClick={() => handleStatClick("internet")}
-        />
-        <StatCard
-          label="Research Satellites"
-          value={stats.research}
-          icon={<ScienceIcon sx={{ fontSize: 20 }} />}
-          loading={loading}
-          onClick={() => handleStatClick("research")}
-        />
-        <StatCard
-          label="Weather Satellites"
-          value={stats.weather}
-          icon={<AirIcon sx={{ fontSize: 20 }} />}
-          loading={loading}
-          onClick={() => handleStatClick("weather")}
-        />
+        <StatCard label="Total Satellites" value={stats.total} icon={<SatelliteAltIcon sx={{ fontSize: 20 }} />} loading={loading} />
+        <StatCard label="Earth Satellites" value={stats.earth} icon={<PublicIcon sx={{ fontSize: 20 }} />} loading={loading} />
+        <StatCard label="Oceanic Satellites" value={stats.oceanic} icon={<WavesIcon sx={{ fontSize: 20 }} />} loading={loading} />
+        <StatCard label="Navigation Satellites" value={stats.navigation} icon={<ExploreIcon sx={{ fontSize: 20 }} />} loading={loading} />
+        <StatCard label="Internet Satellites" value={stats.internet} icon={<WifiIcon sx={{ fontSize: 20 }} />} loading={loading} />
+        <StatCard label="Research Satellites" value={stats.research} icon={<ScienceIcon sx={{ fontSize: 20 }} />} loading={loading} />
+        <StatCard label="Weather Satellites" value={stats.weather} icon={<AirIcon sx={{ fontSize: 20 }} />} loading={loading} />
       </div>
 
-      {/* Filter bar */}
-      <div className={styles.filterBar}>
-        {/* Search */}
-        <div className={styles.filterSearch}>
-          <SearchIcon sx={{ fontSize: 16, color: "#475569", flexShrink: 0 }} />
-          <input
-            type="text"
-            placeholder="Search by name or NORAD ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ ...inputStyle, paddingLeft: "0.25rem" }}
-          />
-        </div>
-
-        {/* Category dropdown */}
-        <select
-          value={satelliteTypeFilter}
-          onChange={(e) => setSatelliteTypeFilter(e.target.value)}
-          style={inputStyle}
-          className={styles.filterSelect}
-        >
-          <option value="">All Categories</option>
-          {satelliteTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-
-        {/* Orbit dropdown */}
-        <select
-          value={orbitTypeFilter}
-          onChange={(e) => setOrbitTypeFilter(e.target.value)}
-          style={inputStyle}
-          className={styles.filterSelect}
-        >
-          <option value="">All Orbits</option>
-          {orbitTypes.map((orbit) => (
-            <option key={orbit} value={orbit}>
-              {orbit}
-            </option>
-          ))}
-        </select>
-
-        {/* Altitude range */}
-        <input
-          type="number"
-          placeholder="Min altitude"
-          value={minAltitude}
-          onChange={(e) => setMinAltitude(e.target.value)}
-          style={inputStyle}
-          className={styles.filterInput}
-        />
-        <input
-          type="number"
-          placeholder="Max altitude"
-          value={maxAltitude}
-          onChange={(e) => setMaxAltitude(e.target.value)}
-          style={inputStyle}
-          className={styles.filterInput}
-        />
-
-        {/* Velocity range */}
-        <input
-          type="number"
-          placeholder="Min velocity"
-          value={minVelocity}
-          onChange={(e) => setMinVelocity(e.target.value)}
-          style={inputStyle}
-          className={styles.filterInput}
-        />
-        <input
-          type="number"
-          placeholder="Max velocity"
-          value={maxVelocity}
-          onChange={(e) => setMaxVelocity(e.target.value)}
-          style={inputStyle}
-          className={styles.filterInput}
-        />
-
-        {/* Clear + count */}
-        <div className={styles.filterActions}>
-          {isFiltered && (
-            <button className={styles.filterClear} onClick={clearFilters}>
-              <CloseIcon sx={{ fontSize: 14 }} /> Clear
-            </button>
-          )}
-          <span className={styles.filterCount}>
-            {visibleCount} / {allSatellites.length}
-          </span>
-        </div>
-      </div>
-
-      {/* Satellite info panel */}
-      {selectedSatelliteId && (
-        <SatelliteInfoPanel
-          satelliteId={selectedSatelliteId}
-          onClose={() => setSelectedSatelliteId(null)}
-        />
-      )}
-
-      {/* Globe + Deployments side by side */}
+      {/* Globe + Satellite Panel */}
       <div className={styles.globeRow}>
         {/* Left: Globe */}
         <div className={styles.globeCard}>
           <div className={styles.globeCardHeader}>
-            <span className={styles.globeCardTitle}>
-              Live Satellite Positions
-            </span>
+            <span className={styles.globeCardTitle}>Live Satellite Positions</span>
           </div>
           <div className={styles.globeCardBody}>
             <SatelliteGlobe
@@ -614,40 +414,79 @@ function OverviewPage() {
           </div>
         </div>
 
-        {/* Right: Recent Deployments */}
-        <div className={styles.deploymentCard}>
-          <div className={styles.deploymentCardHeader}>
-            <span className={styles.deploymentCardTitle}>
-              Satellites Deployed in the Last 5 Years
+        {/* Right: Satellite Search Panel */}
+        <div className={styles.satellitePanel}>
+          {/* Panel Header */}
+          <div className={styles.satellitePanelHeader}>
+            <span className={styles.satellitePanelTitle}>Satellites</span>
+            <span className={styles.satellitePanelCount}>
+              {filteredSatellites.length} / {allSatellites.length}
             </span>
           </div>
-          <div className={styles.deploymentList}>
+
+          {/* Search */}
+          <div className={styles.panelSearchWrapper}>
+            <SearchIcon sx={{ fontSize: 15, color: "#475569", flexShrink: 0 }} />
+            <input
+              className={styles.panelSearchInput}
+              type="text"
+              placeholder="Search by name or NORAD ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Globe Filters */}
+          <div className={styles.panelFilters}>
+            <div className={styles.panelFiltersLabel}>
+              <span>Globe Filters</span>
+              {isFiltered && (
+                <button className={styles.panelFiltersClear} onClick={clearFilters}>
+                  <CloseIcon sx={{ fontSize: 12 }} /> Clear
+                </button>
+              )}
+            </div>
+            <div className={styles.panelFiltersRow}>
+              <select value={satelliteTypeFilter} onChange={(e) => setSatelliteTypeFilter(e.target.value)} style={selectStyle}>
+                <option value="">All Categories</option>
+                {satelliteTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <select value={orbitTypeFilter} onChange={(e) => setOrbitTypeFilter(e.target.value)} style={selectStyle}>
+                <option value="">All Orbits</option>
+                {orbitTypes.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+            <div className={styles.panelFiltersRow}>
+              <input style={selectStyle} type="number" placeholder="Min altitude" value={minAltitude} onChange={(e) => setMinAltitude(e.target.value)} />
+              <input style={selectStyle} type="number" placeholder="Max altitude" value={maxAltitude} onChange={(e) => setMaxAltitude(e.target.value)} />
+            </div>
+            <div className={styles.panelFiltersRow}>
+              <input style={selectStyle} type="number" placeholder="Min velocity" value={minVelocity} onChange={(e) => setMinVelocity(e.target.value)} />
+              <input style={selectStyle} type="number" placeholder="Max velocity" value={maxVelocity} onChange={(e) => setMaxVelocity(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Satellite List */}
+          <div className={styles.satelliteList}>
             {loading ? (
-              <div className={styles.deploymentItem}>
-                <span className={styles.deploymentMeta}>Loading...</span>
-              </div>
-            ) : stats.recentDeployments?.length === 0 ? (
-              <div className={styles.deploymentItem}>
-                <span className={styles.deploymentMeta}>
-                  No recent deployments
-                </span>
-              </div>
+              <div className={styles.satelliteListEmpty}>Loading satellites...</div>
+            ) : filteredSatellites.length === 0 ? (
+              <div className={styles.satelliteListEmpty}>No satellites match filters</div>
             ) : (
-              stats.recentDeployments?.map((sat) => (
-                <div key={sat.satellite_id} className={styles.deploymentItem}>
-                  <div className={styles.deploymentDot} />
-                  <div className={styles.deploymentInfo}>
-                    <span className={styles.deploymentName}>
-                      {sat.satellite_type} - {sat.name} - {sat.norad_id}
-                    </span>
-                    <span className={styles.deploymentMeta}>
-                      {sat.object_id} · {sat.orbit_type} · {sat.classification}
+              filteredSatellites.map((sat) => (
+                <div
+                  key={sat.satellite_id}
+                  className={`${styles.satelliteItem} ${selectedSatelliteId === sat.satellite_id ? styles.satelliteItemSelected : ""}`}
+                  onClick={() => handleSelectSatellite(sat.satellite_id)}
+                >
+                  <div className={styles.satelliteItemDot} />
+                  <div className={styles.satelliteItemInfo}>
+                    <span className={styles.satelliteItemName}>{sat.name}</span>
+                    <span className={styles.satelliteItemMeta}>
+                      {sat.satellite_type} · {sat.norad_id}
                     </span>
                   </div>
-                  <span className={styles.deploymentDate}>
-                    Deploy Date:{" "}
-                    {new Date(sat.deploy_date_time).toLocaleDateString()}
-                  </span>
+                  <span className={styles.satelliteItemOrbit}>{sat.orbit_type}</span>
                 </div>
               ))
             )}
@@ -655,16 +494,13 @@ function OverviewPage() {
         </div>
       </div>
 
-      {/* Satellite List Modal */}
-      {showModal && (
-        <SatelliteListModal
-          category={selectedCategory}
-          satellites={categorySatellites}
-          onClose={() => setShowModal(false)}
-          onSatelliteClick={(satelliteId) => {
-            setHighlightedSatellites([satelliteId]);
-            setSelectedSatelliteId(satelliteId);
-            setShowModal(false);
+      {/* Satellite Info Panel — shown below globe row when a satellite is selected */}
+      {selectedSatelliteId && (
+        <SatelliteInfoPanel
+          satelliteId={selectedSatelliteId}
+          onClose={() => {
+            setSelectedSatelliteId(null);
+            setHighlightedSatellites([]);
           }}
         />
       )}
