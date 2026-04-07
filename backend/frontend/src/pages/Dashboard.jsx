@@ -445,14 +445,6 @@ function OverviewPage() {
 
   return (
     <div className={styles.overviewLayout}>
-      <div>
-        <h2 className={styles.pageTitle}>Dashboard Overview</h2>
-        <p className={styles.pageSubtitle}>
-          Real-time satellite tracking and monitoring
-          {stats.datasets ? ` with ${stats.datasets} datasets available` : ""}
-        </p>
-      </div>
-
       {/* Stats row or Satellite Info Panel */}
       {selectedSatelliteId ? (
         <SatelliteInfoPanel
