@@ -159,7 +159,6 @@ function SatelliteInfoPanel({ satelliteId, onClose }) {
     if (!satelliteId) return;
     setLoading(true);
     setError(null);
-    setProfile(null);
     getSatelliteProfile(satelliteId)
       .then((data) => setProfile(data))
       .catch((err) => {
@@ -169,7 +168,7 @@ function SatelliteInfoPanel({ satelliteId, onClose }) {
       .finally(() => setLoading(false));
   }, [satelliteId]);
 
-  if (loading) {
+  if (loading && !profile) {
     return (
       <div className={styles.infoPanel}>
         <div className={styles.infoPanelLoading}>Loading satellite data...</div>
@@ -201,7 +200,7 @@ function SatelliteInfoPanel({ satelliteId, onClose }) {
     <div className={styles.infoPanel}>
       <div className={styles.infoPanelHeader}>
         <div className={styles.infoPanelTitleGroup}>
-          <SatelliteAltIcon sx={{ fontSize: 18, color: "#3b82f6" }} />
+          <SatelliteAltIcon sx={{ fontSize: 18, color: "#3b82f6", flexShrink: 0 }} />
           <span className={styles.infoPanelTitle}>
             {s.name ?? "Unknown Satellite"}
           </span>
@@ -210,6 +209,9 @@ function SatelliteInfoPanel({ satelliteId, onClose }) {
           )}
           {s.satellite_type && (
             <span className={styles.infoPanelBadgeAlt}>{s.satellite_type}</span>
+          )}
+          {s.description && (
+            <span className={styles.infoPanelDescription}>{s.description}</span>
           )}
         </div>
         <button className={styles.infoPanelClose} onClick={onClose}>
@@ -223,7 +225,6 @@ function SatelliteInfoPanel({ satelliteId, onClose }) {
           <InfoField label="Name" value={s.name} />
           <InfoField label="NORAD ID" value={s.norad_id} />
           <InfoField label="Orbit Type" value={s.orbit_type} />
-          <InfoField label="Description" value={s.description} />
         </div>
 
         <div className={styles.infoPanelSection}>
