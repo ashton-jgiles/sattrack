@@ -119,23 +119,19 @@ class AddDataset(APIView):
         with connection.cursor() as cursor:
             # restore a soft-deleted dataset — no CelesTrak validation needed
             cursor.execute(
-                "SELECT dataset_id FROM dataset WHERE source_url = %s AND deleted_at IS NOT NULL",
+                "SELECT dataset_id, deleted_at FROM dataset WHERE source_url = %s AND deleted_at IS NOT NULL",
                 [source_url]
             )
             existing = cursor.fetchone()
             if existing:
-                dataset_id = existing[0]
+                dataset_id, dataset_deleted_at = existing
                 cursor.execute(
                     "UPDATE dataset SET deleted_at = NULL, dataset_name = %s, description = %s, pull_frequency = %s WHERE dataset_id = %s",
                     [dataset_name, description, pull_frequency, dataset_id]
                 )
                 cursor.execute(
-                    """
-                    UPDATE satellite SET deleted_at = NULL
-                    WHERE dataset_id = %s
-                    AND deleted_at = (SELECT deleted_at FROM dataset WHERE dataset_id = %s)
-                    """,
-                    [dataset_id, dataset_id]
+                    "UPDATE satellite SET deleted_at = NULL WHERE dataset_id = %s AND deleted_at = %s",
+                    [dataset_id, dataset_deleted_at]
                 )
                 return Response({'message': 'Dataset restored successfully', 'dataset_id': dataset_id}, status=200)
 
