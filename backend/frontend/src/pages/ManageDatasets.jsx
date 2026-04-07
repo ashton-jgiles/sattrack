@@ -96,7 +96,7 @@ export default function ManageDatasets() {
         <div>
           <h2 className={styles.pageTitle}>Manage Datasets</h2>
           <p className={styles.pageSubtitle}>
-            Review and manage satellite datasets
+            View, manage and remove datasets
           </p>
         </div>
         <button
