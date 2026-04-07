@@ -166,18 +166,18 @@ class GetUserProfile(APIView):
     def get(self, request, username):
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT 
-                    u.username, 
-                    u.full_name, 
-                    u.level_access, 
+                SELECT
+                    u.username,
+                    u.full_name,
+                    u.level_access,
                     CASE
                         WHEN ad.username IS NOT NULL THEN 'Administrator'
                         WHEN am.username IS NOT NULL THEN 'Amateur'
                         WHEN da.username IS NOT NULL THEN 'Data Analyst'
                         WHEN s.username IS NOT NULL THEN 'Scientist'
                         ELSE 'Unknown'
-                    END AS user_type 
-                FROM user u  
+                    END AS user_type
+                FROM user u
                     LEFT JOIN administrator ad ON u.username = ad.username
                     LEFT JOIN amateur am ON u.username = am.username
                     LEFT JOIN data_analyst da ON u.username = da.username
@@ -186,10 +186,33 @@ class GetUserProfile(APIView):
             columns = [col[0] for col in cursor.description]
             row = cursor.fetchone()
 
-        if not row:
-            return Response({'error': 'user not found'}, status=404)
-        
-        return Response(dict(zip(columns, row)))
+            if not row:
+                return Response({'error': 'user not found'}, status=404)
+
+            data = dict(zip(columns, row))
+
+            # Fetch subtype-specific fields
+            subtype_data = {}
+            user_type = data['user_type']
+            if user_type in ('Administrator', 'Data Analyst'):
+                table = 'administrator' if user_type == 'Administrator' else 'data_analyst'
+                cursor.execute(f"SELECT employee_id FROM {table} WHERE username = %s", [username])
+                r = cursor.fetchone()
+                if r:
+                    subtype_data['employee_id'] = r[0]
+            elif user_type == 'Scientist':
+                cursor.execute("SELECT profession FROM scientist WHERE username = %s", [username])
+                r = cursor.fetchone()
+                if r:
+                    subtype_data['profession'] = r[0]
+            elif user_type == 'Amateur':
+                cursor.execute("SELECT interests FROM amateur WHERE username = %s", [username])
+                r = cursor.fetchone()
+                if r:
+                    subtype_data['interests'] = r[0]
+
+        data['subtype_data'] = subtype_data
+        return Response(data)
     
 class ModifyUser(APIView):
     TYPE_TABLE_MAP = {
@@ -210,6 +233,7 @@ class ModifyUser(APIView):
         original_username = request.data.get('original_username')
         level_access      = request.data.get('level_access')
         user_type         = request.data.get('user_type')
+        subtype_data      = request.data.get('subtype_data', {})
 
         if not original_username:
             return Response({'error': 'original_username is required'}, status=400)
@@ -242,7 +266,141 @@ class ModifyUser(APIView):
                 sql, default_val = self.TYPE_INSERT[new_table]
                 cursor.execute(sql, [original_username, default_val])
 
+            # Update subtype-specific fields if provided
+            if new_table in ('administrator', 'data_analyst') and 'employee_id' in subtype_data:
+                cursor.execute(
+                    f"UPDATE {new_table} SET employee_id = %s WHERE username = %s",
+                    [subtype_data['employee_id'], original_username]
+                )
+            elif new_table == 'scientist' and 'profession' in subtype_data:
+                cursor.execute(
+                    "UPDATE scientist SET profession = %s WHERE username = %s",
+                    [subtype_data['profession'], original_username]
+                )
+
         return Response({'message': 'User updated successfully'})
+
+
+class UpdateOwnProfile(APIView):
+    def post(self, request):
+        current_username = request.user.username
+        new_username     = request.data.get('username', '').strip()
+        full_name        = request.data.get('full_name', '').strip()
+        subtype_data     = request.data.get('subtype_data', {})
+
+        if not full_name:
+            return Response({'error': 'full_name is required'}, status=400)
+        if not new_username:
+            return Response({'error': 'username is required'}, status=400)
+
+        username_changed = new_username != current_username
+
+        with transaction.atomic(), connection.cursor() as cursor:
+            # Check new username isn't already taken
+            if username_changed:
+                cursor.execute("SELECT username FROM user WHERE username = %s", [new_username])
+                if cursor.fetchone():
+                    return Response({'error': 'Username already taken'}, status=409)
+
+            cursor.execute(
+                "UPDATE user SET full_name = %s WHERE username = %s",
+                [full_name, current_username]
+            )
+
+            if username_changed:
+                # Temporarily disable FK checks so we can rename the PK
+                cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+                cursor.execute(
+                    "UPDATE user SET username = %s WHERE username = %s",
+                    [new_username, current_username]
+                )
+                for table in ['administrator', 'data_analyst', 'scientist', 'amateur']:
+                    cursor.execute(
+                        f"UPDATE {table} SET username = %s WHERE username = %s",
+                        [new_username, current_username]
+                    )
+                cursor.execute(
+                    "UPDATE reviews SET reviewed_by = %s WHERE reviewed_by = %s",
+                    [new_username, current_username]
+                )
+                cursor.execute(
+                    "UPDATE uploads SET uploaded_by = %s WHERE uploaded_by = %s",
+                    [new_username, current_username]
+                )
+                cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+            # Determine user's current subtype table (use new_username after rename)
+            active_username = new_username if username_changed else current_username
+            user_type = None
+            for role, table in [
+                ('Administrator', 'administrator'),
+                ('Data Analyst',  'data_analyst'),
+                ('Scientist',     'scientist'),
+                ('Amateur',       'amateur'),
+            ]:
+                cursor.execute(f"SELECT username FROM {table} WHERE username = %s", [active_username])
+                if cursor.fetchone():
+                    user_type = role
+                    break
+
+            # Update subtype-specific fields
+            if user_type in ('Administrator', 'Data Analyst'):
+                table = 'administrator' if user_type == 'Administrator' else 'data_analyst'
+                if 'employee_id' in subtype_data:
+                    cursor.execute(
+                        f"UPDATE {table} SET employee_id = %s WHERE username = %s",
+                        [subtype_data['employee_id'], active_username]
+                    )
+            elif user_type == 'Scientist' and 'profession' in subtype_data:
+                cursor.execute(
+                    "UPDATE scientist SET profession = %s WHERE username = %s",
+                    [subtype_data['profession'], active_username]
+                )
+            elif user_type == 'Amateur' and 'interests' in subtype_data:
+                cursor.execute(
+                    "UPDATE amateur SET interests = %s WHERE username = %s",
+                    [subtype_data['interests'], active_username]
+                )
+
+        return Response({
+            'message': 'Profile updated successfully',
+            'full_name': full_name,
+            'username': new_username,
+            'username_changed': username_changed,
+        })
+
+
+class ChangePassword(APIView):
+    def post(self, request):
+        username = request.user.username
+        old_password = request.data.get('old_password', '')
+        new_password = request.data.get('new_password', '')
+
+        if not old_password or not new_password:
+            return Response({'error': 'Both old and new passwords are required'}, status=400)
+
+        if len(new_password) < 8:
+            return Response({'error': 'Password must be at least 8 characters'}, status=400)
+
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT password FROM user WHERE username = %s", [username])
+            row = cursor.fetchone()
+            if not row:
+                return Response({'error': 'User not found'}, status=404)
+
+            if not check_password(old_password, row[0]):
+                return Response({'error': 'Current password is incorrect'}, status=400)
+
+            hashed = bcrypt.hashpw(
+                new_password.encode('utf-8'),
+                bcrypt.gensalt()
+            ).decode('utf-8')
+            cursor.execute(
+                "UPDATE user SET password = %s WHERE username = %s",
+                [hashed, username]
+            )
+
+        return Response({'message': 'Password changed successfully'})
 
 
 class DeleteUser(APIView):

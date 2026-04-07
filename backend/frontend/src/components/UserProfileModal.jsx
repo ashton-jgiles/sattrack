@@ -54,13 +54,16 @@ function SelectField({ label, value, onChange, options, full }) {
   );
 }
 
-const READ_ONLY_TYPE_FIELDS = new Set(["full_name"]);
-
 export default function UserProfileModal({ data, onClose, onSave }) {
   const [form, setForm] = useState({
     username: data.username ?? "",
     level_access: String(data.level_access ?? "1"),
     user_type: data.user_type ?? "Amateur",
+  });
+  // subtype fields — pre-populated from existing data
+  const [subtypeForm, setSubtypeForm] = useState({
+    employee_id: data.subtype_data?.employee_id ?? "",
+    profession: data.subtype_data?.profession ?? "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -68,10 +71,30 @@ export default function UserProfileModal({ data, onClose, onSave }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleTypeChange = (value) => {
+    // reset subtype fields when switching type
+    setForm((prev) => ({ ...prev, user_type: value }));
+    setSubtypeForm({ employee_id: "", profession: "" });
+  };
+
+  const buildSubtypeData = () => {
+    if (form.user_type === "Administrator" || form.user_type === "Data Analyst") {
+      return { employee_id: parseInt(subtypeForm.employee_id) || 0 };
+    }
+    if (form.user_type === "Scientist") {
+      return { profession: subtypeForm.profession };
+    }
+    return {};
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave({ ...form, original_username: data.username });
+      await onSave({
+        ...form,
+        original_username: data.username,
+        subtype_data: buildSubtypeData(),
+      });
       onClose();
     } finally {
       setSaving(false);
@@ -120,7 +143,7 @@ export default function UserProfileModal({ data, onClose, onSave }) {
             <SelectField
               label="User Type"
               value={form.user_type}
-              onChange={(v) => handleChange("user_type", v)}
+              onChange={handleTypeChange}
               options={[
                 { value: "Amateur", label: "Amateur" },
                 { value: "Scientist", label: "Scientist" },
@@ -128,6 +151,26 @@ export default function UserProfileModal({ data, onClose, onSave }) {
                 { value: "Administrator", label: "Administrator" },
               ]}
             />
+            {(form.user_type === "Administrator" ||
+              form.user_type === "Data Analyst") && (
+              <EditField
+                label="Employee ID"
+                value={subtypeForm.employee_id}
+                onChange={(v) =>
+                  setSubtypeForm((prev) => ({ ...prev, employee_id: v }))
+                }
+                type="number"
+              />
+            )}
+            {form.user_type === "Scientist" && (
+              <EditField
+                label="Profession"
+                value={subtypeForm.profession}
+                onChange={(v) =>
+                  setSubtypeForm((prev) => ({ ...prev, profession: v }))
+                }
+              />
+            )}
           </div>
         </div>
 

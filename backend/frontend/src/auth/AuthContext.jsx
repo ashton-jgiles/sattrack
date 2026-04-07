@@ -48,6 +48,13 @@ export function AuthProvider({ children }) {
     return userData;
   };
 
+  // patch the in-memory user object and sessionStorage (e.g. after profile update)
+  const updateUser = (updates) => {
+    const updated = { ...user, ...updates };
+    setUser(updated);
+    sessionStorage.setItem("user", JSON.stringify(updated));
+  };
+
   // logout method
   const logout = () => {
     setAccessToken(null);
@@ -57,7 +64,7 @@ export function AuthProvider({ children }) {
 
   // return the auth context
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, accessToken, login, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );
