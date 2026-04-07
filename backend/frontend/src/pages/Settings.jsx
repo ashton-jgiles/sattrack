@@ -201,8 +201,8 @@ export default function Settings() {
           data={userData}
           onClose={() => setUserData(null)}
           onSave={async (payload) => {
-            modifyUser(payload);
-            showPopupMessage("User updated sucessfully");
+            await modifyUser(payload);
+            showPopupMessage("User updated successfully");
           }}
         />
       )}
