@@ -72,43 +72,9 @@
   border-color: #475569;
 }
 
-/* ── Tabs ───────────────────────────────────────────────────── */
+/* ── Field Content ────────────────────────────────────────────── */
 
-.tabs {
-  display: flex;
-  border-bottom: 1px solid #1e293b;
-  padding: 0 1.5rem;
-  flex-shrink: 0;
-  overflow-x: auto;
-}
-
-.tab {
-  padding: 0.75rem 1rem;
-  font-size: var(--text-sm);
-  font-family: var(--font-body);
-  color: #475569;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease;
-  white-space: nowrap;
-}
-
-.tab:hover {
-  color: #94a3b8;
-}
-
-.tabActive {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
-}
-
-/* ── Tab Content ────────────────────────────────────────────── */
-
-.tabContent {
+.fieldContent {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
@@ -117,15 +83,15 @@
   scrollbar-color: #3b82f6 #1e293b;
 }
 
-.tabContent::-webkit-scrollbar {
+.fieldContent::-webkit-scrollbar {
   width: 6px;
 }
 
-.tabContent::-webkit-scrollbar-track {
+.fieldContent::-webkit-scrollbar-track {
   background: #1e293b;
 }
 
-.tabContent::-webkit-scrollbar-thumb {
+.fieldContent::-webkit-scrollbar-thumb {
   background-color: #3b82f6;
   border-radius: 3px;
 }
@@ -198,23 +164,6 @@
   color: #ffffff;
 }
 
-/* ── Error Banner ───────────────────────────────────────────── */
-
-.errorBanner {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.75rem 1.5rem;
-  background-color: rgba(239, 68, 68, 0.1);
-  border-top: 1px solid #991b1b;
-  flex-shrink: 0;
-}
-
-.errorItem {
-  font-size: var(--text-xs);
-  color: #fca5a5;
-}
-
 /* ── Modal Footer ───────────────────────────────────────────── */
 
 .modalFooter {
@@ -270,95 +219,4 @@
   background-color: #1e3a5f;
   cursor: not-allowed;
   color: #475569;
-}
-
-/* ── Communication station card ─────────────────────────────── */
-
-.stationCard {
-  background-color: #0f172a;
-  border: 1px solid #1e293b;
-  border-radius: 0.5rem;
-  padding: 1rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.stationName {
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  color: #ffffff;
-}
-
-.stationMeta {
-  font-size: var(--text-xs);
-  color: #94a3b8;
-}
-
-/* ── Confirm Delete Modal ───────────────────────────────────── */
-
-.confirmBackdrop {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.8);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-}
-
-.confirmModal {
-  background-color: #0a1628;
-  border: 1px solid #991b1b;
-  border-radius: 0.75rem;
-  width: 100%;
-  max-width: 420px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  position: relative;
-  z-index: 10000;
-}
-
-.confirmTitle {
-  font-family: var(--font-display);
-  font-size: var(--text-lg);
-  font-weight: var(--font-weight-medium);
-  color: #ef4444;
-}
-
-.confirmMessage {
-  font-size: var(--text-sm);
-  color: #94a3b8;
-  line-height: 1.6;
-}
-
-.confirmName {
-  color: #ffffff;
-  font-weight: var(--font-weight-medium);
-}
-
-.confirmActions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-}
-
-.confirmDeleteButton {
-  padding: 0.6rem 1.25rem;
-  background-color: #dc2626;
-  color: #ffffff;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: var(--text-sm);
-  font-family: var(--font-body);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.confirmDeleteButton:hover {
-  background-color: #b91c1c;
 }
