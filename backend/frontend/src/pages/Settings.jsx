@@ -15,6 +15,7 @@ import PopupMessage from "../components/PopupMessage";
 import usePopupMessage from "../hooks/usePopupMessage";
 
 // api imports
+import { updateTrajectories } from "../api/trajectoryService";
 import {
   getUsers,
   getUserProfile,
@@ -42,6 +43,7 @@ export default function Settings() {
   const [userData, setUserData] = useState(null);
   const [userLoading, setUserLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [trajectoryUpdating, setTrajectoryUpdating] = useState(false);
   const { message, messageFading, messageVisible, showPopupMessage } =
     usePopupMessage();
 
@@ -90,7 +92,16 @@ export default function Settings() {
 
   // handle update trajectory
   const handleUpdateTrajectory = async () => {
-    console.log("Refreshing trajectory");
+    setTrajectoryUpdating(true);
+    try {
+      await updateTrajectories();
+      showPopupMessage("Trajectory update started");
+    } catch (err) {
+      console.error("Failed to start trajectory update:", err);
+      showPopupMessage("Failed to start trajectory update", "error");
+    } finally {
+      setTrajectoryUpdating(false);
+    }
   };
 
   return (
@@ -104,9 +115,13 @@ export default function Settings() {
             of all current satellites
           </p>
         </div>
-        <button className={styles.addButton} onClick={handleUpdateTrajectory}>
+        <button
+          className={styles.refreshButton}
+          onClick={handleUpdateTrajectory}
+          disabled={trajectoryUpdating}
+        >
           <CachedIcon sx={{ fontSize: 18 }} />
-          Refresh Satellite Trajectory
+          {trajectoryUpdating ? "Starting..." : "Refresh Satellite Trajectory"}
         </button>
       </div>
 

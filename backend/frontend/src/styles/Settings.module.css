@@ -48,6 +48,11 @@
   background-color: #1d4ed8;
 }
 
+.refreshButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ── Filter Bar ─────────────────────────────────────────────── */
 
 .filterBar {
