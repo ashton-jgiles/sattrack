@@ -471,11 +471,13 @@ function OverviewPage() {
             <div className={styles.panelFilters}>
               <div className={styles.panelFiltersLabel}>
                 <span>Filters — also apply to globe</span>
-                {isFiltered && (
-                  <button className={styles.panelFiltersClear} onClick={clearFilters}>
-                    <CloseIcon sx={{ fontSize: 12 }} /> Clear
-                  </button>
-                )}
+                <button
+                  className={styles.panelFiltersClear}
+                  onClick={clearFilters}
+                  style={{ visibility: isFiltered ? 'visible' : 'hidden' }}
+                >
+                  <CloseIcon sx={{ fontSize: 12 }} /> Clear
+                </button>
               </div>
               <div className={styles.panelFiltersRow}>
                 <select value={satelliteTypeFilter} onChange={(e) => setSatelliteTypeFilter(e.target.value)} style={selectStyle}>
