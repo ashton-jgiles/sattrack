@@ -579,6 +579,14 @@ function OverviewPage() {
         </div>
       </div>
 
+      {/* Satellite info panel */}
+      {selectedSatelliteId && (
+        <SatelliteInfoPanel
+          satelliteId={selectedSatelliteId}
+          onClose={() => setSelectedSatelliteId(null)}
+        />
+      )}
+
       {/* Globe + Deployments side by side */}
       <div className={styles.globeRow}>
         {/* Left: Globe */}
@@ -636,14 +644,6 @@ function OverviewPage() {
           </div>
         </div>
       </div>
-
-      {/* Satellite info panel */}
-      {selectedSatelliteId && (
-        <SatelliteInfoPanel
-          satelliteId={selectedSatelliteId}
-          onClose={() => setSelectedSatelliteId(null)}
-        />
-      )}
 
       {/* Satellite List Modal */}
       {showModal && (
