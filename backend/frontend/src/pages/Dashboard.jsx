@@ -32,6 +32,8 @@ import AirIcon from "@mui/icons-material/Air";
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
 import PersonIcon from "@mui/icons-material/Person";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 // component imports
 import SatelliteGlobe from "../components/SatelliteGlobe";
@@ -46,6 +48,38 @@ import { getTotalDatasets } from "../api/datasetService";
 
 // style imports
 import styles from "../styles/Dashboard.module.css";
+
+function NumInput({ placeholder, value, onChange }) {
+  const step = 1;
+  const adjust = (dir) => {
+    const current = parseFloat(value) || 0;
+    onChange(String(current + dir * step));
+  };
+  return (
+    <div className={styles.numberInputWrapper}>
+      <input
+        className={styles.numberInput}
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => {
+          const val = e.target.value;
+          if (val === "" || /^-?\d*\.?\d*$/.test(val)) onChange(val);
+        }}
+      />
+      <div className={styles.numberInputSpinners}>
+        <button className={styles.spinnerBtn} onClick={() => adjust(1)} tabIndex={-1}>
+          <KeyboardArrowUpIcon sx={{ fontSize: 12 }} />
+        </button>
+        <button className={styles.spinnerBtn} onClick={() => adjust(-1)} tabIndex={-1}>
+          <KeyboardArrowDownIcon sx={{ fontSize: 12 }} />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // Sidebar nav config
 const NAV_ITEMS = [
@@ -498,12 +532,12 @@ function OverviewPage() {
                 </select>
               </div>
               <div className={styles.panelFiltersRow}>
-                <input style={selectStyle} type="number" placeholder="Min altitude" value={minAltitude} onChange={(e) => setMinAltitude(e.target.value)} />
-                <input style={selectStyle} type="number" placeholder="Max altitude" value={maxAltitude} onChange={(e) => setMaxAltitude(e.target.value)} />
+                <NumInput placeholder="Min altitude" value={minAltitude} onChange={setMinAltitude} />
+                <NumInput placeholder="Max altitude" value={maxAltitude} onChange={setMaxAltitude} />
               </div>
               <div className={styles.panelFiltersRow}>
-                <input style={selectStyle} type="number" placeholder="Min velocity" value={minVelocity} onChange={(e) => setMinVelocity(e.target.value)} />
-                <input style={selectStyle} type="number" placeholder="Max velocity" value={maxVelocity} onChange={(e) => setMaxVelocity(e.target.value)} />
+                <NumInput placeholder="Min velocity" value={minVelocity} onChange={setMinVelocity} />
+                <NumInput placeholder="Max velocity" value={maxVelocity} onChange={setMaxVelocity} />
               </div>
               <div className={styles.keywordRow}>
                 {keywords.map((kw) => (
@@ -517,7 +551,7 @@ function OverviewPage() {
                 <input
                   className={styles.keywordInput}
                   type="text"
-                  placeholder={keywords.length === 0 ? "Keyword — press Enter to add tag" : "Add another..."}
+                  placeholder={keywords.length === 0 ? "Filter by keyword, press Enter to add..." : "Add another..."}
                   value={keywordInput}
                   onChange={(e) => setKeywordInput(e.target.value)}
                   onKeyDown={addKeyword}
