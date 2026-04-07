@@ -259,14 +259,19 @@ function OverviewPage() {
   const [highlightedSatellites, setHighlightedSatellites] = useState([]);
   const [selectedSatelliteId, setSelectedSatelliteId] = useState(null);
 
-  // Filter state
+  // Search — list only, never affects globe
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Filters — affect both list and globe
+  const [showFilters, setShowFilters] = useState(false);
   const [satelliteTypeFilter, setSatelliteTypeFilter] = useState("");
   const [orbitTypeFilter, setOrbitTypeFilter] = useState("");
   const [minAltitude, setMinAltitude] = useState("");
   const [maxAltitude, setMaxAltitude] = useState("");
   const [minVelocity, setMinVelocity] = useState("");
   const [maxVelocity, setMaxVelocity] = useState("");
+  const [keywords, setKeywords] = useState([]);
+  const [keywordInput, setKeywordInput] = useState("");
 
   // Derived option lists
   const satelliteTypes = useMemo(
@@ -279,21 +284,63 @@ function OverviewPage() {
   );
 
   const isFiltered =
-    searchTerm.trim() !== "" ||
     satelliteTypeFilter !== "" ||
     orbitTypeFilter !== "" ||
     minAltitude !== "" ||
     maxAltitude !== "" ||
     minVelocity !== "" ||
-    maxVelocity !== "";
+    maxVelocity !== "" ||
+    keywords.length > 0;
 
-  const filteredSatellites = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
+  const activeFilterCount = [satelliteTypeFilter, orbitTypeFilter, minAltitude, maxAltitude, minVelocity, maxVelocity].filter(Boolean).length + keywords.length;
+
+  const addKeyword = (e) => {
+    if (e.key === "Enter" && keywordInput.trim()) {
+      const kw = keywordInput.trim().toLowerCase();
+      if (!keywords.includes(kw)) setKeywords((prev) => [...prev, kw]);
+      setKeywordInput("");
+    }
+  };
+
+  const removeKeyword = (kw) => setKeywords((prev) => prev.filter((k) => k !== kw));
+
+  const matchesKeywords = (sat) => {
+    if (keywords.length === 0) return true;
+    const fields = [sat.name, sat.satellite_type, sat.orbit_type, sat.norad_id, sat.object_id]
+      .map((f) => String(f ?? "").toLowerCase());
+    return keywords.every((kw) => fields.some((f) => f.includes(kw)));
+  };
+
+  // Applies only filter values (no search) — used for globe visibility
+  const globeFilteredIds = useMemo(() => {
+    if (!isFiltered) return null;
     const minAlt = parseFloat(minAltitude);
     const maxAlt = parseFloat(maxAltitude);
     const minVel = parseFloat(minVelocity);
     const maxVel = parseFloat(maxVelocity);
+    return new Set(
+      allSatellites.filter((sat) => {
+        if (satelliteTypeFilter && sat.satellite_type !== satelliteTypeFilter) return false;
+        if (orbitTypeFilter && sat.orbit_type !== orbitTypeFilter) return false;
+        const altitude = Number(sat.altitude);
+        if (!isNaN(minAlt) && !isNaN(altitude) && altitude < minAlt) return false;
+        if (!isNaN(maxAlt) && !isNaN(altitude) && altitude > maxAlt) return false;
+        if (!isNaN(minAlt) && isNaN(altitude) && minAltitude !== "") return false;
+        if (!isNaN(maxAlt) && isNaN(altitude) && maxAltitude !== "") return false;
+        const velocity = Number(sat.velocity);
+        if (!isNaN(minVel) && !isNaN(velocity) && velocity < minVel) return false;
+        if (!isNaN(maxVel) && !isNaN(velocity) && velocity > maxVel) return false;
+        if (!isNaN(minVel) && isNaN(velocity) && minVelocity !== "") return false;
+        if (!isNaN(maxVel) && isNaN(velocity) && maxVelocity !== "") return false;
+        if (!matchesKeywords(sat)) return false;
+        return true;
+      }).map((s) => s.satellite_id)
+    );
+  }, [isFiltered, allSatellites, satelliteTypeFilter, orbitTypeFilter, minAltitude, maxAltitude, minVelocity, maxVelocity, keywords]);
 
+  // Applies both search and filters — used for the satellite list
+  const filteredSatellites = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
     return allSatellites.filter((sat) => {
       if (search) {
         const matchesSearch =
@@ -301,36 +348,20 @@ function OverviewPage() {
           (sat.norad_id && sat.norad_id.toString().includes(search));
         if (!matchesSearch) return false;
       }
-      if (satelliteTypeFilter && sat.satellite_type !== satelliteTypeFilter) return false;
-      if (orbitTypeFilter && sat.orbit_type !== orbitTypeFilter) return false;
-      const altitude = Number(sat.altitude);
-      if (!isNaN(minAlt) && !isNaN(altitude) && altitude < minAlt) return false;
-      if (!isNaN(maxAlt) && !isNaN(altitude) && altitude > maxAlt) return false;
-      if (!isNaN(minAlt) && isNaN(altitude) && minAltitude !== "") return false;
-      if (!isNaN(maxAlt) && isNaN(altitude) && maxAltitude !== "") return false;
-      const velocity = Number(sat.velocity);
-      if (!isNaN(minVel) && !isNaN(velocity) && velocity < minVel) return false;
-      if (!isNaN(maxVel) && !isNaN(velocity) && velocity > maxVel) return false;
-      if (!isNaN(minVel) && isNaN(velocity) && minVelocity !== "") return false;
-      if (!isNaN(maxVel) && isNaN(velocity) && maxVelocity !== "") return false;
+      if (globeFilteredIds !== null && !globeFilteredIds.has(sat.satellite_id)) return false;
       return true;
     });
-  }, [allSatellites, searchTerm, satelliteTypeFilter, orbitTypeFilter, minAltitude, maxAltitude, minVelocity, maxVelocity]);
-
-  // Satellite IDs visible on globe (null = show all)
-  const visibleSatelliteIds = useMemo(
-    () => isFiltered ? new Set(filteredSatellites.map((s) => s.satellite_id)) : null,
-    [isFiltered, filteredSatellites],
-  );
+  }, [allSatellites, searchTerm, globeFilteredIds]);
 
   const clearFilters = () => {
-    setSearchTerm("");
     setSatelliteTypeFilter("");
     setOrbitTypeFilter("");
     setMinAltitude("");
     setMaxAltitude("");
     setMinVelocity("");
     setMaxVelocity("");
+    setKeywords([]);
+    setKeywordInput("");
   };
 
   const handleSelectSatellite = (satelliteId) => {
@@ -409,7 +440,7 @@ function OverviewPage() {
           <div className={styles.globeCardBody}>
             <SatelliteGlobe
               highlightedSatellites={highlightedSatellites}
-              visibleSatelliteIds={visibleSatelliteIds}
+              visibleSatelliteIds={globeFilteredIds}
             />
           </div>
         </div>
@@ -424,7 +455,7 @@ function OverviewPage() {
             </span>
           </div>
 
-          {/* Search */}
+          {/* Search + Filter row */}
           <div className={styles.panelSearchWrapper}>
             <SearchIcon sx={{ fontSize: 15, color: "#475569", flexShrink: 0 }} />
             <input
@@ -434,37 +465,66 @@ function OverviewPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            <button
+              className={`${styles.filterToggleBtn} ${showFilters ? styles.filterToggleActive : ""}`}
+              onClick={() => setShowFilters((p) => !p)}
+            >
+              Filters
+              {activeFilterCount > 0 && (
+                <span className={styles.filterBadge}>{activeFilterCount}</span>
+              )}
+            </button>
           </div>
 
-          {/* Globe Filters */}
-          <div className={styles.panelFilters}>
-            <div className={styles.panelFiltersLabel}>
-              <span>Globe Filters</span>
-              {isFiltered && (
-                <button className={styles.panelFiltersClear} onClick={clearFilters}>
-                  <CloseIcon sx={{ fontSize: 12 }} /> Clear
-                </button>
-              )}
+          {/* Expandable Filters */}
+          {showFilters && (
+            <div className={styles.panelFilters}>
+              <div className={styles.panelFiltersLabel}>
+                <span>Filters — also apply to globe</span>
+                {isFiltered && (
+                  <button className={styles.panelFiltersClear} onClick={clearFilters}>
+                    <CloseIcon sx={{ fontSize: 12 }} /> Clear
+                  </button>
+                )}
+              </div>
+              <div className={styles.panelFiltersRow}>
+                <select value={satelliteTypeFilter} onChange={(e) => setSatelliteTypeFilter(e.target.value)} style={selectStyle}>
+                  <option value="">All Categories</option>
+                  {satelliteTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <select value={orbitTypeFilter} onChange={(e) => setOrbitTypeFilter(e.target.value)} style={selectStyle}>
+                  <option value="">All Orbits</option>
+                  {orbitTypes.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+              <div className={styles.panelFiltersRow}>
+                <input style={selectStyle} type="number" placeholder="Min altitude" value={minAltitude} onChange={(e) => setMinAltitude(e.target.value)} />
+                <input style={selectStyle} type="number" placeholder="Max altitude" value={maxAltitude} onChange={(e) => setMaxAltitude(e.target.value)} />
+              </div>
+              <div className={styles.panelFiltersRow}>
+                <input style={selectStyle} type="number" placeholder="Min velocity" value={minVelocity} onChange={(e) => setMinVelocity(e.target.value)} />
+                <input style={selectStyle} type="number" placeholder="Max velocity" value={maxVelocity} onChange={(e) => setMaxVelocity(e.target.value)} />
+              </div>
+              <div className={styles.keywordRow}>
+                {keywords.map((kw) => (
+                  <span key={kw} className={styles.keywordTag}>
+                    {kw}
+                    <button className={styles.keywordTagRemove} onClick={() => removeKeyword(kw)}>
+                      <CloseIcon sx={{ fontSize: 10 }} />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  className={styles.keywordInput}
+                  type="text"
+                  placeholder={keywords.length === 0 ? "Keyword — press Enter to add tag" : "Add another..."}
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                  onKeyDown={addKeyword}
+                />
+              </div>
             </div>
-            <div className={styles.panelFiltersRow}>
-              <select value={satelliteTypeFilter} onChange={(e) => setSatelliteTypeFilter(e.target.value)} style={selectStyle}>
-                <option value="">All Categories</option>
-                {satelliteTypes.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-              <select value={orbitTypeFilter} onChange={(e) => setOrbitTypeFilter(e.target.value)} style={selectStyle}>
-                <option value="">All Orbits</option>
-                {orbitTypes.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
-            </div>
-            <div className={styles.panelFiltersRow}>
-              <input style={selectStyle} type="number" placeholder="Min altitude" value={minAltitude} onChange={(e) => setMinAltitude(e.target.value)} />
-              <input style={selectStyle} type="number" placeholder="Max altitude" value={maxAltitude} onChange={(e) => setMaxAltitude(e.target.value)} />
-            </div>
-            <div className={styles.panelFiltersRow}>
-              <input style={selectStyle} type="number" placeholder="Min velocity" value={minVelocity} onChange={(e) => setMinVelocity(e.target.value)} />
-              <input style={selectStyle} type="number" placeholder="Max velocity" value={maxVelocity} onChange={(e) => setMaxVelocity(e.target.value)} />
-            </div>
-          </div>
+          )}
 
           {/* Satellite List */}
           <div className={styles.satelliteList}>
