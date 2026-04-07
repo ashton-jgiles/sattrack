@@ -9,6 +9,7 @@ import { useAuth } from "../hooks/useAuth";
 import ManageSatellites from "./ManageSatellites";
 import ManageDatasets from "./ManageDatasets";
 import Datasets from "./Datasets";
+import UserProfile from "./UserProfile";
 import Settings from "./Settings";
 
 // icon imports
@@ -29,6 +30,7 @@ import ScienceIcon from "@mui/icons-material/Science";
 import AirIcon from "@mui/icons-material/Air";
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
+import PersonIcon from "@mui/icons-material/Person";
 
 // component imports
 import SatelliteGlobe from "../components/SatelliteGlobe";
@@ -63,6 +65,12 @@ const NAV_ITEMS = [
         icon: <StorageIcon sx={{ fontSize: 18 }} />,
         minLevel: 1,
       },
+      {
+        id: "userProfile",
+        label: "User Profile",
+        icon: <PersonIcon sx={{ fontSize: 18 }} />,
+        minLevel: 1,
+      },
     ],
   },
   {
@@ -72,7 +80,7 @@ const NAV_ITEMS = [
         id: "visualizations",
         label: "Visualizations",
         icon: <EqualizerIcon sx={{ fontSize: 18 }} />,
-        minLevel: 1,
+        minLevel: 2,
       },
     ],
   },
@@ -696,10 +704,10 @@ export default function Dashboard() {
     switch (activePage) {
       case "overview":
         return <OverviewPage />;
-      case "satellites":
-        return <PlaceholderPage title="Satellites" />;
       case "datasets":
         return <Datasets />;
+      case "userProfile":
+        return <UserProfile />;
       case "visualizations":
         return <PlaceholderPage title="Visualizations" />;
       case "reviews":
