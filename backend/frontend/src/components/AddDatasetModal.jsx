@@ -64,7 +64,7 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
       setForm((prev) => ({
         ...prev,
         group,
-        dataset_name: `CelesTrak ${namePart}`,
+        dataset_name: `CelesTrak ${namePart} Satellites`,
         description: `TLE orbital elements for ${namePart} satellites`,
         pull_frequency: "6h",
       }));
@@ -72,7 +72,8 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
     setDropdownOpen(false);
   };
 
-  const isRestore = sources.find((s) => s.group === form.group)?.previously_deleted ?? false;
+  const isRestore =
+    sources.find((s) => s.group === form.group)?.previously_deleted ?? false;
 
   const handleSave = async () => {
     const errs = [];
@@ -109,9 +110,13 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
         {/* Header */}
         <div className={styles.modalHeader}>
           <div>
-            <div className={styles.modalTitle}>{isRestore ? "Restore Dataset" : "Add Dataset"}</div>
+            <div className={styles.modalTitle}>
+              {isRestore ? "Restore Dataset" : "Add Dataset"}
+            </div>
             <div className={styles.modalSubtitle}>
-              {isRestore ? "Restore a previously deleted CelesTrak dataset" : "Create a new CelesTrak dataset"}
+              {isRestore
+                ? "Restore a previously deleted CelesTrak dataset"
+                : "Create a new CelesTrak dataset"}
             </div>
           </div>
           <button className={styles.closeButton} onClick={onClose}>
@@ -147,7 +152,15 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
                     >
                       {s.group}
                       {s.previously_deleted && (
-                        <span style={{ marginLeft: "0.5rem", fontSize: "0.7rem", color: "#a78bfa" }}>restore</span>
+                        <span
+                          style={{
+                            marginLeft: "0.5rem",
+                            fontSize: "0.7rem",
+                            color: "#a78bfa",
+                          }}
+                        >
+                          restore
+                        </span>
                       )}
                     </div>
                   ))}
@@ -198,7 +211,13 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
             disabled={isSaving}
           >
             <AddIcon sx={{ fontSize: 16 }} />
-            {isSaving ? (isRestore ? "Restoring..." : "Creating...") : (isRestore ? "Restore Dataset" : "Add Dataset")}
+            {isSaving
+              ? isRestore
+                ? "Restoring..."
+                : "Creating..."
+              : isRestore
+                ? "Restore Dataset"
+                : "Add Dataset"}
           </button>
         </div>
       </div>
