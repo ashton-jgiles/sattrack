@@ -25,3 +25,13 @@ export const getNewSatellitesFromDataset = async (
 export const createSatellite = async (payload) => {
   return await post("/manage/satellite/create/", payload);
 };
+
+// get all soft-deleted satellites
+export const getDeletedSatellites = async () => {
+  return await get("/manage/satellite/deleted/");
+};
+
+// recover a soft-deleted satellite
+export const recoverSatellite = async (id) => {
+  return await post(`/manage/satellite/${id}/recover/`, {});
+};
