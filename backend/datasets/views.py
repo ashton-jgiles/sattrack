@@ -11,7 +11,7 @@ class TotalDatasets(APIView):
 
     def get(self, request):
         with connection.cursor() as cursor:
-            cursor.execute("SELECT COUNT(dataset_id) AS total FROM dataset WHERE deleted_at IS NULL")
+            cursor.execute("SELECT COUNT(dataset_id) AS total FROM dataset WHERE deleted_at IS NULL AND review_status = 'approved'")
             columns = [col[0] for col in cursor.description]
             row = cursor.fetchone()
 
@@ -23,8 +23,11 @@ class TotalDatasets(APIView):
 # dataset view class which returns as json all datasets in the dataset table
 class DatasetView(APIView):
     def get(self, request):
+        level = getattr(request.user, 'level_access', 1)
+        status_filter = "" if level >= 3 else "AND review_status = 'approved'"
+
         with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM dataset WHERE deleted_at IS NULL")
+            cursor.execute(f"SELECT * FROM dataset WHERE deleted_at IS NULL {status_filter}")
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
