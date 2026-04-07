@@ -283,20 +283,54 @@ class ModifyUser(APIView):
 
 class UpdateOwnProfile(APIView):
     def post(self, request):
-        username = request.user.username
-        full_name = request.data.get('full_name', '').strip()
-        subtype_data = request.data.get('subtype_data', {})
+        current_username = request.user.username
+        new_username     = request.data.get('username', '').strip()
+        full_name        = request.data.get('full_name', '').strip()
+        subtype_data     = request.data.get('subtype_data', {})
 
         if not full_name:
             return Response({'error': 'full_name is required'}, status=400)
+        if not new_username:
+            return Response({'error': 'username is required'}, status=400)
+
+        username_changed = new_username != current_username
 
         with transaction.atomic(), connection.cursor() as cursor:
+            # Check new username isn't already taken
+            if username_changed:
+                cursor.execute("SELECT username FROM user WHERE username = %s", [new_username])
+                if cursor.fetchone():
+                    return Response({'error': 'Username already taken'}, status=409)
+
             cursor.execute(
                 "UPDATE user SET full_name = %s WHERE username = %s",
-                [full_name, username]
+                [full_name, current_username]
             )
 
-            # Determine user's current subtype table
+            if username_changed:
+                # Temporarily disable FK checks so we can rename the PK
+                cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+                cursor.execute(
+                    "UPDATE user SET username = %s WHERE username = %s",
+                    [new_username, current_username]
+                )
+                for table in ['administrator', 'data_analyst', 'scientist', 'amateur']:
+                    cursor.execute(
+                        f"UPDATE {table} SET username = %s WHERE username = %s",
+                        [new_username, current_username]
+                    )
+                cursor.execute(
+                    "UPDATE reviews SET reviewed_by = %s WHERE reviewed_by = %s",
+                    [new_username, current_username]
+                )
+                cursor.execute(
+                    "UPDATE uploads SET uploaded_by = %s WHERE uploaded_by = %s",
+                    [new_username, current_username]
+                )
+                cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+            # Determine user's current subtype table (use new_username after rename)
+            active_username = new_username if username_changed else current_username
             user_type = None
             for role, table in [
                 ('Administrator', 'administrator'),
@@ -304,7 +338,7 @@ class UpdateOwnProfile(APIView):
                 ('Scientist',     'scientist'),
                 ('Amateur',       'amateur'),
             ]:
-                cursor.execute(f"SELECT username FROM {table} WHERE username = %s", [username])
+                cursor.execute(f"SELECT username FROM {table} WHERE username = %s", [active_username])
                 if cursor.fetchone():
                     user_type = role
                     break
@@ -315,20 +349,25 @@ class UpdateOwnProfile(APIView):
                 if 'employee_id' in subtype_data:
                     cursor.execute(
                         f"UPDATE {table} SET employee_id = %s WHERE username = %s",
-                        [subtype_data['employee_id'], username]
+                        [subtype_data['employee_id'], active_username]
                     )
             elif user_type == 'Scientist' and 'profession' in subtype_data:
                 cursor.execute(
                     "UPDATE scientist SET profession = %s WHERE username = %s",
-                    [subtype_data['profession'], username]
+                    [subtype_data['profession'], active_username]
                 )
             elif user_type == 'Amateur' and 'interests' in subtype_data:
                 cursor.execute(
                     "UPDATE amateur SET interests = %s WHERE username = %s",
-                    [subtype_data['interests'], username]
+                    [subtype_data['interests'], active_username]
                 )
 
-        return Response({'message': 'Profile updated successfully', 'full_name': full_name})
+        return Response({
+            'message': 'Profile updated successfully',
+            'full_name': full_name,
+            'username': new_username,
+            'username_changed': username_changed,
+        })
 
 
 class ChangePassword(APIView):

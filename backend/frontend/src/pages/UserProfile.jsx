@@ -11,6 +11,7 @@ import PopupMessage from "../components/PopupMessage";
 // hooks
 import usePopupMessage from "../hooks/usePopupMessage";
 import { useAuth } from "../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 // api imports
 import {
@@ -23,12 +24,14 @@ import {
 import styles from "../styles/UserProfile.module.css";
 
 export default function UserProfile() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Profile form
   const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
   const [subtypeData, setSubtypeData] = useState({});
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
@@ -49,6 +52,7 @@ export default function UserProfile() {
       .then((data) => {
         setProfile(data);
         setFullName(data.full_name || "");
+        setUsername(data.username || "");
         setSubtypeData(data.subtype_data || {});
       })
       .catch((err) => console.error("Failed to load profile:", err))
@@ -61,14 +65,27 @@ export default function UserProfile() {
       setProfileError("Full name is required.");
       return;
     }
+    if (!username.trim()) {
+      setProfileError("Username is required.");
+      return;
+    }
     setProfileSaving(true);
     try {
       const res = await updateOwnProfile({
         full_name: fullName.trim(),
+        username: username.trim(),
         subtype_data: subtypeData,
       });
-      updateUser({ full_name: res.full_name });
-      showPopupMessage("Profile updated successfully");
+      if (res.username_changed) {
+        showPopupMessage("Username changed — redirecting to login...");
+        setTimeout(() => {
+          logout();
+          navigate("/login");
+        }, 3000);
+      } else {
+        updateUser({ full_name: res.full_name });
+        showPopupMessage("Profile updated successfully");
+      }
     } catch (err) {
       setProfileError(err.message || "Failed to update profile.");
     } finally {
@@ -192,7 +209,7 @@ export default function UserProfile() {
               <div className={styles.avatar}>{initials}</div>
               <div className={styles.identityInfo}>
                 <span className={styles.identityUsername}>
-                  @{profile?.username}
+                  @{username || profile?.username}
                 </span>
                 <div className={styles.badgeRow}>
                   <span className={styles.badge}>
@@ -224,8 +241,9 @@ export default function UserProfile() {
               <input
                 type="text"
                 className={styles.fieldInput}
-                value={profile?.username || ""}
-                disabled
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username"
               />
             </div>
 
