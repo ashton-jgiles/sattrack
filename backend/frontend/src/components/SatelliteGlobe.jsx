@@ -103,7 +103,15 @@ export default function SatelliteGlobe({
       new Cesium.PointPrimitiveCollection(),
     );
 
+    const ro = new ResizeObserver(() => {
+      if (viewerRef.current && !viewerRef.current.isDestroyed()) {
+        viewerRef.current.resize();
+      }
+    });
+    ro.observe(cesiumContainer.current);
+
     return () => {
+      ro.disconnect();
       cancelAnimationFrame(animRef.current);
       if (viewerRef.current && !viewerRef.current.isDestroyed()) {
         viewerRef.current.destroy();

@@ -275,7 +275,9 @@ function OverviewPage() {
 
   // Derived option lists
   const satelliteTypes = useMemo(
-    () => [...new Set(allSatellites.map((s) => s.satellite_type).filter(Boolean))],
+    () => [
+      ...new Set(allSatellites.map((s) => s.satellite_type).filter(Boolean)),
+    ],
     [allSatellites],
   );
   const orbitTypes = useMemo(
@@ -291,7 +293,14 @@ function OverviewPage() {
     maxNoradId !== "" ||
     keywords.length > 0;
 
-  const activeFilterCount = [satelliteTypeFilter, orbitTypeFilter, classificationFilter, minNoradId, maxNoradId].filter(Boolean).length + keywords.length;
+  const activeFilterCount =
+    [
+      satelliteTypeFilter,
+      orbitTypeFilter,
+      classificationFilter,
+      minNoradId,
+      maxNoradId,
+    ].filter(Boolean).length + keywords.length;
 
   const addKeyword = (e) => {
     if (e.key === "Enter" && keywordInput.trim()) {
@@ -301,12 +310,18 @@ function OverviewPage() {
     }
   };
 
-  const removeKeyword = (kw) => setKeywords((prev) => prev.filter((k) => k !== kw));
+  const removeKeyword = (kw) =>
+    setKeywords((prev) => prev.filter((k) => k !== kw));
 
   const matchesKeywords = (sat) => {
     if (keywords.length === 0) return true;
-    const fields = [sat.name, sat.satellite_type, sat.orbit_type, sat.norad_id, sat.object_id]
-      .map((f) => String(f ?? "").toLowerCase());
+    const fields = [
+      sat.name,
+      sat.satellite_type,
+      sat.orbit_type,
+      sat.norad_id,
+      sat.object_id,
+    ].map((f) => String(f ?? "").toLowerCase());
     return keywords.every((kw) => fields.some((f) => f.includes(kw)));
   };
 
@@ -316,18 +331,45 @@ function OverviewPage() {
     const minId = parseInt(minNoradId);
     const maxId = parseInt(maxNoradId);
     return new Set(
-      allSatellites.filter((sat) => {
-        if (satelliteTypeFilter && sat.satellite_type !== satelliteTypeFilter) return false;
-        if (orbitTypeFilter && sat.orbit_type !== orbitTypeFilter) return false;
-        if (classificationFilter && sat.classification !== classificationFilter) return false;
-        const noradId = parseInt(sat.norad_id);
-        if (minNoradId !== "" && !isNaN(minId) && (isNaN(noradId) || noradId < minId)) return false;
-        if (maxNoradId !== "" && !isNaN(maxId) && (isNaN(noradId) || noradId > maxId)) return false;
-        if (!matchesKeywords(sat)) return false;
-        return true;
-      }).map((s) => s.satellite_id)
+      allSatellites
+        .filter((sat) => {
+          if (satelliteTypeFilter && sat.satellite_type !== satelliteTypeFilter)
+            return false;
+          if (orbitTypeFilter && sat.orbit_type !== orbitTypeFilter)
+            return false;
+          if (
+            classificationFilter &&
+            sat.classification !== classificationFilter
+          )
+            return false;
+          const noradId = parseInt(sat.norad_id);
+          if (
+            minNoradId !== "" &&
+            !isNaN(minId) &&
+            (isNaN(noradId) || noradId < minId)
+          )
+            return false;
+          if (
+            maxNoradId !== "" &&
+            !isNaN(maxId) &&
+            (isNaN(noradId) || noradId > maxId)
+          )
+            return false;
+          if (!matchesKeywords(sat)) return false;
+          return true;
+        })
+        .map((s) => s.satellite_id),
     );
-  }, [isFiltered, allSatellites, satelliteTypeFilter, orbitTypeFilter, classificationFilter, minNoradId, maxNoradId, keywords]);
+  }, [
+    isFiltered,
+    allSatellites,
+    satelliteTypeFilter,
+    orbitTypeFilter,
+    classificationFilter,
+    minNoradId,
+    maxNoradId,
+    keywords,
+  ]);
 
   // Applies both search and filters — used for the satellite list
   const filteredSatellites = useMemo(() => {
@@ -339,7 +381,8 @@ function OverviewPage() {
           (sat.norad_id && sat.norad_id.toString().includes(search));
         if (!matchesSearch) return false;
       }
-      if (globeFilteredIds !== null && !globeFilteredIds.has(sat.satellite_id)) return false;
+      if (globeFilteredIds !== null && !globeFilteredIds.has(sat.satellite_id))
+        return false;
       return true;
     });
   }, [allSatellites, searchTerm, globeFilteredIds]);
@@ -400,7 +443,7 @@ function OverviewPage() {
   };
 
   return (
-    <div className={styles.content}>
+    <div className={styles.overviewLayout}>
       <div>
         <h2 className={styles.pageTitle}>Dashboard Overview</h2>
         <p className={styles.pageSubtitle}>
@@ -409,24 +452,71 @@ function OverviewPage() {
         </p>
       </div>
 
-      {/* Stats row — static display only */}
-      <div className={styles.statsRow}>
-        <StatCard label="Total Satellites" value={stats.total} icon={<SatelliteAltIcon sx={{ fontSize: 20 }} />} loading={loading} />
-        <StatCard label="Earth Satellites" value={stats.earth} icon={<PublicIcon sx={{ fontSize: 20 }} />} loading={loading} />
-        <StatCard label="Oceanic Satellites" value={stats.oceanic} icon={<WavesIcon sx={{ fontSize: 20 }} />} loading={loading} />
-        <StatCard label="Navigation Satellites" value={stats.navigation} icon={<ExploreIcon sx={{ fontSize: 20 }} />} loading={loading} />
-        <StatCard label="Internet Satellites" value={stats.internet} icon={<WifiIcon sx={{ fontSize: 20 }} />} loading={loading} />
-        <StatCard label="Research Satellites" value={stats.research} icon={<ScienceIcon sx={{ fontSize: 20 }} />} loading={loading} />
-        <StatCard label="Weather Satellites" value={stats.weather} icon={<AirIcon sx={{ fontSize: 20 }} />} loading={loading} />
-      </div>
+      {/* Stats row or Satellite Info Panel */}
+      {selectedSatelliteId ? (
+        <SatelliteInfoPanel
+          satelliteId={selectedSatelliteId}
+          onClose={() => {
+            setSelectedSatelliteId(null);
+            setHighlightedSatellites([]);
+          }}
+        />
+      ) : (
+        <div className={styles.statsRow}>
+          <StatCard
+            label="Total Satellites"
+            value={stats.total}
+            icon={<SatelliteAltIcon sx={{ fontSize: 20 }} />}
+            loading={loading}
+          />
+          <StatCard
+            label="Earth Satellites"
+            value={stats.earth}
+            icon={<PublicIcon sx={{ fontSize: 20 }} />}
+            loading={loading}
+          />
+          <StatCard
+            label="Oceanic Satellites"
+            value={stats.oceanic}
+            icon={<WavesIcon sx={{ fontSize: 20 }} />}
+            loading={loading}
+          />
+          <StatCard
+            label="Navigation Satellites"
+            value={stats.navigation}
+            icon={<ExploreIcon sx={{ fontSize: 20 }} />}
+            loading={loading}
+          />
+          <StatCard
+            label="Internet Satellites"
+            value={stats.internet}
+            icon={<WifiIcon sx={{ fontSize: 20 }} />}
+            loading={loading}
+          />
+          <StatCard
+            label="Research Satellites"
+            value={stats.research}
+            icon={<ScienceIcon sx={{ fontSize: 20 }} />}
+            loading={loading}
+          />
+          <StatCard
+            label="Weather Satellites"
+            value={stats.weather}
+            icon={<AirIcon sx={{ fontSize: 20 }} />}
+            loading={loading}
+          />
+        </div>
+      )}
 
       {/* Globe + Satellite Panel */}
       <div className={styles.globeRow}>
         {/* Left: Globe */}
         <div className={styles.globeCard}>
-          <div className={styles.globeCardHeader}>
-            <span className={styles.globeCardTitle}>Live Satellite Positions</span>
-          </div>
+          {/* <div className={styles.globeCardHeader}>
+            <span className={styles.globeCardTitle}>
+              Live Satellite Positions
+            </span>
+          </div> */}
           <div className={styles.globeCardBody}>
             <SatelliteGlobe
               highlightedSatellites={highlightedSatellites}
@@ -447,7 +537,9 @@ function OverviewPage() {
 
           {/* Search + Filter row */}
           <div className={styles.panelSearchWrapper}>
-            <SearchIcon sx={{ fontSize: 15, color: "#475569", flexShrink: 0 }} />
+            <SearchIcon
+              sx={{ fontSize: 15, color: "#475569", flexShrink: 0 }}
+            />
             <input
               className={styles.panelSearchInput}
               type="text"
@@ -474,23 +566,43 @@ function OverviewPage() {
                 <button
                   className={styles.panelFiltersClear}
                   onClick={clearFilters}
-                  style={{ visibility: isFiltered ? 'visible' : 'hidden' }}
+                  style={{ visibility: isFiltered ? "visible" : "hidden" }}
                 >
                   <CloseIcon sx={{ fontSize: 12 }} /> Clear
                 </button>
               </div>
               <div className={styles.panelFiltersRow}>
-                <select value={satelliteTypeFilter} onChange={(e) => setSatelliteTypeFilter(e.target.value)} style={selectStyle}>
+                <select
+                  value={satelliteTypeFilter}
+                  onChange={(e) => setSatelliteTypeFilter(e.target.value)}
+                  style={selectStyle}
+                >
                   <option value="">All Categories</option>
-                  {satelliteTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {satelliteTypes.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
                 </select>
-                <select value={orbitTypeFilter} onChange={(e) => setOrbitTypeFilter(e.target.value)} style={selectStyle}>
+                <select
+                  value={orbitTypeFilter}
+                  onChange={(e) => setOrbitTypeFilter(e.target.value)}
+                  style={selectStyle}
+                >
                   <option value="">All Orbits</option>
-                  {orbitTypes.map((o) => <option key={o} value={o}>{o}</option>)}
+                  {orbitTypes.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className={styles.panelFiltersRow}>
-                <select value={classificationFilter} onChange={(e) => setClassificationFilter(e.target.value)} style={selectStyle}>
+                <select
+                  value={classificationFilter}
+                  onChange={(e) => setClassificationFilter(e.target.value)}
+                  style={selectStyle}
+                >
                   <option value="">All Classifications</option>
                   <option value="U">Unclassified (U)</option>
                   <option value="C">Classified (C)</option>
@@ -503,7 +615,10 @@ function OverviewPage() {
                     inputMode="numeric"
                     placeholder="Min NORAD ID"
                     value={minNoradId}
-                    onChange={(e) => { if (e.target.value === "" || /^\d*$/.test(e.target.value)) setMinNoradId(e.target.value); }}
+                    onChange={(e) => {
+                      if (e.target.value === "" || /^\d*$/.test(e.target.value))
+                        setMinNoradId(e.target.value);
+                    }}
                   />
                   <span className={styles.noradRangeSep}>—</span>
                   <input
@@ -512,7 +627,10 @@ function OverviewPage() {
                     inputMode="numeric"
                     placeholder="Max NORAD ID"
                     value={maxNoradId}
-                    onChange={(e) => { if (e.target.value === "" || /^\d*$/.test(e.target.value)) setMaxNoradId(e.target.value); }}
+                    onChange={(e) => {
+                      if (e.target.value === "" || /^\d*$/.test(e.target.value))
+                        setMaxNoradId(e.target.value);
+                    }}
                   />
                 </div>
               </div>
@@ -520,7 +638,10 @@ function OverviewPage() {
                 {keywords.map((kw) => (
                   <span key={kw} className={styles.keywordTag}>
                     {kw}
-                    <button className={styles.keywordTagRemove} onClick={() => removeKeyword(kw)}>
+                    <button
+                      className={styles.keywordTagRemove}
+                      onClick={() => removeKeyword(kw)}
+                    >
                       <CloseIcon sx={{ fontSize: 10 }} />
                     </button>
                   </span>
@@ -528,7 +649,11 @@ function OverviewPage() {
                 <input
                   className={styles.keywordInput}
                   type="text"
-                  placeholder={keywords.length === 0 ? "Filter by keyword, press Enter to add..." : "Add another..."}
+                  placeholder={
+                    keywords.length === 0
+                      ? "Filter by keyword, press Enter to add..."
+                      : "Add another..."
+                  }
                   value={keywordInput}
                   onChange={(e) => setKeywordInput(e.target.value)}
                   onKeyDown={addKeyword}
@@ -540,9 +665,13 @@ function OverviewPage() {
           {/* Satellite List */}
           <div className={styles.satelliteList}>
             {loading ? (
-              <div className={styles.satelliteListEmpty}>Loading satellites...</div>
+              <div className={styles.satelliteListEmpty}>
+                Loading satellites...
+              </div>
             ) : filteredSatellites.length === 0 ? (
-              <div className={styles.satelliteListEmpty}>No satellites match filters</div>
+              <div className={styles.satelliteListEmpty}>
+                No satellites match filters
+              </div>
             ) : (
               filteredSatellites.map((sat) => (
                 <div
@@ -552,7 +681,11 @@ function OverviewPage() {
                 >
                   <div
                     className={styles.satelliteItemDot}
-                    style={user?.level_access >= 3 && sat.review_status === 'pending' ? { backgroundColor: '#f59e0b' } : undefined}
+                    style={
+                      user?.level_access >= 3 && sat.review_status === "pending"
+                        ? { backgroundColor: "#f59e0b" }
+                        : undefined
+                    }
                   />
                   <div className={styles.satelliteItemInfo}>
                     <span className={styles.satelliteItemName}>{sat.name}</span>
@@ -560,24 +693,15 @@ function OverviewPage() {
                       {sat.satellite_type} · {sat.norad_id}
                     </span>
                   </div>
-                  <span className={styles.satelliteItemOrbit}>{sat.orbit_type}</span>
+                  <span className={styles.satelliteItemOrbit}>
+                    {sat.orbit_type}
+                  </span>
                 </div>
               ))
             )}
           </div>
         </div>
       </div>
-
-      {/* Satellite Info Panel — shown below globe row when a satellite is selected */}
-      {selectedSatelliteId && (
-        <SatelliteInfoPanel
-          satelliteId={selectedSatelliteId}
-          onClose={() => {
-            setSelectedSatelliteId(null);
-            setHighlightedSatellites([]);
-          }}
-        />
-      )}
     </div>
   );
 }
