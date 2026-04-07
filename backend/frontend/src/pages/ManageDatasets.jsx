@@ -3,12 +3,22 @@ import React, { useEffect, useState } from "react";
 
 // icon imports
 import EditIcon from "@mui/icons-material/Edit";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 // api imports
-import { getAllDatasets, modifyDataset } from "../api/datasetService";
+import {
+  getAllDatasets,
+  modifyDataset,
+  addDataset,
+  getDatasetSources,
+  deleteDataset,
+} from "../api/datasetService";
 
 // component imports
 import DatasetProfileModal from "../components/DatasetProfileModal";
+import AddDatasetModal from "../components/AddDatasetModal";
+import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import PopupMessage from "../components/PopupMessage";
 
 // hooks
@@ -19,7 +29,7 @@ import styles from "../styles/ManageDatasets.module.css";
 
 const STATUS_STYLES = {
   approved: { backgroundColor: "#14532d", color: "#4ade80" },
-  pending:  { backgroundColor: "#1c1917", color: "#f59e0b" },
+  pending: { backgroundColor: "#1c1917", color: "#f59e0b" },
   rejected: { backgroundColor: "#450a0a", color: "#f87171" },
 };
 
@@ -27,8 +37,12 @@ export default function ManageDatasets() {
   const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [sources, setSources] = useState([]);
 
-  const { message, messageFading, messageVisible, showPopupMessage } = usePopupMessage();
+  const { message, messageFading, messageVisible, showPopupMessage } =
+    usePopupMessage();
 
   // load datasets on mount
   useEffect(() => {
@@ -43,21 +57,62 @@ export default function ManageDatasets() {
     await modifyDataset(editTarget.dataset_id, payload);
     setDatasets((prev) =>
       prev.map((d) =>
-        d.dataset_id === editTarget.dataset_id ? { ...d, ...payload } : d
-      )
+        d.dataset_id === editTarget.dataset_id ? { ...d, ...payload } : d,
+      ),
     );
     showPopupMessage("Dataset updated successfully");
   };
 
-// main component structure
+  // handle add dataset
+  const handleAdd = async (payload) => {
+    const result = await addDataset(payload);
+    const updated = await getAllDatasets();
+    setDatasets(updated);
+    showPopupMessage(result.message ?? "Dataset created successfully");
+    return result;
+  };
+
+  // handle delete dataset
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteDataset(deleteTarget.dataset_id);
+      setDatasets((prev) =>
+        prev.filter((d) => d.dataset_id !== deleteTarget.dataset_id),
+      );
+      setDeleteTarget(null);
+      showPopupMessage("Dataset deleted successfully");
+    } catch (err) {
+      console.error("Failed to delete dataset:", err);
+      showPopupMessage("Failed to delete dataset", "error");
+    }
+  };
+
+  // main component structure
   return (
     <div className={styles.page}>
       {/* Page Header */}
       <div className={styles.pageHeader}>
         <div>
           <h2 className={styles.pageTitle}>Manage Datasets</h2>
-          <p className={styles.pageSubtitle}>Review and manage satellite datasets</p>
+          <p className={styles.pageSubtitle}>
+            View, manage and remove datasets
+          </p>
         </div>
+        <button
+          className={styles.addButton}
+          onClick={() => {
+            if (sources.length === 0) {
+              getDatasetSources()
+                .then(setSources)
+                .catch((err) => console.error("Failed to load sources:", err));
+            }
+            setShowAddModal(true);
+          }}
+        >
+          <AddIcon sx={{ fontSize: 18 }} />
+          Add Dataset
+        </button>
       </div>
 
       {/* Dataset Table */}
@@ -69,6 +124,7 @@ export default function ManageDatasets() {
           <span className={styles.listHeaderCell}>Last Pulled</span>
           <span className={styles.listHeaderCell}>Created</span>
           <span className={styles.listHeaderCell}>Review Status</span>
+          <span className={styles.listHeaderCell}></span>
           <span className={styles.listHeaderCell}></span>
         </div>
 
@@ -85,7 +141,9 @@ export default function ManageDatasets() {
                   {dataset.dataset_name}
                 </div>
                 <div className={styles.listCell}>{dataset.source}</div>
-                <div className={styles.listCell}>{dataset.file_size ?? "—"}</div>
+                <div className={styles.listCell}>
+                  {dataset.file_size ?? "—"}
+                </div>
                 <div className={styles.listCell}>
                   {dataset.last_pulled
                     ? new Date(dataset.last_pulled).toLocaleDateString()
@@ -97,7 +155,10 @@ export default function ManageDatasets() {
                     : "—"}
                 </div>
                 <div className={styles.listCell}>
-                  <span className={styles.statusBadge} style={STATUS_STYLES[dataset.review_status] ?? {}}>
+                  <span
+                    className={styles.statusBadge}
+                    style={STATUS_STYLES[dataset.review_status] ?? {}}
+                  >
                     {dataset.review_status}
                   </span>
                 </div>
@@ -106,6 +167,12 @@ export default function ManageDatasets() {
                   onClick={() => setEditTarget(dataset)}
                 >
                   <EditIcon sx={{ fontSize: 18 }} />
+                </button>
+                <button
+                  className={styles.deleteButton}
+                  onClick={() => setDeleteTarget(dataset)}
+                >
+                  <DeleteOutlineIcon sx={{ fontSize: 18 }} />
                 </button>
               </div>
             ))
@@ -122,7 +189,27 @@ export default function ManageDatasets() {
         />
       )}
 
-{message && (
+      {/* Add Modal */}
+      {showAddModal && (
+        <AddDatasetModal
+          sources={sources}
+          onClose={() => setShowAddModal(false)}
+          onSave={handleAdd}
+        />
+      )}
+
+      {/* Confirm Delete Modal */}
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          title="Remove Dataset"
+          message="Removing this dataset will also remove all associated satellites."
+          confirmLabel="Delete"
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {message && (
         <PopupMessage
           message={message.message}
           type={message.type}
