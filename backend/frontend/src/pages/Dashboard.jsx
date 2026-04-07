@@ -300,10 +300,9 @@ function OverviewPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [satelliteTypeFilter, setSatelliteTypeFilter] = useState("");
   const [orbitTypeFilter, setOrbitTypeFilter] = useState("");
-  const [minAltitude, setMinAltitude] = useState("");
-  const [maxAltitude, setMaxAltitude] = useState("");
-  const [minVelocity, setMinVelocity] = useState("");
-  const [maxVelocity, setMaxVelocity] = useState("");
+  const [classificationFilter, setClassificationFilter] = useState("");
+  const [minNoradId, setMinNoradId] = useState("");
+  const [maxNoradId, setMaxNoradId] = useState("");
   const [keywords, setKeywords] = useState([]);
   const [keywordInput, setKeywordInput] = useState("");
 
@@ -320,13 +319,12 @@ function OverviewPage() {
   const isFiltered =
     satelliteTypeFilter !== "" ||
     orbitTypeFilter !== "" ||
-    minAltitude !== "" ||
-    maxAltitude !== "" ||
-    minVelocity !== "" ||
-    maxVelocity !== "" ||
+    classificationFilter !== "" ||
+    minNoradId !== "" ||
+    maxNoradId !== "" ||
     keywords.length > 0;
 
-  const activeFilterCount = [satelliteTypeFilter, orbitTypeFilter, minAltitude, maxAltitude, minVelocity, maxVelocity].filter(Boolean).length + keywords.length;
+  const activeFilterCount = [satelliteTypeFilter, orbitTypeFilter, classificationFilter, minNoradId, maxNoradId].filter(Boolean).length + keywords.length;
 
   const addKeyword = (e) => {
     if (e.key === "Enter" && keywordInput.trim()) {
@@ -348,29 +346,21 @@ function OverviewPage() {
   // Applies only filter values (no search) — used for globe visibility
   const globeFilteredIds = useMemo(() => {
     if (!isFiltered) return null;
-    const minAlt = parseFloat(minAltitude);
-    const maxAlt = parseFloat(maxAltitude);
-    const minVel = parseFloat(minVelocity);
-    const maxVel = parseFloat(maxVelocity);
+    const minId = parseInt(minNoradId);
+    const maxId = parseInt(maxNoradId);
     return new Set(
       allSatellites.filter((sat) => {
         if (satelliteTypeFilter && sat.satellite_type !== satelliteTypeFilter) return false;
         if (orbitTypeFilter && sat.orbit_type !== orbitTypeFilter) return false;
-        const altitude = Number(sat.altitude);
-        if (!isNaN(minAlt) && !isNaN(altitude) && altitude < minAlt) return false;
-        if (!isNaN(maxAlt) && !isNaN(altitude) && altitude > maxAlt) return false;
-        if (!isNaN(minAlt) && isNaN(altitude) && minAltitude !== "") return false;
-        if (!isNaN(maxAlt) && isNaN(altitude) && maxAltitude !== "") return false;
-        const velocity = Number(sat.velocity);
-        if (!isNaN(minVel) && !isNaN(velocity) && velocity < minVel) return false;
-        if (!isNaN(maxVel) && !isNaN(velocity) && velocity > maxVel) return false;
-        if (!isNaN(minVel) && isNaN(velocity) && minVelocity !== "") return false;
-        if (!isNaN(maxVel) && isNaN(velocity) && maxVelocity !== "") return false;
+        if (classificationFilter && sat.classification !== classificationFilter) return false;
+        const noradId = parseInt(sat.norad_id);
+        if (minNoradId !== "" && !isNaN(minId) && (isNaN(noradId) || noradId < minId)) return false;
+        if (maxNoradId !== "" && !isNaN(maxId) && (isNaN(noradId) || noradId > maxId)) return false;
         if (!matchesKeywords(sat)) return false;
         return true;
       }).map((s) => s.satellite_id)
     );
-  }, [isFiltered, allSatellites, satelliteTypeFilter, orbitTypeFilter, minAltitude, maxAltitude, minVelocity, maxVelocity, keywords]);
+  }, [isFiltered, allSatellites, satelliteTypeFilter, orbitTypeFilter, classificationFilter, minNoradId, maxNoradId, keywords]);
 
   // Applies both search and filters — used for the satellite list
   const filteredSatellites = useMemo(() => {
@@ -390,10 +380,9 @@ function OverviewPage() {
   const clearFilters = () => {
     setSatelliteTypeFilter("");
     setOrbitTypeFilter("");
-    setMinAltitude("");
-    setMaxAltitude("");
-    setMinVelocity("");
-    setMaxVelocity("");
+    setClassificationFilter("");
+    setMinNoradId("");
+    setMaxNoradId("");
     setKeywords([]);
     setKeywordInput("");
   };
@@ -532,12 +521,31 @@ function OverviewPage() {
                 </select>
               </div>
               <div className={styles.panelFiltersRow}>
-                <NumInput placeholder="Min altitude" value={minAltitude} onChange={setMinAltitude} />
-                <NumInput placeholder="Max altitude" value={maxAltitude} onChange={setMaxAltitude} />
-              </div>
-              <div className={styles.panelFiltersRow}>
-                <NumInput placeholder="Min velocity" value={minVelocity} onChange={setMinVelocity} />
-                <NumInput placeholder="Max velocity" value={maxVelocity} onChange={setMaxVelocity} />
+                <select value={classificationFilter} onChange={(e) => setClassificationFilter(e.target.value)} style={selectStyle}>
+                  <option value="">All Classifications</option>
+                  <option value="U">Unclassified (U)</option>
+                  <option value="C">Classified (C)</option>
+                  <option value="S">Secret (S)</option>
+                </select>
+                <div className={styles.noradRange}>
+                  <input
+                    className={styles.noradRangeInput}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Min NORAD ID"
+                    value={minNoradId}
+                    onChange={(e) => { if (e.target.value === "" || /^\d*$/.test(e.target.value)) setMinNoradId(e.target.value); }}
+                  />
+                  <span className={styles.noradRangeSep}>—</span>
+                  <input
+                    className={styles.noradRangeInput}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Max NORAD ID"
+                    value={maxNoradId}
+                    onChange={(e) => { if (e.target.value === "" || /^\d*$/.test(e.target.value)) setMaxNoradId(e.target.value); }}
+                  />
+                </div>
               </div>
               <div className={styles.keywordRow}>
                 {keywords.map((kw) => (

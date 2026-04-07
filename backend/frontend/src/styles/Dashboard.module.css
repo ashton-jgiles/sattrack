@@ -628,6 +628,50 @@
   flex-shrink: 0;
 }
 
+/* ── NORAD ID range input ───────────────────────────────────── */
+
+.noradRange {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  background-color: #0a1628;
+  border: 1px solid #1e293b;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.noradRangeInput {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  font-family: inherit;
+  padding: 0.4rem 0.6rem;
+  width: auto;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.noradRangeInput:focus {
+  outline: none !important;
+}
+
+.noradRangeInput::placeholder {
+  color: #475569;
+}
+
+.noradRangeSep {
+  color: #334155;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  user-select: none;
+}
+
 /* ── Keyword tag filter ─────────────────────────────────────── */
 
 .keywordRow {
