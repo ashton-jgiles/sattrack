@@ -35,3 +35,4 @@ export const getDeletedSatellites = async () => {
 export const recoverSatellite = async (id) => {
   return await post(`/manage/satellite/${id}/recover/`, {});
 };
+

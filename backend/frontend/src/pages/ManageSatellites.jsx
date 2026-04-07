@@ -1,5 +1,5 @@
 // react imports
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 // icon imports
 import AddIcon from "@mui/icons-material/Add";
@@ -51,7 +51,6 @@ export default function ManageSatellites() {
   const [loading, setLoading] = useState(true);
   const [deletedLoading, setDeletedLoading] = useState(false);
   const [profileData, setProfileData] = useState(null);
-  const [profileLoading, setProfileLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const { message, messageFading, messageVisible, showPopupMessage } =
@@ -338,7 +337,7 @@ export default function ManageSatellites() {
       {deleteTarget && (
         <ConfirmDeleteModal
           title="Remove Satellite"
-          message="Removing this satellite will permanently remove it from the database."
+          message="This satellite will be moved to Recently Deleted. It can be recovered within 30 days, after which it is permanently removed."
           confirmLabel="Delete"
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteTarget(null)}
