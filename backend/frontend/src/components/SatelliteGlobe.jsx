@@ -67,6 +67,7 @@ export default function SatelliteGlobe({
   const startTimeRef = useRef(null);
   const satelliteGroupsRef = useRef({});
   const satelliteIdsRef = useRef([]);
+  const pendingSatelliteIdsRef = useRef(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -129,6 +130,7 @@ export default function SatelliteGlobe({
         const pendingSatelliteIds = new Set(
           allPages.flatMap((p) => p.pending_satellite_ids ?? [])
         );
+        pendingSatelliteIdsRef.current = pendingSatelliteIds;
         const groups = groupBySatellite(allPositions);
         satelliteGroupsRef.current = groups;
 
@@ -197,13 +199,18 @@ export default function SatelliteGlobe({
       const isVisible =
         visibleSatelliteIds === null || visibleSatelliteIds.has(id);
 
+      const isPending = pendingSatelliteIdsRef.current.has(id);
       point.show = isVisible;
       point.color = isHighlighted
         ? Cesium.Color.fromCssColorString("#3b82f6").withAlpha(0.9)
+        : isPending
+        ? Cesium.Color.fromCssColorString("#f59e0b").withAlpha(0.9)
         : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9);
       point.pixelSize = isHighlighted ? 14 : 6;
       point.outlineColor = isHighlighted
         ? Cesium.Color.WHITE.withAlpha(0.4)
+        : isPending
+        ? Cesium.Color.fromCssColorString("#fbbf24").withAlpha(0.4)
         : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4);
       point.outlineWidth = isHighlighted ? 2 : 3;
     });

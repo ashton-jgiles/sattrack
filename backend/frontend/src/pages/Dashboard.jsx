@@ -32,8 +32,6 @@ import AirIcon from "@mui/icons-material/Air";
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
 import PersonIcon from "@mui/icons-material/Person";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 // component imports
 import SatelliteGlobe from "../components/SatelliteGlobe";
@@ -48,38 +46,6 @@ import { getTotalDatasets } from "../api/datasetService";
 
 // style imports
 import styles from "../styles/Dashboard.module.css";
-
-function NumInput({ placeholder, value, onChange }) {
-  const step = 1;
-  const adjust = (dir) => {
-    const current = parseFloat(value) || 0;
-    onChange(String(current + dir * step));
-  };
-  return (
-    <div className={styles.numberInputWrapper}>
-      <input
-        className={styles.numberInput}
-        type="text"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => {
-          const val = e.target.value;
-          if (val === "" || /^-?\d*\.?\d*$/.test(val)) onChange(val);
-        }}
-      />
-      <div className={styles.numberInputSpinners}>
-        <button className={styles.spinnerBtn} onClick={() => adjust(1)} tabIndex={-1}>
-          <KeyboardArrowUpIcon sx={{ fontSize: 12 }} />
-        </button>
-        <button className={styles.spinnerBtn} onClick={() => adjust(-1)} tabIndex={-1}>
-          <KeyboardArrowDownIcon sx={{ fontSize: 12 }} />
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // Sidebar nav config
 const NAV_ITEMS = [
@@ -287,6 +253,7 @@ function SatelliteInfoPanel({ satelliteId, onClose }) {
 
 // Page: Overview
 function OverviewPage() {
+  const { user } = useAuth();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [allSatellites, setAllSatellites] = useState([]);
@@ -581,7 +548,10 @@ function OverviewPage() {
                   className={`${styles.satelliteItem} ${selectedSatelliteId === sat.satellite_id ? styles.satelliteItemSelected : ""}`}
                   onClick={() => handleSelectSatellite(sat.satellite_id)}
                 >
-                  <div className={styles.satelliteItemDot} />
+                  <div
+                    className={styles.satelliteItemDot}
+                    style={user?.level_access >= 3 && sat.review_status === 'pending' ? { backgroundColor: '#f59e0b' } : undefined}
+                  />
                   <div className={styles.satelliteItemInfo}>
                     <span className={styles.satelliteItemName}>{sat.name}</span>
                     <span className={styles.satelliteItemMeta}>

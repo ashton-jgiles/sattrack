@@ -15,6 +15,7 @@ class SatelliteView(APIView):
             cursor.execute(f"""
                 SELECT
                     s.*,
+                    d.review_status,
                     CASE
                         WHEN es.satellite_id IS NOT NULL THEN 'Earth Science'
                         WHEN os.satellite_id IS NOT NULL THEN 'Oceanic Science'
