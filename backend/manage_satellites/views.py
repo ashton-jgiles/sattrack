@@ -200,6 +200,56 @@ def derive_orbit_type(mean_motion, inclination):
     else:
         return 'LEO'
 
+# returns all soft-deleted satellites
+class GetDeletedSatellites(APIView):
+    def get(self, request):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    s.satellite_id, s.name, s.orbit_type, s.norad_id, s.object_id,
+                    s.deleted_at,
+                    CASE
+                        WHEN es.satellite_id IS NOT NULL THEN 'Earth Science'
+                        WHEN os.satellite_id IS NOT NULL THEN 'Oceanic Science'
+                        WHEN w.satellite_id  IS NOT NULL THEN 'Weather'
+                        WHEN n.satellite_id  IS NOT NULL THEN 'Navigation'
+                        WHEN i.satellite_id  IS NOT NULL THEN 'Internet'
+                        WHEN r.satellite_id  IS NOT NULL THEN 'Research'
+                        ELSE 'Unknown'
+                    END AS satellite_type
+                FROM satellite s
+                    LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
+                    LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
+                    LEFT JOIN weather         w  ON s.satellite_id = w.satellite_id
+                    LEFT JOIN navigation      n  ON s.satellite_id = n.satellite_id
+                    LEFT JOIN internet        i  ON s.satellite_id = i.satellite_id
+                    LEFT JOIN research        r  ON s.satellite_id = r.satellite_id
+                WHERE s.deleted_at IS NOT NULL
+                ORDER BY s.deleted_at DESC
+            """)
+            columns = [col[0] for col in cursor.description]
+            rows = cursor.fetchall()
+        return Response([dict(zip(columns, row)) for row in rows])
+
+
+# restores a soft-deleted satellite by clearing deleted_at
+class RecoverSatellite(APIView):
+    def post(self, request, satellite_id):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT satellite_id FROM satellite WHERE satellite_id = %s AND deleted_at IS NOT NULL",
+                [satellite_id]
+            )
+            if not cursor.fetchone():
+                return Response({'error': 'Deleted satellite not found'}, status=404)
+
+            cursor.execute(
+                "UPDATE satellite SET deleted_at = NULL WHERE satellite_id = %s",
+                [satellite_id]
+            )
+        return Response({'message': 'Satellite recovered successfully'})
+
+
 # delete satellite data which takes a satellite id and removes all associated data from the database
 class DeleteSatellite(APIView):
     def delete(self, request, satellite_id):
