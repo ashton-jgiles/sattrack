@@ -11,7 +11,7 @@ class TotalDatasets(APIView):
 
     def get(self, request):
         with connection.cursor() as cursor:
-            cursor.execute("SELECT COUNT(dataset_id) AS total FROM dataset")
+            cursor.execute("SELECT COUNT(dataset_id) AS total FROM dataset WHERE deleted_at IS NULL")
             columns = [col[0] for col in cursor.description]
             row = cursor.fetchone()
 
@@ -24,7 +24,7 @@ class TotalDatasets(APIView):
 class DatasetView(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM dataset")
+            cursor.execute("SELECT * FROM dataset WHERE deleted_at IS NULL")
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
