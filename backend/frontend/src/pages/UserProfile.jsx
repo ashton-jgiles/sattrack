@@ -134,10 +134,7 @@ export default function UserProfile() {
             type="text"
             className={styles.fieldInput}
             value={subtypeData.profession || ""}
-            onChange={(e) =>
-              setSubtypeData({ ...subtypeData, profession: e.target.value })
-            }
-            placeholder="Your profession..."
+            disabled
           />
         </div>
       );
@@ -150,13 +147,7 @@ export default function UserProfile() {
             type="number"
             className={styles.fieldInput}
             value={subtypeData.employee_id ?? ""}
-            onChange={(e) =>
-              setSubtypeData({
-                ...subtypeData,
-                employee_id: parseInt(e.target.value) || 0,
-              })
-            }
-            placeholder="Employee ID"
+            disabled
           />
         </div>
       );
