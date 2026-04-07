@@ -116,7 +116,7 @@ export default function ManageSatellites() {
           </p>
         </div>
         <button
-          className={styles.refreshButton}
+          className={styles.addButton}
           onClick={() => setShowAddModal(true)}
         >
           <AddIcon sx={{ fontSize: 18 }} />
