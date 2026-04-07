@@ -10,6 +10,9 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 // api imports
 import { getAllDatasets, getSatellitesInDataset } from "../api/datasetService";
 
+// auth imports
+import { useAuth } from "../hooks/useAuth";
+
 // style imports
 import styles from "../styles/Datasets.module.css";
 
@@ -21,7 +24,7 @@ const STATUS_COLORS = {
 };
 
 // dataset card component
-function DatasetCard({ dataset, onViewDetails }) {
+function DatasetCard({ dataset, onViewDetails, showStatus }) {
   const [satellitesOpen, setSatellitesOpen] = useState(false);
   const [satellites, setSatellites] = useState([]);
   const [satellitesLoading, setSatellitesLoading] = useState(false);
@@ -40,9 +43,11 @@ function DatasetCard({ dataset, onViewDetails }) {
           <h3 className={styles.cardTitle}>{dataset.dataset_name}</h3>
           <span className={styles.cardSource}>{dataset.source}</span>
         </div>
-        <span className={`${styles.statusBadge} ${statusClass}`}>
-          {dataset.review_status}
-        </span>
+        {showStatus && (
+          <span className={`${styles.statusBadge} ${statusClass}`}>
+            {dataset.review_status}
+          </span>
+        )}
       </div>
 
       {/* Card Body */}
@@ -141,6 +146,8 @@ export default function Datasets() {
   const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDataset, setSelectedDataset] = useState(null);
+  const { user } = useAuth();
+  const showStatus = user?.level_access >= 3;
 
   // load datasets on mount
   useEffect(() => {
@@ -174,6 +181,7 @@ export default function Datasets() {
               key={dataset.dataset_id}
               dataset={dataset}
               onViewDetails={setSelectedDataset}
+              showStatus={showStatus}
             />
           ))}
         </div>

@@ -11,7 +11,7 @@ class TotalDatasets(APIView):
 
     def get(self, request):
         with connection.cursor() as cursor:
-            cursor.execute("SELECT COUNT(dataset_id) AS total FROM dataset WHERE deleted_at IS NULL")
+            cursor.execute("SELECT COUNT(dataset_id) AS total FROM dataset WHERE deleted_at IS NULL AND review_status = 'approved'")
             columns = [col[0] for col in cursor.description]
             row = cursor.fetchone()
 
@@ -23,8 +23,11 @@ class TotalDatasets(APIView):
 # dataset view class which returns as json all datasets in the dataset table
 class DatasetView(APIView):
     def get(self, request):
+        level = getattr(request.user, 'level_access', 1)
+        status_filter = "" if level >= 3 else "AND review_status = 'approved'"
+
         with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM dataset WHERE deleted_at IS NULL")
+            cursor.execute(f"SELECT * FROM dataset WHERE deleted_at IS NULL {status_filter}")
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
@@ -33,12 +36,23 @@ class DatasetView(APIView):
 # satellites in dataset view returns all satellites belonging to a given dataset
 class SatellitesInDataset(APIView):
     def get(self, request, dataset_id):
+        level = getattr(request.user, 'level_access', 1)
+
         with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT satellite_id, name, orbit_type, norad_id, object_id, classification
-                FROM satellite
-                WHERE dataset_id = %s AND deleted_at IS NULL
-            """, [dataset_id])
+            if level < 3:
+                cursor.execute("""
+                    SELECT s.satellite_id, s.name, s.orbit_type, s.norad_id, s.object_id, s.classification
+                    FROM satellite s
+                    INNER JOIN dataset d ON s.dataset_id = d.dataset_id
+                    WHERE s.dataset_id = %s AND s.deleted_at IS NULL
+                      AND d.deleted_at IS NULL AND d.review_status = 'approved'
+                """, [dataset_id])
+            else:
+                cursor.execute("""
+                    SELECT satellite_id, name, orbit_type, norad_id, object_id, classification
+                    FROM satellite
+                    WHERE dataset_id = %s AND deleted_at IS NULL
+                """, [dataset_id])
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 

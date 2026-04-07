@@ -7,7 +7,68 @@ import requests
 import re
 
 VALID_STATUSES = {'pending', 'approved', 'rejected'}
+CLOSED_STATUSES = {'approved', 'rejected'}
 CELESTRAK_BASE = 'https://celestrak.org/NORAD/elements/gp.php'
+
+# get review datasets returns all non-deleted datasets for the reviews page
+class GetReviewDatasets(APIView):
+    def get(self, request):
+        show_closed = request.GET.get('closed', 'false').lower() == 'true'
+
+        if show_closed:
+            status_filter = "AND review_status IN ('approved', 'rejected')"
+        else:
+            status_filter = "AND review_status = 'pending'"
+
+        with connection.cursor() as cursor:
+            cursor.execute(f"""
+                SELECT
+                    d.dataset_id,
+                    d.dataset_name,
+                    d.description,
+                    d.review_status,
+                    d.review_comment,
+                    d.creation_date,
+                    d.last_pulled,
+                    COUNT(s.satellite_id) AS satellite_count
+                FROM dataset d
+                LEFT JOIN satellite s
+                    ON s.dataset_id = d.dataset_id AND s.deleted_at IS NULL
+                WHERE d.deleted_at IS NULL
+                {status_filter}
+                GROUP BY d.dataset_id
+                ORDER BY d.creation_date DESC
+            """)
+            columns = [col[0] for col in cursor.description]
+            rows = cursor.fetchall()
+
+        return Response([dict(zip(columns, row)) for row in rows])
+
+
+# review dataset updates review_status and review_comment for a dataset
+class ReviewDataset(APIView):
+    def post(self, request, dataset_id):
+        review_status = request.data.get('review_status')
+        review_comment = request.data.get('review_comment', '')
+
+        if review_status not in CLOSED_STATUSES:
+            return Response({'error': 'review_status must be approved or rejected'}, status=400)
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT dataset_id FROM dataset WHERE dataset_id = %s AND deleted_at IS NULL",
+                [dataset_id]
+            )
+            if not cursor.fetchone():
+                return Response({'error': 'Dataset not found'}, status=404)
+
+            cursor.execute(
+                "UPDATE dataset SET review_status = %s, review_comment = %s WHERE dataset_id = %s",
+                [review_status, review_comment, dataset_id]
+            )
+
+        return Response({'message': f'Dataset {review_status} successfully'})
+
 
 # modify dataset class which updates description, pull_frequency, and review_status
 class ModifyDataset(APIView):

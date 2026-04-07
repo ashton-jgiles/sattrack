@@ -11,6 +11,7 @@ import ManageDatasets from "./ManageDatasets";
 import Datasets from "./Datasets";
 import UserProfile from "./UserProfile";
 import Settings from "./Settings";
+import Reviews from "./Reviews";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
@@ -711,7 +712,7 @@ export default function Dashboard() {
       case "visualizations":
         return <PlaceholderPage title="Visualizations" />;
       case "reviews":
-        return <PlaceholderPage title="Reviews" />;
+        return <Reviews />;
       case "manageSatellites":
         return <ManageSatellites />;
       case "manageDatasets":
