@@ -5,7 +5,7 @@ from sgp4.api import Satrec, jday
 from sgp4.omm import initialize
 
 # constants
-HISTORY_DAYS     = 7
+HISTORY_DAYS = 7
 INTERVAL_MINUTES = 5
 
 # build sat record method

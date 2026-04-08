@@ -1,4 +1,4 @@
-# connection and api imports and rate limiting imports
+# connection and api imports and rate limiting imports and logging
 from django.db import connection, transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,8 +14,8 @@ from sgp4.api import jday
 import requests
 from manage_satellites.trajectory import (
     build_sat_record, ecef_to_geodetic, 
-    compute_velocity, build_timestamps,
-    HISTORY_DAYS, INTERVAL_MINUTES
+    compute_velocity, HISTORY_DAYS, 
+    INTERVAL_MINUTES
 )
 
 # cache retention hours
@@ -35,13 +35,13 @@ def get_stale_cache(url):
     # try select the data from the database cache from the celestrak url we are using
     try:
         with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT data FROM celestrak_cache WHERE url = %s",
-                (url,)
-            )
+            # select the data from the database cache table
+            cursor.execute("SELECT data FROM celestrak_cache WHERE url = %s",[url])
             row = cursor.fetchone()
+            # if we get data load the json
             if row:
                 return json.loads(row[0])
+            
     # if no data just pass
     except Exception:
         pass
@@ -107,6 +107,7 @@ def generate_trajectory_async(satellite_id, dataset_id, tle_data):
     logger.info(f"[Trajectory] Generating for NORAD {norad_id}...")
 
     try:
+        # sat data structure from CelesTrak
         sat_data = {
             'NORAD_CAT_ID': norad_id,
             'OBJECT_NAME': tle_data.get('name'),
@@ -127,9 +128,11 @@ def generate_trajectory_async(satellite_id, dataset_id, tle_data):
             'REV_AT_EPOCH': 0,
         }
 
+        # try to build the satellite record
         try:
             sat_record = build_sat_record(sat_data)
         except Exception as e:
+            # log the info for error
             logger.info(f"[Trajectory] SGP4 error for NORAD {norad_id}: {e}")
             return
 
@@ -157,6 +160,7 @@ def generate_trajectory_async(satellite_id, dataset_id, tle_data):
                 lat, lon, alt = ecef_to_geodetic(r[0], r[1], r[2])
                 velocity = compute_velocity(sat_record.no_kozai)
 
+                # insert the data into the trajectory table
                 cursor.execute("""
                     INSERT INTO trajectory (
                         dataset_id, satellite_id, timestamp, velocity,
@@ -182,6 +186,7 @@ def generate_trajectory_async(satellite_id, dataset_id, tle_data):
                     connection.commit()
 
             connection.commit()
+        # log the trajectory data when done for the satellite
         logger.info(f"[Trajectory] Done NORAD {norad_id} — {inserted} snapshots inserted")
 
     except Exception as e:
@@ -204,6 +209,7 @@ def derive_orbit_type(mean_motion, inclination):
 class GetDeletedSatellites(APIView):
     def get(self, request):
         with connection.cursor() as cursor:
+            # get satellites and their type from the satellites table where delete_at is not null (its been deleted)
             cursor.execute("""
                 SELECT
                     s.satellite_id, s.name, s.orbit_type, s.norad_id, s.object_id,
@@ -220,33 +226,37 @@ class GetDeletedSatellites(APIView):
                 FROM satellite s
                     LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
                     LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
-                    LEFT JOIN weather         w  ON s.satellite_id = w.satellite_id
-                    LEFT JOIN navigation      n  ON s.satellite_id = n.satellite_id
-                    LEFT JOIN internet        i  ON s.satellite_id = i.satellite_id
-                    LEFT JOIN research        r  ON s.satellite_id = r.satellite_id
+                    LEFT JOIN weather w  ON s.satellite_id = w.satellite_id
+                    LEFT JOIN navigation n  ON s.satellite_id = n.satellite_id
+                    LEFT JOIN internet i  ON s.satellite_id = i.satellite_id
+                    LEFT JOIN research r  ON s.satellite_id = r.satellite_id
                 WHERE s.deleted_at IS NOT NULL
                 ORDER BY s.deleted_at DESC
             """)
             columns = [col[0] for col in cursor.description]
             rows = cursor.fetchall()
-        return Response([dict(zip(columns, row)) for row in rows])
+
+        # create the data to return
+        data = [dict(zip(columns, row)) for row in rows]
+
+        # return the data in a response
+        return Response(data)
 
 
 # restores a soft-deleted satellite by clearing deleted_at
 class RecoverSatellite(APIView):
     def post(self, request, satellite_id):
         with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT satellite_id FROM satellite WHERE satellite_id = %s AND deleted_at IS NOT NULL",
-                [satellite_id]
-            )
+            # get satellites that have been deleted
+            cursor.execute("SELECT satellite_id FROM satellite WHERE satellite_id = %s AND deleted_at IS NOT NULL", [satellite_id])
+            # if none are deleted return an error response
             if not cursor.fetchone():
                 return Response({'error': 'Deleted satellite not found'}, status=404)
 
-            cursor.execute(
-                "UPDATE satellite SET deleted_at = NULL WHERE satellite_id = %s",
-                [satellite_id]
-            )
+            # update the satellite table and set deleted at on the sat id to null
+            cursor.execute("UPDATE satellite SET deleted_at = NULL WHERE satellite_id = %s", [satellite_id])
+
+        # return a success reponse
         return Response({'message': 'Satellite recovered successfully'})
 
 
@@ -255,34 +265,32 @@ class DeleteSatellite(APIView):
     def delete(self, request, satellite_id):
         with connection.cursor() as cursor:
             # check satellite exists and is not already deleted
-            cursor.execute(
-                "SELECT satellite_id FROM satellite WHERE satellite_id = %s AND deleted_at IS NULL",
-                [satellite_id]
-            )
+            cursor.execute("SELECT satellite_id FROM satellite WHERE satellite_id = %s AND deleted_at IS NULL", [satellite_id])
 
+            # check the satellite exists
             if not cursor.fetchone():
                 return Response({'error': 'Satellite not found'}, status=404)
 
-            cursor.execute(
-                "UPDATE satellite SET deleted_at = NOW() WHERE satellite_id = %s",
-                (satellite_id,)
-            )
+            # update the satellite deleted at column to the current time
+            cursor.execute("UPDATE satellite SET deleted_at = NOW() WHERE satellite_id = %s", [satellite_id])
 
+        # return a success response
         return Response({'message': 'Satellite deleted successfully'})
 
 # modify satellite class which updates all associated satellite data in the database
 class ModifySatellite(APIView):
     def post(self, request):
+        # get the satellite data from the request
         satellite = request.data.get('satellite', {})
         communication = request.data.get('communication', {})
         type_data = request.data.get('type_data', {})
 
+        # check the satellite id exists
         satellite_id = satellite.get('satellite_id')
         if not satellite_id:
             return Response({'error': 'satellite_id is required'}, status=400)
 
         with connection.cursor() as cursor:
-
             # Update satellite table 
             cursor.execute("""
                 UPDATE satellite
@@ -311,6 +319,7 @@ class ModifySatellite(APIView):
                 'navigation', 'internet', 'research'
             ]
 
+            # update the sublclass tables
             for table in subclass_tables:
                 cursor.execute(
                     f"SELECT satellite_id FROM {table} WHERE satellite_id = %s",
@@ -327,6 +336,7 @@ class ModifySatellite(APIView):
                         )
                     break
 
+        # return a success response
         return Response({'message': 'Satellite updated successfully'})   
 
 # new satellite from dataset takes a dataset id and return the satellites from celetrak that arent already in our database
@@ -336,6 +346,7 @@ class NewSatellitesFromDataset(APIView):
 
     # get method taking the dataset id and computing values for pages and search for our frontend later
     def get(self, request, dataset_id):
+        # get the fields from the request
         search = request.GET.get('search', '').strip()
         page = int(request.GET.get('page', 1))
         limit = int(request.GET.get('limit', 50))
@@ -345,6 +356,7 @@ class NewSatellitesFromDataset(APIView):
             # get the dataset source url
             cursor.execute("SELECT source_url FROM dataset WHERE dataset_id = %s", [dataset_id])
             row = cursor.fetchone()
+            # check the dataset url exists
             if not row:
                 return Response({'error': 'Dataset not found'}, status=404)
             url = row[0]
@@ -353,7 +365,7 @@ class NewSatellitesFromDataset(APIView):
             cursor.execute("SELECT norad_id FROM satellite")
             existing_norad_ids = {str(row[0]) for row in cursor.fetchall()}
 
-        # fetch data from celestrak
+        # fetch data from  using the chaching system
         try:
             all_sats = fetch_celestrak_cached(url)
         except RateLimitedError :
@@ -361,6 +373,7 @@ class NewSatellitesFromDataset(APIView):
             if stale:
                 all_sats = stale
             else:
+                # rate limit error on celestrak end
                 return Response(
                     {'error': 'CelesTrak rate limit reached. Please try again later.'},
                     status=429
@@ -408,6 +421,7 @@ class NewSatellitesFromDataset(APIView):
             for sat in results
         ]
 
+        # return the formatted json response
         return Response({
             'results': formatted,
             'total': total,
@@ -419,6 +433,7 @@ class NewSatellitesFromDataset(APIView):
 # create satellite takes all the data from our frontend as a payload and adds new rows to all associated tables in the database
 class CreateSatellite(APIView):
     def post(self, request):
+        # get the data from the request
         satellite = request.data.get('satellite', {})
         owner = request.data.get('owner', {})
         launch = request.data.get('launch', {})
@@ -435,7 +450,7 @@ class CreateSatellite(APIView):
 
         with transaction.atomic(), connection.cursor() as cursor:
 
-            # 1. Owner — use existing or create new
+            # 1. Owner use existing or create new
             if owner.get('isNew'):
                 cursor.execute("""
                     INSERT INTO satellite_owner 
@@ -470,7 +485,7 @@ class CreateSatellite(APIView):
             ))
             satellite_id = cursor.lastrowid
 
-            # 3. Launch vehicle — use existing or create
+            # 3. Launch vehicle use existing or create
             if launch.get('vehicleIsNew'):
                 cursor.execute("""
                     INSERT INTO launch_vehicle 
@@ -487,7 +502,7 @@ class CreateSatellite(APIView):
             else:
                 vehicle_id = launch.get('vehicle_id')
 
-            # 4. Launch site — use existing or create 
+            # 4. Launch site use existing or create 
             if launch.get('siteIsNew'):
                 cursor.execute("""
                     INSERT INTO launch_site (site_name, location, climate, country)
@@ -507,13 +522,13 @@ class CreateSatellite(APIView):
                 VALUES (%s, %s, %s)
             """, (vehicle_id, satellite_id, deploy_date))
 
-            # 6. launched_from — ignore if this vehicle/site/date combo already exists
+            # 6. launched_from ignore if this vehicle/site/date combo already exists
             cursor.execute("""
                 INSERT IGNORE INTO launched_from (vehicle_id, site_name, launch_date)
                 VALUES (%s, %s, %s)
             """, (vehicle_id, site_name, deploy_date))
 
-            # 7. Communication station — use existing or create
+            # 7. Communication station use existing or create
             if communication.get('stationIsNew'):
                 cursor.execute("""
                     INSERT INTO communication_station (name, location)
@@ -547,7 +562,7 @@ class CreateSatellite(APIView):
             table = subclass_table_map.get(subclass)
 
             if table:
-                # Remove subclass key — only insert actual fields
+                # Remove subclass key only insert actual fields
                 fields = {k: v for k, v in type_data.items() if k != 'subclass'}
                 if fields:
                     cols = ', '.join(fields.keys())
@@ -567,6 +582,7 @@ class CreateSatellite(APIView):
         # start the thread
         thread.start()
 
+        # return success response
         return Response({
             'message': 'Satellite created successfully',
             'satellite_id': satellite_id,
