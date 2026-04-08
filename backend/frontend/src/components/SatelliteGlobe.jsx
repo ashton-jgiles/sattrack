@@ -17,6 +17,8 @@ Cesium.Ion.defaultAccessToken = process.env.CESIUM_TOKEN;
 // compute total frames and loop durations
 const TOTAL_FRAMES = 288;
 const LOOP_DURATION_MS = 200 * 1000;
+const FLY_IN_DURATION_S = 1.2;
+const FLY_IN_DURATION_MS = FLY_IN_DURATION_S * 1000;
 
 // take the data returned from the satellite positions endpoint into satellite groups by id
 function groupBySatellite(positions) {
@@ -66,9 +68,10 @@ function releaseToEarth(viewer) {
   );
   // Stable up vector perpendicular to toEarth
   const worldZ = new Cesium.Cartesian3(0, 0, 1);
-  const refAxis = Math.abs(Cesium.Cartesian3.dot(toEarth, worldZ)) > 0.99
-    ? new Cesium.Cartesian3(1, 0, 0)
-    : worldZ;
+  const refAxis =
+    Math.abs(Cesium.Cartesian3.dot(toEarth, worldZ)) > 0.99
+      ? new Cesium.Cartesian3(1, 0, 0)
+      : worldZ;
   const right = Cesium.Cartesian3.normalize(
     Cesium.Cartesian3.cross(toEarth, refAxis, new Cesium.Cartesian3()),
     new Cesium.Cartesian3(),
@@ -104,9 +107,44 @@ export default function SatelliteGlobe({
   const selectedLabelRef = useRef(null);
   const trackingRef = useRef(false);
   const trackingRangeRef = useRef(null); // null = use default on next frame
-  const flyingInRef = useRef(false);     // true while the fly-in animation plays
+  const flyingInRef = useRef(false); // true while the fly-in animation plays
   const currentSatPosRef = useRef(null); // live ECEF position of highlighted satellite
-  const currentSatAltRef = useRef(0);    // live altitude (km) of highlighted satellite
+  const currentSatAltRef = useRef(0); // live altitude (km) of highlighted satellite
+
+  const getSatelliteSampleAtTimestamp = (satelliteId, timestampMs) => {
+    if (satelliteId === null || satelliteId === undefined) return null;
+
+    const positions = satelliteGroupsRef.current[String(satelliteId)];
+    if (!positions || positions.length === 0) return null;
+
+    if (positions.length === 1 || !startTimeRef.current) {
+      const only = positions[0];
+      return {
+        position: Cesium.Cartesian3.fromDegrees(
+          only.longitude,
+          only.latitude,
+          only.altitude * 1000,
+        ),
+        altKm: only.altitude,
+      };
+    }
+
+    const frameCount = positions.length;
+    const elapsed = (timestampMs - startTimeRef.current) % LOOP_DURATION_MS;
+    const continuousFrame = (elapsed / LOOP_DURATION_MS) * frameCount;
+    const frameIndex = Math.floor(continuousFrame) % frameCount;
+    const t = continuousFrame - Math.floor(continuousFrame);
+
+    const posA = positions[frameIndex];
+    const posB = positions[(frameIndex + 1) % frameCount];
+    if (!posA || !posB) return null;
+
+    return {
+      position: interpolatePosition(posA, posB, t),
+      altKm: lerp(posA.altitude, posB.altitude, t),
+    };
+  };
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -181,14 +219,21 @@ export default function SatelliteGlobe({
       // Normalize deltaY across deltaMode values to match Cesium's feel.
       // DOM_DELTA_PIXEL (0) ~100-120 per tick, LINE (1) ~3, PAGE (2) ~1.
       const normalized =
-        e.deltaMode === 1 ? e.deltaY * 40 :
-        e.deltaMode === 2 ? e.deltaY * 800 :
-        e.deltaY;
+        e.deltaMode === 1
+          ? e.deltaY * 40
+          : e.deltaMode === 2
+            ? e.deltaY * 800
+            : e.deltaY;
       // ~10% range change per standard 120-unit tick, scaling with scroll speed.
       const fraction = (normalized / 120) * 0.1;
-      trackingRangeRef.current = Math.max(500_000, trackingRangeRef.current * (1 + fraction));
+      trackingRangeRef.current = Math.max(
+        500_000,
+        trackingRangeRef.current * (1 + fraction),
+      );
     };
-    cesiumContainer.current.addEventListener("wheel", handleWheel, { passive: false });
+    cesiumContainer.current.addEventListener("wheel", handleWheel, {
+      passive: false,
+    });
 
     return () => {
       ro.disconnect();
@@ -219,9 +264,17 @@ export default function SatelliteGlobe({
       const satPos = currentSatPosRef.current;
       const altKm = currentSatAltRef.current;
       if (satPos) {
+        const highlightedId = highlightedSatellites[0] ?? null;
+        const predictedSample = getSatelliteSampleAtTimestamp(
+          highlightedId,
+          performance.now() + FLY_IN_DURATION_MS,
+        );
+        const targetSatPos = predictedSample?.position ?? satPos;
+        const targetAltKm = predictedSample?.altKm ?? altKm;
+
         const heading = 0;
         const pitch = Cesium.Math.toRadians(-50);
-        const range = Math.max(12_000_000, altKm * 1000 * 1.2);
+        const range = Math.max(12_000_000, targetAltKm * 1000 * 1.2);
         trackingRangeRef.current = range;
 
         const cosP = Math.cos(pitch);
@@ -230,17 +283,31 @@ export default function SatelliteGlobe({
           -Math.cos(heading) * cosP * range,
           -Math.sin(pitch) * range,
         );
-        const enuToEcef = Cesium.Transforms.eastNorthUpToFixedFrame(satPos);
+        const enuToEcef =
+          Cesium.Transforms.eastNorthUpToFixedFrame(targetSatPos);
         const ecefOffset = Cesium.Matrix4.multiplyByPointAsVector(
-          enuToEcef, enuOffset, new Cesium.Cartesian3(),
-        );
-        const cameraPos = Cesium.Cartesian3.add(satPos, ecefOffset, new Cesium.Cartesian3());
-
-        const dir = Cesium.Cartesian3.normalize(
-          Cesium.Cartesian3.subtract(satPos, cameraPos, new Cesium.Cartesian3()),
+          enuToEcef,
+          enuOffset,
           new Cesium.Cartesian3(),
         );
-        const radial = Cesium.Cartesian3.normalize(cameraPos, new Cesium.Cartesian3());
+        const cameraPos = Cesium.Cartesian3.add(
+          targetSatPos,
+          ecefOffset,
+          new Cesium.Cartesian3(),
+        );
+
+        const dir = Cesium.Cartesian3.normalize(
+          Cesium.Cartesian3.subtract(
+            targetSatPos,
+            cameraPos,
+            new Cesium.Cartesian3(),
+          ),
+          new Cesium.Cartesian3(),
+        );
+        const radial = Cesium.Cartesian3.normalize(
+          cameraPos,
+          new Cesium.Cartesian3(),
+        );
         const right = Cesium.Cartesian3.normalize(
           Cesium.Cartesian3.cross(dir, radial, new Cesium.Cartesian3()),
           new Cesium.Cartesian3(),
@@ -251,10 +318,29 @@ export default function SatelliteGlobe({
         viewer.camera.flyTo({
           destination: cameraPos,
           orientation: { direction: dir, up },
-          duration: 1.2,
+          duration: FLY_IN_DURATION_S,
           easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
-          complete: () => { flyingInRef.current = false; },
-          cancel: () => { flyingInRef.current = false; },
+          complete: () => {
+            flyingInRef.current = false;
+            if (
+              trackingRef.current &&
+              viewerRef.current &&
+              !viewerRef.current.isDestroyed() &&
+              currentSatPosRef.current
+            ) {
+              viewerRef.current.camera.lookAt(
+                currentSatPosRef.current,
+                new Cesium.HeadingPitchRange(
+                  0,
+                  Cesium.Math.toRadians(-50),
+                  trackingRangeRef.current ?? range,
+                ),
+              );
+            }
+          },
+          cancel: () => {
+            flyingInRef.current = false;
+          },
         });
       }
     } else {
@@ -422,7 +508,10 @@ export default function SatelliteGlobe({
           ) {
             // Seed range on first tracking frame; afterwards the wheel handler owns it.
             if (trackingRangeRef.current === null) {
-              trackingRangeRef.current = Math.max(12_000_000, altKm * 1000 * 1.2);
+              trackingRangeRef.current = Math.max(
+                12_000_000,
+                altKm * 1000 * 1.2,
+              );
             }
             viewerRef.current.camera.lookAt(
               interpolated,
