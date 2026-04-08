@@ -34,8 +34,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import PersonIcon from "@mui/icons-material/Person";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import FullscreenIcon from "@mui/icons-material/Fullscreen";
-import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 
 // component imports
@@ -318,7 +316,6 @@ function OverviewPage() {
   const [highlightedSatellites, setHighlightedSatellites] = useState([]);
   const [selectedSatelliteId, setSelectedSatelliteId] = useState(null);
   const [infoPanelMinimized, setInfoPanelMinimized] = useState(false);
-  const [globeExpanded, setGlobeExpanded] = useState(false);
   const globeControlsRef = React.useRef(null);
 
   // Search — list only, never affects globe
@@ -552,7 +549,7 @@ function OverviewPage() {
       {/* Globe + Satellite Panel */}
       <div className={styles.globeRow}>
         {/* Left: Globe */}
-        <div className={`${styles.globeCard} ${globeExpanded ? styles.globeCardExpanded : ""}`}>
+        <div className={styles.globeCard}>
           <div className={styles.globeCardBody}>
             <SatelliteGlobe
               highlightedSatellites={highlightedSatellites}
@@ -566,16 +563,6 @@ function OverviewPage() {
                 title="Reset view"
               >
                 <MyLocationIcon sx={{ fontSize: 16 }} />
-              </button>
-              <button
-                className={styles.globeControlBtn}
-                onClick={() => setGlobeExpanded((e) => !e)}
-                title={globeExpanded ? "Exit fullscreen" : "Expand"}
-              >
-                {globeExpanded
-                  ? <FullscreenExitIcon sx={{ fontSize: 16 }} />
-                  : <FullscreenIcon sx={{ fontSize: 16 }} />
-                }
               </button>
             </div>
           </div>
