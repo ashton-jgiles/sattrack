@@ -9,7 +9,7 @@ class CustomJWTAuthentication(JWTAuthentication):
         if not username:
             raise InvalidToken('Token has no username')
 
-        # Return a simple object instead of a Django User
+        # Return a simple object
         class SimpleUser:
             def __init__(self, username, level_access):
                 self.username     = username
@@ -18,13 +18,14 @@ class CustomJWTAuthentication(JWTAuthentication):
                 self.pk = username
 
         with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT username, level_access FROM user WHERE username = %s",
-                (username,)
-            )
+            # select the user for the user table using their username
+            cursor.execute("SELECT username, level_access FROM user WHERE username = %s", [username])
             row = cursor.fetchone()
 
+        # check to make sure the user exists
         if not row:
             raise InvalidToken('User not found')
 
+        # create the simple user
         return SimpleUser(row[0], row[1])
+    
