@@ -73,6 +73,7 @@ export default function SatelliteGlobe({
   const labelCollectionRef = useRef(null);
   const selectedLabelRef = useRef(null);
   const trackingRef = useRef(false);
+  const trackingRangeRef = useRef(null); // null = use default on next frame
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -141,8 +142,24 @@ export default function SatelliteGlobe({
     });
     ro.observe(cesiumContainer.current);
 
+    const handleWheel = (e) => {
+      if (!trackingRef.current || trackingRangeRef.current === null) return;
+      e.preventDefault();
+      // Normalize deltaY across deltaMode values to match Cesium's feel.
+      // DOM_DELTA_PIXEL (0) ~100-120 per tick, LINE (1) ~3, PAGE (2) ~1.
+      const normalized =
+        e.deltaMode === 1 ? e.deltaY * 40 :
+        e.deltaMode === 2 ? e.deltaY * 800 :
+        e.deltaY;
+      // ~10% range change per standard 120-unit tick, scaling with scroll speed.
+      const fraction = (normalized / 120) * 0.1;
+      trackingRangeRef.current = Math.max(500_000, trackingRangeRef.current * (1 + fraction));
+    };
+    cesiumContainer.current.addEventListener("wheel", handleWheel, { passive: false });
+
     return () => {
       ro.disconnect();
+      cesiumContainer.current?.removeEventListener("wheel", handleWheel);
       cancelAnimationFrame(animRef.current);
       if (viewerRef.current && !viewerRef.current.isDestroyed()) {
         viewerRef.current.destroy();
@@ -156,6 +173,7 @@ export default function SatelliteGlobe({
     trackingRef.current = tracking;
     if (!tracking && viewerRef.current && !viewerRef.current.isDestroyed()) {
       viewerRef.current.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+      trackingRangeRef.current = null;
     }
   }, [tracking]);
 
@@ -175,7 +193,7 @@ export default function SatelliteGlobe({
         const allPages = [first, ...remaining];
         const allPositions = allPages.flatMap((p) => p.results);
         const pendingSatelliteIds = new Set(
-          allPages.flatMap((p) => p.pending_satellite_ids ?? [])
+          allPages.flatMap((p) => p.pending_satellite_ids ?? []),
         );
         pendingSatelliteIdsRef.current = pendingSatelliteIds;
         const groups = groupBySatellite(allPositions);
@@ -198,13 +216,13 @@ export default function SatelliteGlobe({
           const baseColor = isHighlighted
             ? "#3b82f6"
             : isPending
-            ? "#f59e0b"
-            : "#22c55e";
+              ? "#f59e0b"
+              : "#22c55e";
           const outlineColor = isHighlighted
             ? "#60a5fa"
             : isPending
-            ? "#fbbf24"
-            : "#4ade80";
+              ? "#fbbf24"
+              : "#4ade80";
 
           return collection.add({
             position: Cesium.Cartesian3.fromDegrees(
@@ -251,14 +269,14 @@ export default function SatelliteGlobe({
       point.color = isHighlighted
         ? Cesium.Color.fromCssColorString("#3b82f6").withAlpha(0.9)
         : isPending
-        ? Cesium.Color.fromCssColorString("#f59e0b").withAlpha(0.9)
-        : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9);
+          ? Cesium.Color.fromCssColorString("#f59e0b").withAlpha(0.9)
+          : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9);
       point.pixelSize = isHighlighted ? 14 : 6;
       point.outlineColor = isHighlighted
         ? Cesium.Color.WHITE.withAlpha(0.4)
         : isPending
-        ? Cesium.Color.fromCssColorString("#fbbf24").withAlpha(0.4)
-        : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4);
+          ? Cesium.Color.fromCssColorString("#fbbf24").withAlpha(0.4)
+          : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4);
       point.outlineWidth = isHighlighted ? 2 : 3;
     });
   }, [highlightedSatellites, visibleSatelliteIds]);
@@ -300,13 +318,22 @@ export default function SatelliteGlobe({
             label.show = true;
           }
 
-          if (trackingRef.current && viewerRef.current && !viewerRef.current.isDestroyed()) {
-            // Camera range: far enough to see Earth clearly behind the satellite.
-            // Min 6,000 km for LEO; scales up for higher orbits.
-            const range = Math.max(6_000_000, altKm * 1000 * 1.2);
+          if (
+            trackingRef.current &&
+            viewerRef.current &&
+            !viewerRef.current.isDestroyed()
+          ) {
+            // Seed range on first tracking frame; afterwards the wheel handler owns it.
+            if (trackingRangeRef.current === null) {
+              trackingRangeRef.current = Math.max(12_000_000, altKm * 1000 * 1.2);
+            }
             viewerRef.current.camera.lookAt(
               interpolated,
-              new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-35), range),
+              new Cesium.HeadingPitchRange(
+                0,
+                Cesium.Math.toRadians(-50),
+                trackingRangeRef.current,
+              ),
             );
           }
         }
