@@ -27,7 +27,7 @@ import {
 import {
   getAllSatellites,
   getRecentDeployments,
-} from "../api/satelliteService";
+} from "../../api/satelliteService";
 
 // style imports
 import styles from "../styles/Visualizations.module.css";

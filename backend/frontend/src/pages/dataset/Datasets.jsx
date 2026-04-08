@@ -8,10 +8,13 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
 // api imports
-import { getAllDatasets, getSatellitesInDataset } from "../api/datasetService";
+import {
+  getAllDatasets,
+  getSatellitesInDataset,
+} from "../../api/datasetService";
 
 // auth imports
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 
 // style imports
 import styles from "../styles/Datasets.module.css";
@@ -130,7 +133,9 @@ function DatasetCard({ dataset, onViewDetails, showStatus }) {
               <div key={sat.satellite_id} className={styles.satelliteRow}>
                 <span className={styles.satelliteName}>{sat.name}</span>
                 <span className={styles.satelliteMeta}>
-                  {[sat.object_id, sat.orbit_type, sat.classification].filter(Boolean).join(" · ")}
+                  {[sat.object_id, sat.orbit_type, sat.classification]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </span>
               </div>
             ))

@@ -8,24 +8,27 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import RestoreIcon from "@mui/icons-material/Restore";
 
 // component imports
-import SatelliteProfileModal from "../components/satellite/SatelliteProfileModal";
+import SatelliteProfileModal from "../../components/satellite/SatelliteProfileModal";
 import AddSatelliteModal from "../components/AddSatelliteModal";
-import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
-import PopupMessage from "../components/PopupMessage";
+import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
+import PopupMessage from "../../components/PopupMessage";
 
 // hooks
-import usePopupMessage from "../hooks/usePopupMessage";
+import usePopupMessage from "../../hooks/usePopupMessage";
 
 // api imports
-import { getAllSatellites, getSatelliteProfile } from "../api/satelliteService";
+import {
+  getAllSatellites,
+  getSatelliteProfile,
+} from "../../api/satelliteService";
 import {
   modifySatellite,
   deleteSatellite,
   getDeletedSatellites,
   recoverSatellite,
   createSatellite,
-} from "../api/manageSatellitesService";
-import { getAllDatasets } from "../api/datasetService";
+} from "../../api/manageSatellitesService";
+import { getAllDatasets } from "../../api/datasetService";
 
 // style imports
 import styles from "../styles/ManageSatellites.module.css";

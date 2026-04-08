@@ -13,16 +13,16 @@ import {
   addDataset,
   getDatasetSources,
   deleteDataset,
-} from "../api/datasetService";
+} from "../../api/datasetService";
 
 // component imports
-import DatasetProfileModal from "../components/dataset/DatasetProfileModal";
-import AddDatasetModal from "../components/addDataset/AddDatasetModal";
-import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
-import PopupMessage from "../components/PopupMessage";
+import DatasetProfileModal from "../../components/dataset/DatasetProfileModal";
+import AddDatasetModal from "../../components/addDataset/AddDatasetModal";
+import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
+import PopupMessage from "../../components/PopupMessage";
 
 // hooks
-import usePopupMessage from "../hooks/usePopupMessage";
+import usePopupMessage from "../../hooks/usePopupMessage";
 
 // style imports
 import styles from "../styles/ManageDatasets.module.css";

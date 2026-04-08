@@ -6,11 +6,11 @@ import SaveIcon from "@mui/icons-material/Save";
 import LockIcon from "@mui/icons-material/Lock";
 
 // component imports
-import PopupMessage from "../components/PopupMessage";
+import PopupMessage from "../../components/PopupMessage";
 
 // hooks
-import usePopupMessage from "../hooks/usePopupMessage";
-import { useAuth } from "../hooks/useAuth";
+import usePopupMessage from "../../hooks/usePopupMessage";
+import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 
 // api imports
@@ -18,7 +18,7 @@ import {
   getUserProfile,
   updateOwnProfile,
   changePassword,
-} from "../api/userService";
+} from "../../api/userService";
 
 // style imports
 import styles from "../styles/UserProfile.module.css";
