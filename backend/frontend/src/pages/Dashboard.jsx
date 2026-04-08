@@ -592,6 +592,7 @@ function OverviewPage() {
               onReady={(controls) => {
                 globeControlsRef.current = controls;
               }}
+              tracking={trackingSatellite}
             />
             <div className={styles.globeControls}>
               {selectedSatelliteId && (

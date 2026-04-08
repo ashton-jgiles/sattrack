@@ -59,6 +59,7 @@ export default function SatelliteGlobe({
   // When null/undefined, all satellites are shown.
   visibleSatelliteIds = null,
   onReady = null,
+  tracking = false,
 }) {
   const cesiumContainer = useRef(null);
   const viewerRef = useRef(null);
@@ -71,6 +72,7 @@ export default function SatelliteGlobe({
   const pendingSatelliteIdsRef = useRef(new Set());
   const labelCollectionRef = useRef(null);
   const selectedLabelRef = useRef(null);
+  const trackingRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -148,6 +150,14 @@ export default function SatelliteGlobe({
       }
     };
   }, []);
+
+  // Sync tracking prop → ref, and unlock camera when tracking is turned off
+  useEffect(() => {
+    trackingRef.current = tracking;
+    if (!tracking && viewerRef.current && !viewerRef.current.isDestroyed()) {
+      viewerRef.current.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+    }
+  }, [tracking]);
 
   // Fetch positions and create one point per satellite
   useEffect(() => {
@@ -280,13 +290,24 @@ export default function SatelliteGlobe({
         point.position = interpolated;
 
         if (parseInt(satelliteIds[index]) === highlightedId) {
+          const altKm = lerp(posA.altitude, posB.altitude, t);
+          const velKms = lerp(posA.velocity, posB.velocity, t).toFixed(2);
+
           const label = selectedLabelRef.current;
           if (label) {
-            const altKm = lerp(posA.altitude, posB.altitude, t).toFixed(0);
-            const velKms = lerp(posA.velocity, posB.velocity, t).toFixed(2);
             label.position = interpolated;
-            label.text = `ALT ${altKm} km\nVEL ${velKms} km/s`;
+            label.text = `ALT ${altKm.toFixed(0)} km\nVEL ${velKms} km/s`;
             label.show = true;
+          }
+
+          if (trackingRef.current && viewerRef.current && !viewerRef.current.isDestroyed()) {
+            // Camera range: far enough to see Earth clearly behind the satellite.
+            // Min 6,000 km for LEO; scales up for higher orbits.
+            const range = Math.max(6_000_000, altKm * 1000 * 1.2);
+            viewerRef.current.camera.lookAt(
+              interpolated,
+              new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-35), range),
+            );
           }
         }
       });
