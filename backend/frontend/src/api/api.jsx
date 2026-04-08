@@ -13,9 +13,17 @@ export const get = (endpoint) => {
     headers: {
       ...getAuthHeaders(),
     },
-  }).then((res) => {
-    if (!res.ok) throw new Error(`HTTP error status: ${res.status}`);
-    return res.json();
+  }).then(async (res) => {
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
+    if (!res.ok) {
+      throw new Error(data.error || `HTTP error status: ${res.status}`);
+    }
+    return data;
   });
 };
 // post method for sending post requests to the backend

@@ -15,7 +15,7 @@ import PopupMessage from "../components/PopupMessage";
 import usePopupMessage from "../hooks/usePopupMessage";
 
 // api imports
-import { updateTrajectories } from "../api/trajectoryService";
+import { updateTrajectories } from "../api/settingsService";
 import {
   getUsers,
   getUserProfile,

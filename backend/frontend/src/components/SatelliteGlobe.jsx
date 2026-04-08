@@ -6,7 +6,7 @@ import * as Cesium from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
 // api imports
-import { getSatellitePositionsPage } from "../api/trajectoryService";
+import { getSatellitePositionsPage } from "../api/satelliteService";
 import { getSatelliteCategoryColor } from "../constants/satelliteColors";
 
 // styles
