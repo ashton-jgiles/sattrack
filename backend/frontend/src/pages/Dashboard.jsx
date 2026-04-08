@@ -12,6 +12,7 @@ import Datasets from "./Datasets";
 import UserProfile from "./UserProfile";
 import Settings from "./Settings";
 import Reviews from "./Reviews";
+import Visualizations from "./Visualizations";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
@@ -22,6 +23,7 @@ import StorageIcon from "@mui/icons-material/Storage";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import ManageSearchIcon from "@mui/icons-material/ManageSearch";
 import SettingsIcon from "@mui/icons-material/Settings";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import PublicIcon from "@mui/icons-material/Public";
 import DatasetIcon from "@mui/icons-material/Dataset";
 import WavesIcon from "@mui/icons-material/Waves";
@@ -114,7 +116,7 @@ const NAV_ITEMS = [
       {
         id: "settings",
         label: "Settings",
-        icon: <SettingsIcon sx={{ fontSize: 18 }} />,
+        icon: <AdminPanelSettingsIcon sx={{ fontSize: 18 }} />,
         minLevel: 4,
       },
     ],
@@ -672,19 +674,6 @@ function OverviewPage() {
   );
 }
 
-// Placeholder pages
-function PlaceholderPage({ title }) {
-  return (
-    <>
-      <div>
-        <h2 className={styles.pageTitle}>{title}</h2>
-        <p className={styles.pageSubtitle}>Coming soon</p>
-      </div>
-      <div className={styles.placeholder}>{title} — under construction</div>
-    </>
-  );
-}
-
 // Dashboard
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -710,7 +699,7 @@ export default function Dashboard() {
       case "userProfile":
         return <UserProfile />;
       case "visualizations":
-        return <PlaceholderPage title="Visualizations" />;
+        return <Visualizations />;
       case "reviews":
         return <Reviews />;
       case "manageSatellites":
