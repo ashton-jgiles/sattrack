@@ -4,8 +4,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // page imports
 import Landing from "../pages/Landing";
-import LoginPage from "../pages/LoginPage";
-import CreateAccountPage from "../pages/CreateAccount";
+import LoginPage from "../pages/login/LoginPage";
+import CreateAccountPage from "../pages/login/CreateAccount";
 import Dashboard from "../pages/Dashboard";
 
 // auth imports

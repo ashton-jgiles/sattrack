@@ -9,7 +9,7 @@ import RestoreIcon from "@mui/icons-material/Restore";
 
 // component imports
 import SatelliteProfileModal from "../../components/satellite/SatelliteProfileModal";
-import AddSatelliteModal from "../components/AddSatelliteModal";
+import AddSatelliteModal from "../../components/addSatellite/AddSatelliteModal";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import PopupMessage from "../../components/PopupMessage";
 
@@ -31,7 +31,7 @@ import {
 import { getAllDatasets } from "../../api/datasetService";
 
 // style imports
-import styles from "../styles/ManageSatellites.module.css";
+import styles from "../../styles/satellite/ManageSatellites.module.css";
 
 // subclass filters array
 const SUBCLASS_FILTERS = [

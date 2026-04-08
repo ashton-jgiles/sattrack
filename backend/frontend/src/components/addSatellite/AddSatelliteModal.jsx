@@ -10,16 +10,16 @@ import SaveIcon from "@mui/icons-material/Save";
 import CheckIcon from "@mui/icons-material/Check";
 
 // api imports
-import { getNewSatellitesFromDataset } from "../api/manageSatellitesService";
+import { getNewSatellitesFromDataset } from "../../api/manageSatellitesService";
 import {
   getAllOwners,
   getAllVehicles,
   getAllLaunchSites,
   getAllStations,
-} from "../api/lookupsService";
+} from "../../api/lookupsService";
 
 // style imports
-import styles from "../styles/AddSatelliteModal.module.css";
+import styles from "../../styles/satellite/AddSatelliteModal.module.css";
 
 // Constants
 const STEPS = [
@@ -49,8 +49,12 @@ const SUBCLASS_TYPES = [
 
 // numeric fields that must be a valid number if filled in
 const NUMERIC_TYPE_FIELDS = new Set([
-  'resolution_m', 'imaging_channels', 'repeat_cycle_min',
-  'altitude_km', 'accuracy_m', 'throughput_gbps',
+  "resolution_m",
+  "imaging_channels",
+  "repeat_cycle_min",
+  "altitude_km",
+  "accuracy_m",
+  "throughput_gbps",
 ]);
 
 // type fields for each subclass
@@ -877,9 +881,9 @@ export default function AddSatelliteModal({
     if (!formData.type?.subclass) errs.push("Please select a satellite type.");
     const typeFields = formData.type || {};
     Object.entries(typeFields).forEach(([field, value]) => {
-      if (NUMERIC_TYPE_FIELDS.has(field) && value !== '' && value != null) {
+      if (NUMERIC_TYPE_FIELDS.has(field) && value !== "" && value != null) {
         if (isNaN(Number(value))) {
-          errs.push(`"${field.replace(/_/g, ' ')}" must be a number.`);
+          errs.push(`"${field.replace(/_/g, " ")}" must be a number.`);
         }
       }
     });

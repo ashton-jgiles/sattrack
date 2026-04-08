@@ -7,7 +7,7 @@ import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
 // component imports
-import SatelliteGlobe from "../components/SatelliteGlobe";
+import SatelliteGlobe from "../components/satellite/SatelliteGlobe";
 
 // style imports
 import styles from "../styles/Landing.module.css";
@@ -114,7 +114,8 @@ export default function Landing() {
             <h2 className={styles.heroTitle}>Real-Time Satellite Tracking</h2>
             <p className={styles.heroSubtitle}>
               Monitor global satellite networks with live position data,
-              trajectory visualization, and comprehensive dataset management{totalDatasets ? ` featuring ${totalDatasets} datasets` : ''}
+              trajectory visualization, and comprehensive dataset management
+              {totalDatasets ? ` featuring ${totalDatasets} datasets` : ""}
             </p>
           </div>
           <div className={styles.globeWrapper}>

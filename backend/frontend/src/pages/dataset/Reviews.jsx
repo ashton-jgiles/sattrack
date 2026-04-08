@@ -19,7 +19,7 @@ import PopupMessage from "../../components/PopupMessage";
 import usePopupMessage from "../../hooks/usePopupMessage";
 
 // style imports
-import styles from "../styles/Reviews.module.css";
+import styles from "../../styles/dataset/Reviews.module.css";
 
 const STATUS_STYLES = {
   approved: styles.statusApproved,

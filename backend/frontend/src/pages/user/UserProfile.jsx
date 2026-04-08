@@ -21,7 +21,7 @@ import {
 } from "../../api/userService";
 
 // style imports
-import styles from "../styles/UserProfile.module.css";
+import styles from "../../styles/user/UserProfile.module.css";
 
 export default function UserProfile() {
   const { user, updateUser, logout } = useAuth();

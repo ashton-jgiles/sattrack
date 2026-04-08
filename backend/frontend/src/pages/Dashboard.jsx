@@ -6,13 +6,13 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 // page imports
-import ManageSatellites from "./ManageSatellites";
-import ManageDatasets from "./ManageDatasets";
-import Datasets from "./Datasets";
-import UserProfile from "./UserProfile";
-import Settings from "./Settings";
-import Reviews from "./Reviews";
-import Visualizations from "./Visualizations";
+import ManageSatellites from "./satellite/ManageSatellites";
+import ManageDatasets from "./dataset/ManageDatasets";
+import Datasets from "./dataset/Datasets";
+import UserProfile from "./user/UserProfile";
+import Settings from "./user/Settings";
+import Reviews from "./dataset/Reviews";
+import Visualizations from "./satellite/Visualizations";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
@@ -39,7 +39,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 
 // component imports
-import SatelliteGlobe from "../components/SatelliteGlobe";
+import SatelliteGlobe from "../components/satellite/SatelliteGlobe";
 
 // api imports
 import {

@@ -11,7 +11,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 
 // style imports
-import styles from "../styles/LoginPage.module.css";
+import styles from "../../styles/login/LoginPage.module.css";
 
 export default function LoginPage() {
   // component fields

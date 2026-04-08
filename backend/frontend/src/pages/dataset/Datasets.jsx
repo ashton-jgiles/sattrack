@@ -17,7 +17,7 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 
 // style imports
-import styles from "../styles/Datasets.module.css";
+import styles from "../../styles/dataset/Datasets.module.css";
 
 // status badge color map
 const STATUS_COLORS = {

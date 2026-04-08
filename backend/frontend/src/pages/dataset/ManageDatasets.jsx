@@ -25,7 +25,7 @@ import PopupMessage from "../../components/PopupMessage";
 import usePopupMessage from "../../hooks/usePopupMessage";
 
 // style imports
-import styles from "../styles/ManageDatasets.module.css";
+import styles from "../../styles/dataset/ManageDatasets.module.css";
 
 const STATUS_STYLES = {
   approved: { backgroundColor: "#14532d", color: "#4ade80" },

@@ -7,7 +7,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import SaveIcon from "@mui/icons-material/Save";
 
 // style imports
-import styles from "../styles/SatelliteProfileModal.module.css";
+import styles from "../../styles/satellite/SatelliteProfileModal.module.css";
 
 // tab config
 const TABS = [

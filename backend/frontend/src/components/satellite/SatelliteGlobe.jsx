@@ -6,11 +6,11 @@ import * as Cesium from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
 // api imports
-import { getSatellitePositionsPage } from "../api/satelliteService";
-import { getSatelliteCategoryColor } from "../constants/satelliteColors";
+import { getSatellitePositionsPage } from "../../api/satelliteService";
+import { getSatelliteCategoryColor } from "../../constants/satelliteColors";
 
 // styles
-import styles from "../styles/SatelliteGlobe.module.css";
+import styles from "../../styles/satellite/SatelliteGlobe.module.css";
 
 // set the cesium token
 Cesium.Ion.defaultAccessToken = process.env.CESIUM_TOKEN;

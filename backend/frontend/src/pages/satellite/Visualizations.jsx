@@ -30,7 +30,7 @@ import {
 } from "../../api/satelliteService";
 
 // style imports
-import styles from "../styles/Visualizations.module.css";
+import styles from "../../styles/satellite/Visualizations.module.css";
 
 //  Palette
 const PALETTE = [

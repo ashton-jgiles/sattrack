@@ -24,7 +24,7 @@ import {
 } from "../../api/userService";
 
 // style imports
-import styles from "../styles/Settings.module.css";
+import styles from "../../styles/user/Settings.module.css";
 
 // subclass filters array
 const SUBCLASS_FILTERS = [

@@ -7,7 +7,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import SaveIcon from "@mui/icons-material/Save";
 
 // style imports
-import styles from "../styles/UserProfileModal.module.css";
+import styles from "../../styles/user/UserProfileModal.module.css";
 
 // field components
 function Field({ label, value, full }) {
@@ -78,7 +78,10 @@ export default function UserProfileModal({ data, onClose, onSave }) {
   };
 
   const buildSubtypeData = () => {
-    if (form.user_type === "Administrator" || form.user_type === "Data Analyst") {
+    if (
+      form.user_type === "Administrator" ||
+      form.user_type === "Data Analyst"
+    ) {
       return { employee_id: parseInt(subtypeForm.employee_id) || 0 };
     }
     if (form.user_type === "Scientist") {

@@ -7,7 +7,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import SaveIcon from "@mui/icons-material/Save";
 
 // style imports
-import styles from "../styles/SatelliteProfileModal.module.css";
+import styles from "../../styles/satellite/SatelliteProfileModal.module.css";
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
@@ -17,10 +17,9 @@ const STATUS_OPTIONS = [
 
 const STATUS_STYLES = {
   approved: { backgroundColor: "#14532d", color: "#4ade80" },
-  pending:  { backgroundColor: "#1c1917", color: "#f59e0b" },
+  pending: { backgroundColor: "#1c1917", color: "#f59e0b" },
   rejected: { backgroundColor: "#450a0a", color: "#f87171" },
 };
-
 
 function Field({ label, value }) {
   return (
@@ -44,7 +43,6 @@ function EditField({ label, value, onChange, full }) {
     </div>
   );
 }
-
 
 export default function DatasetProfileModal({ data, onClose, onSave }) {
   const [editData, setEditData] = useState({
@@ -76,7 +74,9 @@ export default function DatasetProfileModal({ data, onClose, onSave }) {
   return ReactDOM.createPortal(
     <div
       className={styles.backdrop}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -98,11 +98,19 @@ export default function DatasetProfileModal({ data, onClose, onSave }) {
             <Field label="Source URL" value={data.source_url} />
             <Field
               label="Creation Date"
-              value={data.creation_date ? new Date(data.creation_date).toLocaleDateString() : null}
+              value={
+                data.creation_date
+                  ? new Date(data.creation_date).toLocaleDateString()
+                  : null
+              }
             />
             <Field
               label="Last Pulled"
-              value={data.last_pulled ? new Date(data.last_pulled).toLocaleString() : null}
+              value={
+                data.last_pulled
+                  ? new Date(data.last_pulled).toLocaleString()
+                  : null
+              }
             />
             <div className={styles.field}>
               <span className={styles.fieldLabel}>Review Status</span>
@@ -113,7 +121,9 @@ export default function DatasetProfileModal({ data, onClose, onSave }) {
                 style={STATUS_STYLES[editData.review_status] ?? {}}
               >
                 {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -135,7 +145,9 @@ export default function DatasetProfileModal({ data, onClose, onSave }) {
         {errors.length > 0 && (
           <div className={styles.errorBanner}>
             {errors.map((e, i) => (
-              <span key={i} className={styles.errorItem}>• {e}</span>
+              <span key={i} className={styles.errorItem}>
+                • {e}
+              </span>
             ))}
           </div>
         )}
@@ -156,6 +168,6 @@ export default function DatasetProfileModal({ data, onClose, onSave }) {
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }

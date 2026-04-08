@@ -7,8 +7,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 
 // style imports
-import styles from "../styles/SatelliteProfileModal.module.css";
-import dropdownStyles from "../styles/AddDatasetModal.module.css";
+import styles from "../../styles/satellite/SatelliteProfileModal.module.css";
+import dropdownStyles from "../../styles/dataset/AddDatasetModal.module.css";
 
 function EditField({ label, value, onChange, placeholder }) {
   return (
