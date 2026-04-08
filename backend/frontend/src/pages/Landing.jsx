@@ -1,10 +1,16 @@
 // react imports
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import PublicIcon from "@mui/icons-material/Public";
+import WavesIcon from "@mui/icons-material/Waves";
+import ExploreIcon from "@mui/icons-material/Explore";
+import WifiIcon from "@mui/icons-material/Wifi";
+import ScienceIcon from "@mui/icons-material/Science";
+import AirIcon from "@mui/icons-material/Air";
 
 // component imports
 import SatelliteGlobe from "../components/satellite/SatelliteGlobe";
@@ -13,19 +19,21 @@ import SatelliteGlobe from "../components/satellite/SatelliteGlobe";
 import styles from "../styles/Landing.module.css";
 
 // api imports
-import { getSatelliteCounts } from "../api/satelliteService";
+import { getSatelliteCounts, getAllSatellites } from "../api/satelliteService";
 import { getTotalDatasets } from "../api/datasetService";
+import { SATELLITE_CATEGORY_COLORS } from "../constants/satelliteColors";
 
 // stat card component
-function StatCard({ label, value, loading }) {
+function StatCard({ label, value, icon, loading }) {
   return (
     <div className={styles.statCard}>
-      <span className={styles.statLabel}>{label}</span>
-      {loading ? (
-        <span className={styles.statLoading}>Loading...</span>
-      ) : (
-        <span className={styles.statValue}>{value}</span>
-      )}
+      <div className={styles.statCardHeader}>
+        <span className={styles.statCardLabel}>{label}</span>
+        <span className={styles.statCardIcon}>{icon}</span>
+      </div>
+      <span className={styles.statCardValue}>
+        {loading ? "—" : (value ?? "—")}
+      </span>
     </div>
   );
 }
@@ -34,33 +42,23 @@ function StatCard({ label, value, loading }) {
 export default function Landing() {
   // component fields
   const navigate = useNavigate();
-  const [totalSatellites, setTotalSatellites] = useState(null);
-  const [totalEarthSatellites, setTotalEarthSatellites] = useState(null);
-  const [totalOceanicSatellites, setTotalOceanicSatellites] = useState(null);
-  const [totalNavigationSatellites, setTotalNavigationSatellites] =
-    useState(null);
-  const [totalInternetSatellites, setTotalInternetSatellites] = useState(null);
-  const [totalWeatherSatellites, setTotalWeatherSatellites] = useState(null);
-  const [totalResearchSatellites, setTotalResearchSatellites] = useState(null);
+  const [counts, setCounts] = useState({});
   const [totalDatasets, setTotalDatasets] = useState(null);
+  const [allSatellites, setAllSatellites] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // use effect to get all the data in our frontend fields from the apis
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [counts, datasets] = await Promise.all([
+        const [satelliteCounts, datasets, satellites] = await Promise.all([
           getSatelliteCounts(),
           getTotalDatasets(),
+          getAllSatellites(),
         ]);
-        setTotalSatellites(counts.total);
+        setCounts(satelliteCounts);
         setTotalDatasets(datasets);
-        setTotalEarthSatellites(counts.earth_science);
-        setTotalOceanicSatellites(counts.oceanic_science);
-        setTotalNavigationSatellites(counts.navigation);
-        setTotalInternetSatellites(counts.internet);
-        setTotalWeatherSatellites(counts.weather);
-        setTotalResearchSatellites(counts.research);
+        setAllSatellites(satellites);
       } catch (error) {
         console.error("Failed to fetch stats:", error);
       } finally {
@@ -70,15 +68,78 @@ export default function Landing() {
     fetchStats();
   }, []);
 
+  const satelliteTypeById = useMemo(
+    () =>
+      Object.fromEntries(
+        allSatellites.map((sat) => [
+          String(sat.satellite_id),
+          sat.satellite_type,
+        ]),
+      ),
+    [allSatellites],
+  );
+
   // stats list for stat cards on the landing page
   const stats = [
-    { label: "Total Satellites", value: totalSatellites },
-    { label: "Earth Satellites", value: totalEarthSatellites },
-    { label: "Oceanic Satellites", value: totalOceanicSatellites },
-    { label: "Navigation", value: totalNavigationSatellites },
-    { label: "Internet Satellites", value: totalInternetSatellites },
-    { label: "Research Satellites", value: totalResearchSatellites },
-    { label: "Weather Satellites", value: totalWeatherSatellites },
+    {
+      label: "Total Satellites",
+      value: counts.total,
+      icon: <SatelliteAltIcon sx={{ fontSize: 20 }} />,
+    },
+    {
+      label: "Earth Satellites",
+      value: counts.earth_science,
+      icon: (
+        <PublicIcon
+          sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS["earth science"] }}
+        />
+      ),
+    },
+    {
+      label: "Oceanic Satellites",
+      value: counts.oceanic_science,
+      icon: (
+        <WavesIcon
+          sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS["oceanic science"] }}
+        />
+      ),
+    },
+    {
+      label: "Navigation",
+      value: counts.navigation,
+      icon: (
+        <ExploreIcon
+          sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS.navigation }}
+        />
+      ),
+    },
+    {
+      label: "Internet Satellites",
+      value: counts.internet,
+      icon: (
+        <WifiIcon
+          sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS.internet }}
+        />
+      ),
+    },
+    {
+      label: "Research Satellites",
+      value: counts.research,
+      icon: (
+        <ScienceIcon
+          sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS.research }}
+        />
+      ),
+    },
+    {
+      label: "Weather Satellites",
+      value: counts.weather,
+      icon: (
+        <AirIcon
+          sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS.weather }}
+        />
+      ),
+    },
   ];
 
   // main component structure
@@ -119,7 +180,7 @@ export default function Landing() {
             </p>
           </div>
           <div className={styles.globeWrapper}>
-            <SatelliteGlobe />
+            <SatelliteGlobe satelliteTypeById={satelliteTypeById} />
           </div>
         </div>
 
@@ -132,6 +193,7 @@ export default function Landing() {
                 key={stat.label}
                 label={stat.label}
                 value={stat.value}
+                icon={stat.icon}
                 loading={loading}
               />
             ))}
