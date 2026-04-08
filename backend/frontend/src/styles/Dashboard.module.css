@@ -310,12 +310,51 @@
   font-weight: var(--font-weight-medium);
 }
 
+.globeCardExpanded {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  border-radius: 0;
+  border: none;
+}
+
 .globeCardBody {
   flex: 1;
-  padding: 10px; /* ✅ 10px border around the globe */
+  padding: 10px;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.globeControls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  z-index: 10;
+}
+
+.globeControlBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background-color: rgba(10, 22, 40, 0.85);
+  border: 1px solid #334155;
+  border-radius: 0.375rem;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  backdrop-filter: blur(4px);
+}
+
+.globeControlBtn:hover {
+  background-color: #1e293b;
+  color: #ffffff;
 }
 
 .deploymentCard {

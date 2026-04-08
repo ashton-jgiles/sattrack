@@ -58,6 +58,7 @@ export default function SatelliteGlobe({
   // When set, only satellites whose IDs are in this Set/array are shown.
   // When null/undefined, all satellites are shown.
   visibleSatelliteIds = null,
+  onReady = null,
 }) {
   const cesiumContainer = useRef(null);
   const viewerRef = useRef(null);
@@ -102,6 +103,16 @@ export default function SatelliteGlobe({
     pointCollectionRef.current = viewer.scene.primitives.add(
       new Cesium.PointPrimitiveCollection(),
     );
+
+    if (onReady) {
+      onReady({
+        resetCamera: () => {
+          if (viewerRef.current && !viewerRef.current.isDestroyed()) {
+            viewerRef.current.camera.flyHome(1.0);
+          }
+        },
+      });
+    }
 
     const ro = new ResizeObserver(() => {
       if (viewerRef.current && !viewerRef.current.isDestroyed()) {
