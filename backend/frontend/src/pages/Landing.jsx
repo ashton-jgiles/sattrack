@@ -84,14 +84,14 @@ export default function Landing() {
     {
       label: "Total Satellites",
       value: counts.total,
-      icon: <SatelliteAltIcon sx={{ fontSize: 20 }} />,
+      icon: <SatelliteAltIcon sx={{ fontSize: "inherit" }} />,
     },
     {
       label: "Earth Satellites",
       value: counts.earth_science,
       icon: (
         <PublicIcon
-          sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS["earth science"] }}
+          sx={{ fontSize: "inherit", color: SATELLITE_CATEGORY_COLORS["earth science"] }}
         />
       ),
     },
@@ -100,7 +100,7 @@ export default function Landing() {
       value: counts.oceanic_science,
       icon: (
         <WavesIcon
-          sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS["oceanic science"] }}
+          sx={{ fontSize: "inherit", color: SATELLITE_CATEGORY_COLORS["oceanic science"] }}
         />
       ),
     },
@@ -109,7 +109,7 @@ export default function Landing() {
       value: counts.navigation,
       icon: (
         <ExploreIcon
-          sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS.navigation }}
+          sx={{ fontSize: "inherit", color: SATELLITE_CATEGORY_COLORS.navigation }}
         />
       ),
     },
@@ -118,7 +118,7 @@ export default function Landing() {
       value: counts.internet,
       icon: (
         <WifiIcon
-          sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS.internet }}
+          sx={{ fontSize: "inherit", color: SATELLITE_CATEGORY_COLORS.internet }}
         />
       ),
     },
@@ -127,7 +127,7 @@ export default function Landing() {
       value: counts.research,
       icon: (
         <ScienceIcon
-          sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS.research }}
+          sx={{ fontSize: "inherit", color: SATELLITE_CATEGORY_COLORS.research }}
         />
       ),
     },
@@ -136,7 +136,7 @@ export default function Landing() {
       value: counts.weather,
       icon: (
         <AirIcon
-          sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS.weather }}
+          sx={{ fontSize: "inherit", color: SATELLITE_CATEGORY_COLORS.weather }}
         />
       ),
     },

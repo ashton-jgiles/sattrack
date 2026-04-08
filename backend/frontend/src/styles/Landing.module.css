@@ -120,7 +120,8 @@
 .rightColumn {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
+  min-height: 0;
 }
 
 .statsTitle {
@@ -129,12 +130,15 @@
   font-weight: var(--font-weight-medium);
   text-align: center;
   color: #ffffff;
+  flex-shrink: 0;
 }
 
 .statsGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr); /* ✅ 2x4 grid */
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── Stat Cards ─────────────────────────────────────────────── */
@@ -145,18 +149,21 @@
   border-radius: 0.75rem;
   padding: 0.625rem 0.875rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  min-height: 0;
 }
 
 .statCardHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.625rem;
 }
 
 .statCardLabel {
-  font-size: var(--text-xs);
+  font-size: clamp(0.75rem, 1.8vh, 1.25rem);
   color: #94a3b8;
   font-weight: var(--font-weight-normal);
   white-space: nowrap;
@@ -164,11 +171,14 @@
 
 .statCardIcon {
   color: #3b82f6;
+  font-size: clamp(1rem, 2.8vh, 2rem);
+  display: flex;
+  align-items: center;
 }
 
 .statCardValue {
   font-family: var(--font-display);
-  font-size: var(--text-lg);
+  font-size: clamp(1rem, 4vh, 3rem);
   font-weight: 600;
   color: #cbd5e1;
   line-height: 1;
