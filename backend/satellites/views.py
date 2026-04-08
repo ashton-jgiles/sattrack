@@ -8,7 +8,7 @@ from backend.throttles import PositionsThrottle
 
 # Subtype detection fragments shared across multiple views.
 # Defined once here to avoid copy-pasting the same SQL in every query.
-_SUBTYPE_CASE = """
+SUBTYPE_CASE = """
     CASE
         WHEN es.satellite_id IS NOT NULL THEN 'Earth Science'
         WHEN os.satellite_id IS NOT NULL THEN 'Oceanic Science'
@@ -19,7 +19,7 @@ _SUBTYPE_CASE = """
         ELSE 'Unknown'
     END AS satellite_type"""
 
-_SUBTYPE_JOINS = """
+SUBTYPE_JOINS = """
     LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
     LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
     LEFT JOIN weather        w  ON s.satellite_id = w.satellite_id
@@ -33,24 +33,26 @@ class SatelliteView(APIView):
     def get(self, request):
         # get the level access of the user
         level = getattr(request.user, 'level_access', 1)
-        # level 3+ can see pending; everyone else only sees approved
+        # level 3 can see pending; everyone else only sees approved
         visible_statuses = ['pending', 'approved'] if level >= 3 else ['approved']
         placeholders = ', '.join(['%s'] * len(visible_statuses))
 
         with connection.cursor() as cursor:
+            # get the all satellites and their type and the dataset review status
             cursor.execute(f"""
                 SELECT
                     s.*,
                     d.review_status,
-                    {_SUBTYPE_CASE}
+                    {SUBTYPE_CASE}
                 FROM satellite s
                     INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status IN ({placeholders})
-                    {_SUBTYPE_JOINS}
+                    {SUBTYPE_JOINS}
                 WHERE s.deleted_at IS NULL
             """, visible_statuses)
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
+        # return the data
         return Response(data)
 
 
@@ -58,13 +60,16 @@ class SatelliteView(APIView):
 class SpecificSatelliteView(APIView):
     def get(self, request, satellite_id):
         with connection.cursor() as cursor:
+            # get the satellite by its id
             cursor.execute("SELECT * FROM satellite WHERE satellite_id = %s AND deleted_at IS NULL", [satellite_id])
             columns = [col[0] for col in cursor.description]
             row = cursor.fetchone()
 
+        # check satellite exists
         if not row:
             return Response({'error': 'Satellite not found'}, status=404)
 
+        # return the data
         return Response(dict(zip(columns, row)))
 
 
@@ -90,7 +95,7 @@ class SatelliteTypeCounts(APIView):
                     COUNT(r.satellite_id)  AS research
                 FROM satellite s
                     INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status IN ({placeholders})
-                    {_SUBTYPE_JOINS}
+                    {SUBTYPE_JOINS}
                 WHERE s.deleted_at IS NULL
             """, visible_statuses)
             columns = [col[0] for col in cursor.description]
@@ -201,21 +206,21 @@ class RecentDeployments(APIView):
             # level 3+ can see satellites from any dataset; others restricted to approved datasets only
             if level >= 3:
                 cursor.execute(f"""
-                    SELECT s.*, dp.deploy_date_time, {_SUBTYPE_CASE}
+                    SELECT s.*, dp.deploy_date_time, {SUBTYPE_CASE}
                     FROM satellite s
                         INNER JOIN deploys_payload dp ON s.satellite_id = dp.satellite_id
-                        {_SUBTYPE_JOINS}
+                        {SUBTYPE_JOINS}
                     WHERE s.deleted_at IS NULL
                       AND dp.deploy_date_time >= NOW() - INTERVAL 5 YEAR
                     ORDER BY dp.deploy_date_time
                 """)
             else:
                 cursor.execute(f"""
-                    SELECT s.*, dp.deploy_date_time, {_SUBTYPE_CASE}
+                    SELECT s.*, dp.deploy_date_time, {SUBTYPE_CASE}
                     FROM satellite s
                         INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status = 'approved'
                         INNER JOIN deploys_payload dp ON s.satellite_id = dp.satellite_id
-                        {_SUBTYPE_JOINS}
+                        {SUBTYPE_JOINS}
                     WHERE s.deleted_at IS NULL
                       AND dp.deploy_date_time >= NOW() - INTERVAL 5 YEAR
                     ORDER BY dp.deploy_date_time

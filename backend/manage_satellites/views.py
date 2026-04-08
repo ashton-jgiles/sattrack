@@ -12,6 +12,7 @@ from manage_satellites.services import (
     start_trajectory_thread,
 )
 
+# create the logger
 logger = logging.getLogger('sattrack')
 
 # maps display subclass name to table name — defined once and shared across views

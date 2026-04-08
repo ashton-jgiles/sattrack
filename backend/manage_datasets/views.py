@@ -7,6 +7,7 @@ from datetime import date
 import requests
 import re
 
+# create the logger
 logger = logging.getLogger('sattrack')
 
 # global statuses and base url

@@ -8,7 +8,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from backend.throttles import RegisterThrottle
 from users.services import check_password, get_user_role
+from rest_framework_simplejwt.tokens import RefreshToken as JWTRefreshToken
 
+# create the logger
 logger = logging.getLogger('sattrack')
 
 # maps get_user_role() return values (table names) to display names
@@ -74,6 +76,7 @@ class LoginView(APIView):
         refresh['level_access'] = level_access
         refresh['full_name'] = full_name
 
+        # log as success
         logger.info(f"[Auth] User '{username}' logged in successfully (role={role})")
 
         # set tokens as httpOnly cookies — not readable by JavaScript
@@ -103,11 +106,13 @@ class LoginView(APIView):
 
 # create account view to create a users account and check for conflicts
 class CreateAccountView(APIView):
+    # set auth, perm, and throttle classes
     authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [RegisterThrottle]
 
     def post(self, request):
+        # get the data from the request
         username = request.data.get('username')
         full_name = request.data.get('full_name')
         password = request.data.get('password')
@@ -148,6 +153,7 @@ class CreateAccountView(APIView):
             # insert the new user subclass entry
             cursor.execute("INSERT INTO amateur (username, interests) VALUES (%s, %s)", [username, None])
 
+        # log for account registration
         logger.info(f"[Auth] New account registered: '{username}'")
         return Response(
             {'message': 'Account Created Successfully'},
@@ -158,6 +164,7 @@ class CreateAccountView(APIView):
 # get users view to list all users — requires level 3+
 class GetUsers(APIView):
     def get(self, request):
+        # check accesss level
         if getattr(request.user, 'level_access', 0) < 3:
             return Response({'error': 'Insufficient permissions'}, status=403)
 
@@ -194,6 +201,7 @@ class GetUserProfile(APIView):
             return Response({'error': 'Insufficient permissions'}, status=403)
 
         with connection.cursor() as cursor:
+            # get profile for a single user
             cursor.execute("""
                 SELECT
                     u.username,
@@ -263,14 +271,17 @@ class ModifyUser(APIView):
     }
 
     def post(self, request):
+        # get access level
         if getattr(request.user, 'level_access', 0) < 4:
             return Response({'error': 'Insufficient permissions'}, status=403)
 
+        # get data from the request
         original_username = request.data.get('original_username')
         level_access = request.data.get('level_access')
         user_type = request.data.get('user_type')
         subtype_data = request.data.get('subtype_data', {})
 
+        # validate original username was passed
         if not original_username:
             return Response({'error': 'original_username is required'}, status=400)
 
@@ -283,10 +294,13 @@ class ModifyUser(APIView):
             return Response({'error': 'Invalid user_type'}, status=400)
 
         with transaction.atomic(), connection.cursor() as cursor:
+            # get the orignal username
             cursor.execute("SELECT username FROM user WHERE username = %s", [original_username])
+            # ensure the user exists
             if not cursor.fetchone():
                 return Response({'error': 'User not found'}, status=404)
 
+            # update the user table
             cursor.execute(
                 "UPDATE user SET level_access = %s WHERE username = %s",
                 [level_access, original_username]
@@ -313,6 +327,7 @@ class ModifyUser(APIView):
                     [subtype_data['profession'], original_username]
                 )
 
+        # log the result
         logger.info(f"[Auth] User '{original_username}' updated by '{request.user.username}' (type={user_type}, level={level_access})")
         return Response({'message': 'User updated successfully'})
 
@@ -320,11 +335,13 @@ class ModifyUser(APIView):
 # update own profile — allows the authenticated user to change their own username, name, and subtype fields
 class UpdateOwnProfile(APIView):
     def post(self, request):
+        # get the data from the request
         current_username = request.user.username
         new_username = request.data.get('username', '').strip()
         full_name = request.data.get('full_name', '').strip()
         subtype_data = request.data.get('subtype_data', {})
 
+        # check required fields exist
         if not full_name:
             return Response({'error': 'full_name is required'}, status=400)
         if not new_username:
@@ -334,10 +351,13 @@ class UpdateOwnProfile(APIView):
 
         with transaction.atomic(), connection.cursor() as cursor:
             if username_changed:
+                # get the user
                 cursor.execute("SELECT username FROM user WHERE username = %s", [new_username])
+                # check the user exists
                 if cursor.fetchone():
                     return Response({'error': 'Username already taken'}, status=409)
 
+            # update the user full name
             cursor.execute(
                 "UPDATE user SET full_name = %s WHERE username = %s",
                 [full_name, current_username]
@@ -396,6 +416,7 @@ class UpdateOwnProfile(APIView):
                     [subtype_data['interests'], active_username]
                 )
 
+        # return the reponse
         return Response({
             'message': 'Profile updated successfully',
             'full_name': full_name,
@@ -407,35 +428,44 @@ class UpdateOwnProfile(APIView):
 # change password class to change a users account password
 class ChangePassword(APIView):
     def post(self, request):
+        # get the data from the request
         username = request.user.username
         old_password = request.data.get('old_password', '')
         new_password = request.data.get('new_password', '')
 
+        # check for required fields
         if not old_password or not new_password:
             return Response({'error': 'Both old and new passwords are required'}, status=400)
 
+        # check password length
         if len(new_password) < 8:
             return Response({'error': 'Password must be at least 8 characters'}, status=400)
 
         with connection.cursor() as cursor:
+            # select the password for the user
             cursor.execute("SELECT password FROM user WHERE username = %s", [username])
             row = cursor.fetchone()
+            # check the password exists
             if not row:
                 return Response({'error': 'User not found'}, status=404)
 
+            #check the old password matches the one from the database
             if not check_password(old_password, row[0]):
                 return Response({'error': 'Current password is incorrect'}, status=400)
 
+            # hash the new password
             hashed = bcrypt.hashpw(
                 new_password.encode('utf-8'),
                 bcrypt.gensalt()
             ).decode('utf-8')
 
+            # update the users password
             cursor.execute(
                 "UPDATE user SET password = %s WHERE username = %s",
                 [hashed, username]
             )
 
+        # log the result
         logger.info(f"[Auth] User '{username}' changed their password")
         return Response({'message': 'Password changed successfully'})
 
@@ -443,11 +473,14 @@ class ChangePassword(APIView):
 # delete user class to remove a user from the database — requires level 4
 class DeleteUser(APIView):
     def delete(self, request, username):
+        # ensure correct level access
         if getattr(request.user, 'level_access', 0) < 4:
             return Response({'error': 'Insufficient permissions'}, status=403)
 
         with transaction.atomic(), connection.cursor() as cursor:
+            # get the user
             cursor.execute("SELECT username FROM user WHERE username = %s", [username])
+            # check user exists
             if not cursor.fetchone():
                 return Response({'error': 'User not found'}, status=404)
 
@@ -455,32 +488,39 @@ class DeleteUser(APIView):
             cursor.execute("DELETE FROM reviews WHERE reviewed_by = %s", [username])
             cursor.execute("DELETE FROM uploads WHERE uploaded_by = %s", [username])
 
+            # get the correct subtype table
             for table in ['administrator', 'data_analyst', 'scientist', 'amateur']:
                 cursor.execute(f"DELETE FROM {table} WHERE username = %s", [username])
 
+            # delete the user from user table
             cursor.execute("DELETE FROM user WHERE username = %s", [username])
 
+        # log the result
         logger.info(f"[Auth] User '{username}' deleted by '{request.user.username}'")
         return Response({'message': 'User deleted successfully'})
 
 
 # refresh token view reads the httpOnly refresh cookie and issues a new access cookie
 class RefreshTokenView(APIView):
+    # get auth and perm classes
     authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request):
-        from rest_framework_simplejwt.tokens import RefreshToken as JWTRefreshToken
+        # create the refresh token
         refresh_token = request.COOKIES.get('refresh_token')
+        # check the token exists
         if not refresh_token:
             return Response({'error': 'No refresh token'}, status=401)
 
+        # try generate the new access token
         try:
             token = JWTRefreshToken(refresh_token)
             new_access = str(token.access_token)
         except Exception:
             return Response({'error': 'Invalid or expired refresh token'}, status=401)
 
+        # create the new token and return it
         response = Response({'message': 'Token refreshed'})
         response.set_cookie(
             'access_token', new_access,
@@ -494,10 +534,12 @@ class RefreshTokenView(APIView):
 
 # logout view clears the httpOnly auth cookies
 class LogoutView(APIView):
+    # get auth and perm classes
     authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request):
+        # remove user token
         response = Response({'message': 'Logged out successfully'})
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')

@@ -36,18 +36,10 @@ SUBCLASS_ALLOWED_COLUMNS = {
 
 
 class RateLimitedError(Exception):
-    """Raised when CelesTrak returns a non-JSON response indicating a rate limit."""
     pass
 
 
 def fetch_celestrak_cached(url):
-    """
-    Return CelesTrak JSON data for a URL, using a two-layer cache:
-      Layer 1 — in-process memory cache (fastest, lost on restart)
-      Layer 2 — database cache (survives restarts, shared across workers)
-    Falls back to a stale DB row when CelesTrak is rate-limited.
-    Raises RateLimitedError if rate-limited and no stale cache exists.
-    """
     # use UTC consistently so cache TTL comparisons are correct regardless of server timezone
     now = datetime.utcnow()
 
@@ -106,11 +98,8 @@ def fetch_celestrak_cached(url):
     return data
 
 
+# compute the orbit type of a new satellite
 def derive_orbit_type(mean_motion, inclination):
-    """
-    Classify a satellite's orbit type from mean motion (rev/day) and inclination (deg).
-    Returns one of: 'GEO', 'MEO', 'HEO', 'LEO'.
-    """
     if mean_motion < 1.5:
         return 'GEO'
     elif mean_motion < 6:
@@ -121,14 +110,8 @@ def derive_orbit_type(mean_motion, inclination):
         return 'LEO'
 
 
+# generate trajectory function
 def generate_trajectory_async(satellite_id, dataset_id, tle_data):
-    """
-    Compute and persist SGP4 trajectory snapshots for a newly added satellite.
-    Intended to be run in a daemon thread so the HTTP response is not blocked.
-
-    Django database connections are thread-local; the connection opened in this
-    daemon thread is explicitly closed in the finally block to avoid pool exhaustion.
-    """
     norad_id = tle_data.get('norad_id')
     logger.info(f"[Trajectory] Generating for NORAD {norad_id}...")
 
@@ -213,8 +196,8 @@ def generate_trajectory_async(satellite_id, dataset_id, tle_data):
         connection.close()
 
 
+# start thread method to start our trajectory update
 def start_trajectory_thread(satellite_id, dataset_id, tle_data):
-    """Spawn a daemon thread to generate trajectory data for a new satellite."""
     thread = threading.Thread(
         target=generate_trajectory_async,
         args=(satellite_id, dataset_id, tle_data),

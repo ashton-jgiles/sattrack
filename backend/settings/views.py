@@ -6,26 +6,27 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.management import call_command
 
+# create the logger
 logger = logging.getLogger('sattrack')
 
 # module-level state shared across requests within a single worker process.
-# _trajectory_running prevents overlapping rebuilds.
-# _last_trajectory_update records when the last successful rebuild finished
+# trajectory_running prevents overlapping rebuilds.
+# last_trajectory_update records when the last successful rebuild finished
 # so the admin page can display "last updated X minutes ago" without a DB query.
-_trajectory_lock = threading.Lock()
-_trajectory_running = False
-_last_trajectory_update = None   # datetime (UTC) of last completed rebuild
-_last_trajectory_error = None    # error message if the last rebuild failed
+trajectory_lock = threading.Lock()
+trajectory_running = False
+last_trajectory_update = None   # datetime (UTC) of last completed rebuild
+last_trajectory_error = None    # error message if the last rebuild failed
 
 
 # returns the current trajectory update status — no auth required so the admin
 # page can poll it freely, but the information is harmless
 class TrajectoryStatus(APIView):
     def get(self, request):
-        with _trajectory_lock:
-            running = _trajectory_running
-            last_update = _last_trajectory_update
-            last_error = _last_trajectory_error
+        with trajectory_lock:
+            running = trajectory_running
+            last_update = last_trajectory_update
+            last_error = last_trajectory_error
 
         return Response({
             'running': running,
@@ -41,26 +42,26 @@ class UpdateTrajectories(APIView):
         if getattr(request.user, 'level_access', 0) < 4:
             return Response({'error': 'Insufficient permissions'}, status=403)
 
-        global _trajectory_running
-        with _trajectory_lock:
-            if _trajectory_running:
+        global trajectory_running
+        with trajectory_lock:
+            if trajectory_running:
                 return Response({'error': 'Trajectory update already in progress'}, status=409)
-            _trajectory_running = True
+            trajectory_running = True
 
         def run_and_clear():
-            global _trajectory_running, _last_trajectory_update, _last_trajectory_error
+            global trajectory_running, last_trajectory_update, last_trajectory_error
             try:
                 call_command('update_trajectories')
-                with _trajectory_lock:
-                    _last_trajectory_update = datetime.now(timezone.utc)
-                    _last_trajectory_error = None
+                with trajectory_lock:
+                    last_trajectory_update = datetime.now(timezone.utc)
+                    last_trajectory_error = None
             except Exception as e:
                 logger.error(f"[Settings] Trajectory update failed: {e}")
-                with _trajectory_lock:
-                    _last_trajectory_error = str(e)
+                with trajectory_lock:
+                    last_trajectory_error = str(e)
             finally:
-                with _trajectory_lock:
-                    _trajectory_running = False
+                with trajectory_lock:
+                    trajectory_running = False
 
         thread = threading.Thread(target=run_and_clear, daemon=True)
         thread.start()
