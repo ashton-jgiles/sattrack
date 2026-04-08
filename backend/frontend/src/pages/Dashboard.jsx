@@ -182,7 +182,7 @@ function InfoField({ label, value }) {
 }
 
 // Satellite info panel shown below the globe when a satellite is selected
-function SatelliteInfoPanel({ satelliteId, onClose }) {
+function SatelliteInfoPanel({ satelliteId, onClose, minimized, onToggleMinimized }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -200,9 +200,11 @@ function SatelliteInfoPanel({ satelliteId, onClose }) {
       .finally(() => setLoading(false));
   }, [satelliteId]);
 
+  const panelClass = `${styles.infoPanel} ${minimized ? styles.infoPanelAbsolute : ""}`;
+
   if (loading && !profile) {
     return (
-      <div className={styles.infoPanel}>
+      <div className={panelClass}>
         <div className={styles.infoPanelLoading}>Loading satellite data...</div>
       </div>
     );
@@ -210,7 +212,7 @@ function SatelliteInfoPanel({ satelliteId, onClose }) {
 
   if (error) {
     return (
-      <div className={styles.infoPanel}>
+      <div className={panelClass}>
         <div className={styles.infoPanelError}>{error}</div>
       </div>
     );
@@ -229,57 +231,77 @@ function SatelliteInfoPanel({ satelliteId, onClose }) {
     : null;
 
   return (
-    <div className={styles.infoPanel}>
+    <div className={panelClass}>
       <div className={styles.infoPanelHeader}>
         <div className={styles.infoPanelTitleGroup}>
           <SatelliteAltIcon sx={{ fontSize: 18, color: "#3b82f6", flexShrink: 0 }} />
-          <span className={styles.infoPanelTitle}>
-            {s.name ?? "Unknown Satellite"}
-          </span>
-          {s.orbit_type && (
-            <span className={styles.infoPanelBadge}>{s.orbit_type}</span>
-          )}
-          {s.satellite_type && (
-            <span className={styles.infoPanelBadgeAlt}>{s.satellite_type}</span>
-          )}
-          {s.description && (
-            <span className={styles.infoPanelDescription}>{s.description}</span>
-          )}
+          <div className={styles.infoPanelTitleStack}>
+            <div className={styles.infoPanelTitleRow}>
+              <span className={styles.infoPanelTitle}>
+                {s.name ?? "Unknown Satellite"}
+              </span>
+              {s.orbit_type && (
+                <span className={styles.infoPanelBadge}>{s.orbit_type}</span>
+              )}
+              {s.satellite_type && (
+                <span className={styles.infoPanelBadgeAlt}>{s.satellite_type}</span>
+              )}
+              {s.description && (
+                <span className={styles.infoPanelDescription}>{s.description}</span>
+              )}
+            </div>
+            <div className={styles.infoPanelMeta}>
+              {s.norad_id && <span>NORAD {s.norad_id}</span>}
+              {o.owner_name && <span>{o.owner_name}</span>}
+              {deployDate && <span>Launched {deployDate}</span>}
+              {ls.site_name && <span>{ls.site_name}</span>}
+            </div>
+          </div>
         </div>
-        <button className={styles.infoPanelClose} onClick={onClose}>
-          <CloseIcon sx={{ fontSize: 16 }} />
-        </button>
-      </div>
-
-      <div className={styles.infoPanelGrid}>
-        <div className={styles.infoPanelSection}>
-          <span className={styles.infoPanelSectionTitle}>Identification</span>
-          <InfoField label="Name" value={s.name} />
-          <InfoField label="NORAD ID" value={s.norad_id} />
-          <InfoField label="Orbit Type" value={s.orbit_type} />
-        </div>
-
-        <div className={styles.infoPanelSection}>
-          <span className={styles.infoPanelSectionTitle}>Owner</span>
-          <InfoField label="Owner" value={o.owner_name} />
-          <InfoField label="Operator" value={o.operator} />
-          <InfoField label="Country" value={o.country} />
-        </div>
-
-        <div className={styles.infoPanelSection}>
-          <span className={styles.infoPanelSectionTitle}>Launch</span>
-          <InfoField label="Deploy Date" value={deployDate} />
-          <InfoField label="Vehicle" value={l.vehicle_name} />
-          <InfoField label="Launch Site" value={ls.site_name} />
-        </div>
-
-        <div className={styles.infoPanelSection}>
-          <span className={styles.infoPanelSectionTitle}>Communications</span>
-          <InfoField label="Station" value={c.station_name} />
-          <InfoField label="Frequency" value={c.communication_frequency} />
-          <InfoField label="Satellite Type" value={s.satellite_type} />
+        <div className={styles.infoPanelActions}>
+          <button className={styles.infoPanelClose} onClick={onToggleMinimized}>
+            {minimized
+              ? <KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
+              : <KeyboardArrowUpIcon sx={{ fontSize: 16 }} />
+            }
+          </button>
+          <button className={styles.infoPanelClose} onClick={onClose}>
+            <CloseIcon sx={{ fontSize: 16 }} />
+          </button>
         </div>
       </div>
+
+      {!minimized && (
+        <div className={styles.infoPanelGrid}>
+          <div className={styles.infoPanelSection}>
+            <span className={styles.infoPanelSectionTitle}>Identification</span>
+            <InfoField label="Name" value={s.name} />
+            <InfoField label="NORAD ID" value={s.norad_id} />
+            <InfoField label="Orbit Type" value={s.orbit_type} />
+          </div>
+
+          <div className={styles.infoPanelSection}>
+            <span className={styles.infoPanelSectionTitle}>Owner</span>
+            <InfoField label="Owner" value={o.owner_name} />
+            <InfoField label="Operator" value={o.operator} />
+            <InfoField label="Country" value={o.country} />
+          </div>
+
+          <div className={styles.infoPanelSection}>
+            <span className={styles.infoPanelSectionTitle}>Launch</span>
+            <InfoField label="Deploy Date" value={deployDate} />
+            <InfoField label="Vehicle" value={l.vehicle_name} />
+            <InfoField label="Launch Site" value={ls.site_name} />
+          </div>
+
+          <div className={styles.infoPanelSection}>
+            <span className={styles.infoPanelSectionTitle}>Communications</span>
+            <InfoField label="Station" value={c.station_name} />
+            <InfoField label="Frequency" value={c.communication_frequency} />
+            <InfoField label="Satellite Type" value={s.satellite_type} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -292,6 +314,7 @@ function OverviewPage() {
   const [allSatellites, setAllSatellites] = useState([]);
   const [highlightedSatellites, setHighlightedSatellites] = useState([]);
   const [selectedSatelliteId, setSelectedSatelliteId] = useState(null);
+  const [infoPanelMinimized, setInfoPanelMinimized] = useState(false);
 
   // Search — list only, never affects globe
   const [searchTerm, setSearchTerm] = useState("");
@@ -462,17 +485,9 @@ function OverviewPage() {
 
   return (
     <div className={styles.overviewLayout}>
-      {/* Stats row or Satellite Info Panel */}
-      {selectedSatelliteId ? (
-        <SatelliteInfoPanel
-          satelliteId={selectedSatelliteId}
-          onClose={() => {
-            setSelectedSatelliteId(null);
-            setHighlightedSatellites([]);
-          }}
-        />
-      ) : (
-        <div className={styles.statsRow}>
+      {/* Stats row (always rendered for sizing) + Info Panel overlay */}
+      <div className={styles.statsRowWrapper}>
+        <div className={styles.statsRow} style={selectedSatelliteId && !infoPanelMinimized ? { visibility: "hidden", height: 0, overflow: "hidden", gap: 0 } : selectedSatelliteId ? { visibility: "hidden" } : undefined}>
           <StatCard
             label="Total Satellites"
             value={stats.total}
@@ -516,7 +531,18 @@ function OverviewPage() {
             loading={loading}
           />
         </div>
-      )}
+        {selectedSatelliteId && (
+          <SatelliteInfoPanel
+            satelliteId={selectedSatelliteId}
+            minimized={infoPanelMinimized}
+            onToggleMinimized={() => setInfoPanelMinimized((m) => !m)}
+            onClose={() => {
+              setSelectedSatelliteId(null);
+              setHighlightedSatellites([]);
+            }}
+          />
+        )}
+      </div>
 
       {/* Globe + Satellite Panel */}
       <div className={styles.globeRow}>
