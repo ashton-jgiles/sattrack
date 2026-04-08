@@ -35,6 +35,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
+import GpsFixedIcon from "@mui/icons-material/GpsFixed";
 
 // component imports
 import SatelliteGlobe from "../components/SatelliteGlobe";
@@ -65,14 +66,23 @@ function NumInput({ placeholder, value, onChange, step = 1000 }) {
         placeholder={placeholder}
         value={value}
         onChange={(e) => {
-          if (e.target.value === "" || /^\d*$/.test(e.target.value)) onChange(e.target.value);
+          if (e.target.value === "" || /^\d*$/.test(e.target.value))
+            onChange(e.target.value);
         }}
       />
       <div className={styles.numberInputSpinners}>
-        <button className={styles.spinnerBtn} onClick={() => adjust(1)} tabIndex={-1}>
+        <button
+          className={styles.spinnerBtn}
+          onClick={() => adjust(1)}
+          tabIndex={-1}
+        >
           <KeyboardArrowUpIcon sx={{ fontSize: 12 }} />
         </button>
-        <button className={styles.spinnerBtn} onClick={() => adjust(-1)} tabIndex={-1}>
+        <button
+          className={styles.spinnerBtn}
+          onClick={() => adjust(-1)}
+          tabIndex={-1}
+        >
           <KeyboardArrowDownIcon sx={{ fontSize: 12 }} />
         </button>
       </div>
@@ -183,7 +193,12 @@ function InfoField({ label, value }) {
 }
 
 // Satellite info panel shown below the globe when a satellite is selected
-function SatelliteInfoPanel({ satelliteId, onClose, minimized, onToggleMinimized }) {
+function SatelliteInfoPanel({
+  satelliteId,
+  onClose,
+  minimized,
+  onToggleMinimized,
+}) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -235,7 +250,9 @@ function SatelliteInfoPanel({ satelliteId, onClose, minimized, onToggleMinimized
     <div className={panelClass}>
       <div className={styles.infoPanelHeader}>
         <div className={styles.infoPanelTitleGroup}>
-          <SatelliteAltIcon sx={{ fontSize: 18, color: "#3b82f6", flexShrink: 0 }} />
+          <SatelliteAltIcon
+            sx={{ fontSize: 18, color: "#3b82f6", flexShrink: 0 }}
+          />
           <div className={styles.infoPanelTitleStack}>
             <div className={styles.infoPanelTitleRow}>
               <span className={styles.infoPanelTitle}>
@@ -245,10 +262,14 @@ function SatelliteInfoPanel({ satelliteId, onClose, minimized, onToggleMinimized
                 <span className={styles.infoPanelBadge}>{s.orbit_type}</span>
               )}
               {s.satellite_type && (
-                <span className={styles.infoPanelBadgeAlt}>{s.satellite_type}</span>
+                <span className={styles.infoPanelBadgeAlt}>
+                  {s.satellite_type}
+                </span>
               )}
               {s.description && (
-                <span className={styles.infoPanelDescription}>{s.description}</span>
+                <span className={styles.infoPanelDescription}>
+                  {s.description}
+                </span>
               )}
             </div>
             <div className={styles.infoPanelMeta}>
@@ -261,10 +282,11 @@ function SatelliteInfoPanel({ satelliteId, onClose, minimized, onToggleMinimized
         </div>
         <div className={styles.infoPanelActions}>
           <button className={styles.infoPanelClose} onClick={onToggleMinimized}>
-            {minimized
-              ? <KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
-              : <KeyboardArrowUpIcon sx={{ fontSize: 16 }} />
-            }
+            {minimized ? (
+              <KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
+            ) : (
+              <KeyboardArrowUpIcon sx={{ fontSize: 16 }} />
+            )}
           </button>
           <button className={styles.infoPanelClose} onClick={onClose}>
             <CloseIcon sx={{ fontSize: 16 }} />
@@ -316,6 +338,7 @@ function OverviewPage() {
   const [highlightedSatellites, setHighlightedSatellites] = useState([]);
   const [selectedSatelliteId, setSelectedSatelliteId] = useState(null);
   const [infoPanelMinimized, setInfoPanelMinimized] = useState(false);
+  const [trackingSatellite, setTrackingSatellite] = useState(false);
   const globeControlsRef = React.useRef(null);
 
   // Search — list only, never affects globe
@@ -350,7 +373,9 @@ function OverviewPage() {
     keywords.length > 0;
 
   const activeFilterCount =
-    [satelliteTypeFilter, orbitTypeFilter, minNoradId, maxNoradId].filter(Boolean).length + keywords.length;
+    [satelliteTypeFilter, orbitTypeFilter, minNoradId, maxNoradId].filter(
+      Boolean,
+    ).length + keywords.length;
 
   const addKeyword = (e) => {
     if (e.key === "Enter" && keywordInput.trim()) {
@@ -489,7 +514,16 @@ function OverviewPage() {
     <div className={styles.overviewLayout}>
       {/* Stats row (always rendered for sizing) + Info Panel overlay */}
       <div className={styles.statsRowWrapper}>
-        <div className={styles.statsRow} style={selectedSatelliteId && !infoPanelMinimized ? { visibility: "hidden", height: 0, overflow: "hidden", gap: 0 } : selectedSatelliteId ? { visibility: "hidden" } : undefined}>
+        <div
+          className={styles.statsRow}
+          style={
+            selectedSatelliteId && !infoPanelMinimized
+              ? { visibility: "hidden", height: 0, overflow: "hidden", gap: 0 }
+              : selectedSatelliteId
+                ? { visibility: "hidden" }
+                : undefined
+          }
+        >
           <StatCard
             label="Total Satellites"
             value={stats.total}
@@ -541,6 +575,7 @@ function OverviewPage() {
             onClose={() => {
               setSelectedSatelliteId(null);
               setHighlightedSatellites([]);
+              setTrackingSatellite(false);
             }}
           />
         )}
@@ -554,12 +589,28 @@ function OverviewPage() {
             <SatelliteGlobe
               highlightedSatellites={highlightedSatellites}
               visibleSatelliteIds={globeFilteredIds}
-              onReady={(controls) => { globeControlsRef.current = controls; }}
+              onReady={(controls) => {
+                globeControlsRef.current = controls;
+              }}
             />
             <div className={styles.globeControls}>
+              {selectedSatelliteId && (
+                <button
+                  className={`${styles.globeControlBtn} ${trackingSatellite ? styles.globeControlBtnActive : ""}`}
+                  onClick={() => setTrackingSatellite((t) => !t)}
+                  title={
+                    trackingSatellite ? "Stop tracking" : "Track satellite"
+                  }
+                >
+                  <SatelliteAltIcon sx={{ fontSize: 16 }} />
+                </button>
+              )}
               <button
                 className={styles.globeControlBtn}
-                onClick={() => globeControlsRef.current?.resetCamera()}
+                onClick={() => {
+                  setTrackingSatellite(false);
+                  globeControlsRef.current?.resetCamera();
+                }}
                 title="Reset view"
               >
                 <MyLocationIcon sx={{ fontSize: 16 }} />
@@ -641,8 +692,16 @@ function OverviewPage() {
                 </select>
               </div>
               <div className={styles.panelFiltersRow}>
-                <NumInput placeholder="Min NORAD ID" value={minNoradId} onChange={setMinNoradId} />
-                <NumInput placeholder="Max NORAD ID" value={maxNoradId} onChange={setMaxNoradId} />
+                <NumInput
+                  placeholder="Min NORAD ID"
+                  value={minNoradId}
+                  onChange={setMinNoradId}
+                />
+                <NumInput
+                  placeholder="Max NORAD ID"
+                  value={maxNoradId}
+                  onChange={setMaxNoradId}
+                />
               </div>
               <div className={styles.keywordRow}>
                 {keywords.map((kw) => (
@@ -694,9 +753,10 @@ function OverviewPage() {
                     style={
                       selectedSatelliteId === sat.satellite_id
                         ? { backgroundColor: "#3b82f6" }
-                        : user?.level_access >= 3 && sat.review_status === "pending"
-                        ? { backgroundColor: "#f59e0b" }
-                        : undefined
+                        : user?.level_access >= 3 &&
+                            sat.review_status === "pending"
+                          ? { backgroundColor: "#f59e0b" }
+                          : undefined
                     }
                   />
                   <div className={styles.satelliteItemInfo}>
