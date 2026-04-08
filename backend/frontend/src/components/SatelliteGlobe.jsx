@@ -283,11 +283,7 @@ export default function SatelliteGlobe({
           const label = selectedLabelRef.current;
           if (label) {
             const altKm = lerp(posA.altitude, posB.altitude, t).toFixed(0);
-            const cartA = Cesium.Cartesian3.fromDegrees(posA.longitude, posA.latitude, posA.altitude * 1000);
-            const cartB = Cesium.Cartesian3.fromDegrees(posB.longitude, posB.latitude, posB.altitude * 1000);
-            const distM = Cesium.Cartesian3.distance(cartA, cartB);
-            const dtSec = (new Date(posB.timestamp) - new Date(posA.timestamp)) / 1000;
-            const velKms = dtSec > 0 ? (distM / dtSec / 1000).toFixed(2) : "—";
+            const velKms = lerp(posA.velocity, posB.velocity, t).toFixed(2);
             label.position = interpolated;
             label.text = `ALT ${altKm} km\nVEL ${velKms} km/s`;
             label.show = true;
