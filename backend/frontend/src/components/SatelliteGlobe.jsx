@@ -104,6 +104,9 @@ export default function SatelliteGlobe({
   const selectedLabelRef = useRef(null);
   const trackingRef = useRef(false);
   const trackingRangeRef = useRef(null); // null = use default on next frame
+  const flyingInRef = useRef(false);     // true while the fly-in animation plays
+  const currentSatPosRef = useRef(null); // live ECEF position of highlighted satellite
+  const currentSatAltRef = useRef(0);    // live altitude (km) of highlighted satellite
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -211,8 +214,52 @@ export default function SatelliteGlobe({
       ctrl.enableTranslate = false;
       ctrl.enableTilt = false;
       ctrl.enableZoom = false;
+
+      // Fly in to the satellite if we already have its live position
+      const satPos = currentSatPosRef.current;
+      const altKm = currentSatAltRef.current;
+      if (satPos) {
+        const heading = 0;
+        const pitch = Cesium.Math.toRadians(-50);
+        const range = Math.max(12_000_000, altKm * 1000 * 1.2);
+        trackingRangeRef.current = range;
+
+        const cosP = Math.cos(pitch);
+        const enuOffset = new Cesium.Cartesian3(
+          -Math.sin(heading) * cosP * range,
+          -Math.cos(heading) * cosP * range,
+          -Math.sin(pitch) * range,
+        );
+        const enuToEcef = Cesium.Transforms.eastNorthUpToFixedFrame(satPos);
+        const ecefOffset = Cesium.Matrix4.multiplyByPointAsVector(
+          enuToEcef, enuOffset, new Cesium.Cartesian3(),
+        );
+        const cameraPos = Cesium.Cartesian3.add(satPos, ecefOffset, new Cesium.Cartesian3());
+
+        const dir = Cesium.Cartesian3.normalize(
+          Cesium.Cartesian3.subtract(satPos, cameraPos, new Cesium.Cartesian3()),
+          new Cesium.Cartesian3(),
+        );
+        const radial = Cesium.Cartesian3.normalize(cameraPos, new Cesium.Cartesian3());
+        const right = Cesium.Cartesian3.normalize(
+          Cesium.Cartesian3.cross(dir, radial, new Cesium.Cartesian3()),
+          new Cesium.Cartesian3(),
+        );
+        const up = Cesium.Cartesian3.cross(right, dir, new Cesium.Cartesian3());
+
+        flyingInRef.current = true;
+        viewer.camera.flyTo({
+          destination: cameraPos,
+          orientation: { direction: dir, up },
+          duration: 1.2,
+          easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
+          complete: () => { flyingInRef.current = false; },
+          cancel: () => { flyingInRef.current = false; },
+        });
+      }
     } else {
       // Restore controls and smoothly fly back to an Earth-facing view
+      flyingInRef.current = false;
       ctrl.enableRotate = true;
       ctrl.enableTranslate = true;
       ctrl.enableTilt = true;
@@ -356,6 +403,10 @@ export default function SatelliteGlobe({
           const altKm = lerp(posA.altitude, posB.altitude, t);
           const velKms = lerp(posA.velocity, posB.velocity, t).toFixed(2);
 
+          // Keep live position/altitude available for the fly-in on tracking start
+          currentSatPosRef.current = interpolated;
+          currentSatAltRef.current = altKm;
+
           const label = selectedLabelRef.current;
           if (label) {
             label.position = interpolated;
@@ -365,6 +416,7 @@ export default function SatelliteGlobe({
 
           if (
             trackingRef.current &&
+            !flyingInRef.current &&
             viewerRef.current &&
             !viewerRef.current.isDestroyed()
           ) {
