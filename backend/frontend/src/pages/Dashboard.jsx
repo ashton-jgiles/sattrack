@@ -596,17 +596,20 @@ function OverviewPage() {
               tracking={trackingSatellite}
             />
             <div className={styles.globeControls}>
-              {selectedSatelliteId && (
-                <button
-                  className={`${styles.globeControlBtn} ${trackingSatellite ? styles.globeControlBtnActive : ""}`}
-                  onClick={() => setTrackingSatellite((t) => !t)}
-                  title={
-                    trackingSatellite ? "Stop tracking" : "Track satellite"
-                  }
-                >
-                  <SatelliteAltIcon sx={{ fontSize: 16 }} />
-                </button>
-              )}
+              <button
+                className={`${styles.globeControlBtn} ${trackingSatellite ? styles.globeControlBtnActive : ""}`}
+                onClick={() => setTrackingSatellite((t) => !t)}
+                title={
+                  selectedSatelliteId
+                    ? trackingSatellite
+                      ? "Stop tracking"
+                      : "Track satellite"
+                    : "Select a satellite to enable tracking"
+                }
+                disabled={!selectedSatelliteId}
+              >
+                <SatelliteAltIcon sx={{ fontSize: 16 }} />
+              </button>
               <button
                 className={styles.globeControlBtn}
                 onClick={() => {

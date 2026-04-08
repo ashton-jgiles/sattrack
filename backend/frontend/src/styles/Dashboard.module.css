@@ -348,13 +348,28 @@
   border-radius: 0.375rem;
   color: #94a3b8;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   backdrop-filter: blur(4px);
 }
 
 .globeControlBtn:hover {
   background-color: #1e293b;
   color: #ffffff;
+}
+
+.globeControlBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  color: #64748b;
+  border-color: #334155;
+  background-color: rgba(10, 22, 40, 0.5);
+}
+
+.globeControlBtn:disabled:hover {
+  background-color: rgba(10, 22, 40, 0.5);
+  color: #64748b;
 }
 
 .globeControlBtnActive {
@@ -546,7 +561,9 @@
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .filterToggleBtn:hover {
@@ -602,7 +619,9 @@
   font-family: var(--font-body);
   padding: 0.2rem 0.5rem;
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .panelFiltersClear:hover {
@@ -762,7 +781,9 @@
   color: #64748b;
   cursor: pointer;
   padding: 0 0.25rem;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   line-height: 1;
 }
 
@@ -869,7 +890,6 @@
   opacity: 1;
 }
 
-
 .keywordInput {
   flex: 1;
   min-width: 8rem;
@@ -926,8 +946,14 @@
 }
 
 @keyframes infoPanelIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .infoPanelLoading,
@@ -1024,7 +1050,6 @@
   padding: 0.15rem 0.6rem;
 }
 
-
 .infoPanelActions {
   display: flex;
   align-items: center;
@@ -1042,7 +1067,9 @@
   color: #94a3b8;
   cursor: pointer;
   padding: 0.3rem;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .infoPanelClose:hover {
@@ -1140,8 +1167,14 @@
 }
 
 @keyframes infoPanelIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .infoPanelLoading,
