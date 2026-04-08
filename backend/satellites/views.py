@@ -15,6 +15,7 @@ class SatelliteView(APIView):
             cursor.execute(f"""
                 SELECT
                     s.*,
+                    d.review_status,
                     CASE
                         WHEN es.satellite_id IS NOT NULL THEN 'Earth Science'
                         WHEN os.satellite_id IS NOT NULL THEN 'Oceanic Science'
@@ -137,7 +138,7 @@ class AllTrajectory(APIView):
             placeholders = ','.join(['%s'] * len(sat_ids))
             cursor.execute(f"""
                 SELECT t.satellite_id, t.dataset_id, t.timestamp,
-                       t.latitude, t.longitude, t.altitude
+                       t.latitude, t.longitude, t.altitude, t.velocity
                 FROM trajectory t
                 INNER JOIN (
                     SELECT satellite_id, MAX(timestamp) AS max_ts
