@@ -30,24 +30,6 @@ logger = logging.getLogger('sattrack')
 class RateLimitedError(Exception):
     pass
 
-# get stale cache method will return the caeche of data from the database if our celestrak cache in memory has expired
-def get_stale_cache(url):
-    # try select the data from the database cache from the celestrak url we are using
-    try:
-        with connection.cursor() as cursor:
-            # select the data from the database cache table
-            cursor.execute("SELECT data FROM celestrak_cache WHERE url = %s",[url])
-            row = cursor.fetchone()
-            # if we get data load the json
-            if row:
-                return json.loads(row[0])
-            
-    # if no data just pass
-    except Exception:
-        pass
-    # return none
-    return None
-
 # if our memory cache is still valid
 def fetch_celestrak_cached(url):
     # get the current time
@@ -60,7 +42,7 @@ def fetch_celestrak_cached(url):
             logger.info(f"[Cache HIT - Memory] {url}")
             return data
 
-    # Layer 2: DB cache
+    # Layer 2: DB cache (within TTL)
     with connection.cursor() as cursor:
         cursor.execute(
             "SELECT data, cached_at FROM celestrak_cache WHERE url = %s",
@@ -83,7 +65,10 @@ def fetch_celestrak_cached(url):
         response.raise_for_status()
         data = response.json()
     except ValueError:
-        # CelesTrak returned non-JSON — rate limited
+        # CelesTrak returned non-JSON — rate limited; fall back to stale DB cache
+        logger.info(f"[Cache STALE] CelesTrak rate limited, using stale DB cache for {url}")
+        if row:
+            return json.loads(row[0])
         raise RateLimitedError("CelesTrak rate limited")
     except Exception as e:
         raise Exception(f"CelesTrak fetch failed: {str(e)}")
@@ -94,8 +79,8 @@ def fetch_celestrak_cached(url):
         cursor.execute("""
             INSERT INTO celestrak_cache (url, data, cached_at)
             VALUES (%s, %s, %s)
-            ON DUPLICATE KEY UPDATE 
-                data = VALUES(data), 
+            ON DUPLICATE KEY UPDATE
+                data = VALUES(data),
                 cached_at = VALUES(cached_at)
         """, (url, json.dumps(data), now))
 
@@ -368,16 +353,11 @@ class NewSatellitesFromDataset(APIView):
         # fetch data from  using the chaching system
         try:
             all_sats = fetch_celestrak_cached(url)
-        except RateLimitedError :
-            stale = get_stale_cache(url)
-            if stale:
-                all_sats = stale
-            else:
-                # rate limit error on celestrak end
-                return Response(
-                    {'error': 'CelesTrak rate limit reached. Please try again later.'},
-                    status=429
-                )
+        except RateLimitedError:
+            return Response(
+                {'error': 'CelesTrak rate limit reached. Please try again later.'},
+                status=429
+            )
         except Exception as e:
             return Response({'error': f'Failed to fetch CelesTrak data: {str(e)}'}, status=502)
         
