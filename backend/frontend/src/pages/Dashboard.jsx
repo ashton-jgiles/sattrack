@@ -9,9 +9,7 @@ import { useAuth } from "../hooks/useAuth";
 import ManageSatellites from "./ManageSatellites";
 import ManageDatasets from "./ManageDatasets";
 import Datasets from "./Datasets";
-import UserProfile from "./UserProfile";
-import Settings from "./Settings";
-import Reviews from "./Reviews";
+import Visualizations from "./Visualizations";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
@@ -21,7 +19,7 @@ import EqualizerIcon from "@mui/icons-material/Equalizer";
 import StorageIcon from "@mui/icons-material/Storage";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import ManageSearchIcon from "@mui/icons-material/ManageSearch";
-import SettingsIcon from "@mui/icons-material/Settings";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import PublicIcon from "@mui/icons-material/Public";
 import DatasetIcon from "@mui/icons-material/Dataset";
 import WavesIcon from "@mui/icons-material/Waves";
@@ -31,7 +29,6 @@ import ScienceIcon from "@mui/icons-material/Science";
 import AirIcon from "@mui/icons-material/Air";
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
-import PersonIcon from "@mui/icons-material/Person";
 
 // component imports
 import SatelliteGlobe from "../components/SatelliteGlobe";
@@ -66,12 +63,6 @@ const NAV_ITEMS = [
         icon: <StorageIcon sx={{ fontSize: 18 }} />,
         minLevel: 1,
       },
-      {
-        id: "userProfile",
-        label: "User Profile",
-        icon: <PersonIcon sx={{ fontSize: 18 }} />,
-        minLevel: 1,
-      },
     ],
   },
   {
@@ -81,7 +72,7 @@ const NAV_ITEMS = [
         id: "visualizations",
         label: "Visualizations",
         icon: <EqualizerIcon sx={{ fontSize: 18 }} />,
-        minLevel: 2,
+        minLevel: 1,
       },
     ],
   },
@@ -112,9 +103,9 @@ const NAV_ITEMS = [
         minLevel: 4,
       },
       {
-        id: "settings",
-        label: "Settings",
-        icon: <SettingsIcon sx={{ fontSize: 18 }} />,
+        id: "admin",
+        label: "Admin Panel",
+        icon: <AdminPanelSettingsIcon sx={{ fontSize: 18 }} />,
         minLevel: 4,
       },
     ],
@@ -705,20 +696,20 @@ export default function Dashboard() {
     switch (activePage) {
       case "overview":
         return <OverviewPage />;
+      case "satellites":
+        return <PlaceholderPage title="Satellites" />;
       case "datasets":
         return <Datasets />;
-      case "userProfile":
-        return <UserProfile />;
       case "visualizations":
-        return <PlaceholderPage title="Visualizations" />;
+        return <Visualizations />;
       case "reviews":
-        return <Reviews />;
+        return <PlaceholderPage title="Reviews" />;
       case "manageSatellites":
         return <ManageSatellites />;
       case "manageDatasets":
         return <ManageDatasets />;
-      case "settings":
-        return <Settings />;
+      case "admin":
+        return <PlaceholderPage title="Admin Panel" />;
       default:
         return <OverviewPage />;
     }
