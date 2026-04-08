@@ -14,10 +14,23 @@ from manage_satellites.services import (
 
 logger = logging.getLogger('sattrack')
 
+# maps display subclass name to table name — defined once and shared across views
+SUBCLASS_TABLE_MAP = {
+    'Earth Science':   'earth_science',
+    'Oceanic Science': 'oceanic_science',
+    'Weather':         'weather',
+    'Navigation':      'navigation',
+    'Internet':        'internet',
+    'Research':        'research',
+}
 
-# returns all soft-deleted satellites
+
+# returns all soft-deleted satellites — requires level 3+
 class GetDeletedSatellites(APIView):
     def get(self, request):
+        if getattr(request.user, 'level_access', 0) < 3:
+            return Response({'error': 'Insufficient permissions'}, status=403)
+
         with connection.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -35,10 +48,10 @@ class GetDeletedSatellites(APIView):
                 FROM satellite s
                     LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
                     LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
-                    LEFT JOIN weather w  ON s.satellite_id = w.satellite_id
-                    LEFT JOIN navigation n  ON s.satellite_id = n.satellite_id
-                    LEFT JOIN internet i  ON s.satellite_id = i.satellite_id
-                    LEFT JOIN research r  ON s.satellite_id = r.satellite_id
+                    LEFT JOIN weather         w  ON s.satellite_id = w.satellite_id
+                    LEFT JOIN navigation      n  ON s.satellite_id = n.satellite_id
+                    LEFT JOIN internet        i  ON s.satellite_id = i.satellite_id
+                    LEFT JOIN research        r  ON s.satellite_id = r.satellite_id
                 WHERE s.deleted_at IS NOT NULL
                 ORDER BY s.deleted_at DESC
             """)
@@ -48,9 +61,12 @@ class GetDeletedSatellites(APIView):
         return Response(data)
 
 
-# restores a soft-deleted satellite by clearing deleted_at
+# restores a soft-deleted satellite by clearing deleted_at — requires level 3+
 class RecoverSatellite(APIView):
     def post(self, request, satellite_id):
+        if getattr(request.user, 'level_access', 0) < 3:
+            return Response({'error': 'Insufficient permissions'}, status=403)
+
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT satellite_id FROM satellite WHERE satellite_id = %s AND deleted_at IS NOT NULL",
@@ -64,12 +80,16 @@ class RecoverSatellite(APIView):
                 [satellite_id]
             )
 
+        logger.info(f"[Satellite] Satellite {satellite_id} recovered by '{request.user.username}'")
         return Response({'message': 'Satellite recovered successfully'})
 
 
-# soft-deletes a satellite by setting deleted_at to the current timestamp
+# soft-deletes a satellite by setting deleted_at to the current timestamp — requires level 3+
 class DeleteSatellite(APIView):
     def delete(self, request, satellite_id):
+        if getattr(request.user, 'level_access', 0) < 3:
+            return Response({'error': 'Insufficient permissions'}, status=403)
+
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT satellite_id FROM satellite WHERE satellite_id = %s AND deleted_at IS NULL",
@@ -83,12 +103,16 @@ class DeleteSatellite(APIView):
                 [satellite_id]
             )
 
+        logger.info(f"[Satellite] Satellite {satellite_id} soft-deleted by '{request.user.username}'")
         return Response({'message': 'Satellite deleted successfully'})
 
 
-# updates core satellite fields, communication frequency, and the matching subclass table row
+# updates core satellite fields, communication frequency, and the matching subclass table row — requires level 3+
 class ModifySatellite(APIView):
     def post(self, request):
+        if getattr(request.user, 'level_access', 0) < 3:
+            return Response({'error': 'Insufficient permissions'}, status=403)
+
         satellite = request.data.get('satellite', {})
         communication = request.data.get('communication', {})
         type_data = request.data.get('type_data', {})
@@ -121,10 +145,7 @@ class ModifySatellite(APIView):
                 ))
 
             # update the matching subclass table row
-            subclass_tables = [
-                'earth_science', 'oceanic_science', 'weather',
-                'navigation', 'internet', 'research',
-            ]
+            subclass_tables = list(SUBCLASS_TABLE_MAP.values())
             for table in subclass_tables:
                 cursor.execute(
                     f"SELECT satellite_id FROM {table} WHERE satellite_id = %s",
@@ -143,17 +164,27 @@ class ModifySatellite(APIView):
                         )
                     break
 
+        logger.info(f"[Satellite] Satellite {satellite_id} modified by '{request.user.username}'")
         return Response({'message': 'Satellite updated successfully'})
 
 
-# returns CelesTrak satellites for a dataset that are not already in the database, with pagination and search
+# returns CelesTrak satellites for a dataset that are not already in the database — requires level 3+
 class NewSatellitesFromDataset(APIView):
     throttle_classes = [CelesTrakThrottle]
 
     def get(self, request, dataset_id):
+        if getattr(request.user, 'level_access', 0) < 3:
+            return Response({'error': 'Insufficient permissions'}, status=403)
+
         search = request.GET.get('search', '').strip()
-        page = int(request.GET.get('page', 1))
-        limit = int(request.GET.get('limit', 50))
+
+        # validate page and limit before using them — non-integer values would otherwise 500
+        try:
+            page = max(1, int(request.GET.get('page', 1)))
+            limit = max(1, int(request.GET.get('limit', 50)))
+        except (TypeError, ValueError):
+            return Response({'error': 'page and limit must be integers'}, status=400)
+
         offset = (page - 1) * limit
 
         with connection.cursor() as cursor:
@@ -226,9 +257,12 @@ class NewSatellitesFromDataset(APIView):
         })
 
 
-# inserts a new satellite and all associated records; spawns a background thread to compute trajectory
+# inserts a new satellite and all associated records — requires level 3+
 class CreateSatellite(APIView):
     def post(self, request):
+        if getattr(request.user, 'level_access', 0) < 3:
+            return Response({'error': 'Insufficient permissions'}, status=403)
+
         satellite = request.data.get('satellite', {})
         owner = request.data.get('owner', {})
         launch = request.data.get('launch', {})
@@ -247,7 +281,21 @@ class CreateSatellite(APIView):
         if satellite.get('classification', 'U') not in ('U', 'C', 'S'):
             return Response({'error': 'classification must be one of: U, C, S'}, status=400)
 
+        # validate the subclass before starting the transaction so we can return 400 cleanly
+        subclass = type_data.get('subclass')
+        table = SUBCLASS_TABLE_MAP.get(subclass)
+        if not table:
+            return Response({'error': f'Unknown satellite subclass: {subclass}'}, status=400)
+
         with transaction.atomic(), connection.cursor() as cursor:
+
+            # check for duplicate norad_id before inserting anything
+            cursor.execute(
+                "SELECT satellite_id FROM satellite WHERE norad_id = %s",
+                [satellite.get('norad_id')]
+            )
+            if cursor.fetchone():
+                return Response({'error': 'A satellite with this NORAD ID already exists'}, status=409)
 
             # 1. owner — use existing or create new
             if owner.get('isNew'):
@@ -356,29 +404,18 @@ class CreateSatellite(APIView):
                 communication.get('communication_frequency'),
             ))
 
-            # 9. subclass type table
-            subclass = type_data.get('subclass')
-            subclass_table_map = {
-                'Earth Science':   'earth_science',
-                'Oceanic Science': 'oceanic_science',
-                'Weather':         'weather',
-                'Navigation':      'navigation',
-                'Internet':        'internet',
-                'Research':        'research',
-            }
-            table = subclass_table_map.get(subclass)
+            # 9. subclass type table (table already validated before transaction)
+            allowed_cols = SUBCLASS_ALLOWED_COLUMNS.get(table, frozenset())
+            fields = {k: v for k, v in type_data.items() if k != 'subclass' and k in allowed_cols}
+            if fields:
+                cols = ', '.join(f'`{k}`' for k in fields.keys())
+                placeholders = ', '.join(['%s'] * len(fields))
+                cursor.execute(
+                    f"INSERT INTO {table} (satellite_id, {cols}) VALUES (%s, {placeholders})",
+                    [satellite_id] + list(fields.values())
+                )
 
-            if table:
-                # filter user-supplied keys through the whitelist to prevent column-name injection
-                allowed_cols = SUBCLASS_ALLOWED_COLUMNS.get(table, frozenset())
-                fields = {k: v for k, v in type_data.items() if k != 'subclass' and k in allowed_cols}
-                if fields:
-                    cols = ', '.join(f'`{k}`' for k in fields.keys())
-                    placeholders = ', '.join(['%s'] * len(fields))
-                    cursor.execute(
-                        f"INSERT INTO {table} (satellite_id, {cols}) VALUES (%s, {placeholders})",
-                        [satellite_id] + list(fields.values())
-                    )
+        logger.info(f"[Satellite] Satellite '{satellite.get('name')}' (NORAD {satellite.get('norad_id')}) created by '{request.user.username}'")
 
         # generate trajectory in the background so the response is not blocked
         start_trajectory_thread(satellite_id, satellite.get('dataset_id'), satellite)

@@ -17,8 +17,11 @@ logger = logging.getLogger('sattrack')
 
 # in-memory cache TTL in hours
 CACHE_TTL_HOURS = 2
+
 # module-level memory cache: url -> (data, datetime)
+# _cache_lock guards all reads and writes to celestrak_cache across threads
 celestrak_cache = {}
+_cache_lock = threading.Lock()
 
 # allowed column names per subclass table — used to validate user-supplied field keys
 # before they are used as column names in dynamic SQL (prevents column-name injection)
@@ -45,14 +48,16 @@ def fetch_celestrak_cached(url):
     Falls back to a stale DB row when CelesTrak is rate-limited.
     Raises RateLimitedError if rate-limited and no stale cache exists.
     """
-    now = datetime.now()
+    # use UTC consistently so cache TTL comparisons are correct regardless of server timezone
+    now = datetime.utcnow()
 
-    # Layer 1: memory cache
-    if url in celestrak_cache:
-        data, timestamp = celestrak_cache[url]
-        if now - timestamp < timedelta(hours=CACHE_TTL_HOURS):
-            logger.info(f"[Cache HIT - Memory] {url}")
-            return data
+    # Layer 1: memory cache — lock protects the shared dict from concurrent reads/writes
+    with _cache_lock:
+        if url in celestrak_cache:
+            data, timestamp = celestrak_cache[url]
+            if now - timestamp < timedelta(hours=CACHE_TTL_HOURS):
+                logger.info(f"[Cache HIT - Memory] {url}")
+                return data
 
     # Layer 2: DB cache (within TTL)
     with connection.cursor() as cursor:
@@ -67,7 +72,8 @@ def fetch_celestrak_cached(url):
         if now - cached_at < timedelta(hours=CACHE_TTL_HOURS):
             logger.info(f"[Cache HIT - DB] {url}")
             data = json.loads(data_json)
-            celestrak_cache[url] = (data, cached_at)
+            with _cache_lock:
+                celestrak_cache[url] = (data, cached_at)
             return data
 
     # Layer 3: fetch from CelesTrak
@@ -86,7 +92,8 @@ def fetch_celestrak_cached(url):
         raise Exception(f"CelesTrak fetch failed: {str(e)}")
 
     # persist to both caches
-    celestrak_cache[url] = (data, now)
+    with _cache_lock:
+        celestrak_cache[url] = (data, now)
     with connection.cursor() as cursor:
         cursor.execute("""
             INSERT INTO celestrak_cache (url, data, cached_at)
@@ -149,7 +156,7 @@ def generate_trajectory_async(satellite_id, dataset_id, tle_data):
         try:
             sat_record = build_sat_record(sat_data)
         except Exception as e:
-            logger.info(f"[Trajectory] SGP4 error for NORAD {norad_id}: {e}")
+            logger.warning(f"[Trajectory] SGP4 build error for NORAD {norad_id}: {e}")
             return
 
         # build the full set of timestamps to compute
@@ -201,7 +208,7 @@ def generate_trajectory_async(satellite_id, dataset_id, tle_data):
         logger.info(f"[Trajectory] Done NORAD {norad_id} — {inserted} snapshots inserted")
 
     except Exception as e:
-        logger.info(f"[Trajectory] Unexpected error for NORAD {norad_id}: {e}")
+        logger.error(f"[Trajectory] Unexpected error for NORAD {norad_id}: {e}")
     finally:
         connection.close()
 

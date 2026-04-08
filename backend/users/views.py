@@ -1,5 +1,7 @@
 # connection and api imports, jwt, and rate limiting imports
+import bcrypt
 import logging
+from django.conf import settings
 from django.db import connection, transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -8,6 +10,15 @@ from backend.throttles import RegisterThrottle
 from users.services import check_password, get_user_role
 
 logger = logging.getLogger('sattrack')
+
+# maps get_user_role() return values (table names) to display names
+ROLE_DISPLAY_MAP = {
+    'administrator': 'Administrator',
+    'data_analyst':  'Data Analyst',
+    'scientist':     'Scientist',
+    'amateur':       'Amateur',
+}
+
 
 # login view class to log the user in and generate the JWT token
 class LoginView(APIView):
@@ -22,46 +33,41 @@ class LoginView(APIView):
 
         # check both values exists
         if not username or not password:
-            # if not return an error response
             return Response(
                 {'error': 'Username and password required'},
                 status=400
             )
 
         with connection.cursor() as cursor:
-            # Get user from the database
+            # get user from the database
             cursor.execute("SELECT username, password, full_name, level_access FROM user WHERE username = %s", [username])
             row = cursor.fetchone()
 
-            # if now user exists in the database
+            # if no user exists in the database
             if not row:
                 logger.info(f"[Auth] Failed login attempt for unknown user '{username}'")
-                # return an error response for invalid credentials
                 return Response(
                     {'error': 'Invalid credentials'},
                     status=401
                 )
 
-            # create
-            retrived_username, retrived_password, full_name, level_access = row
+            retrieved_username, retrieved_password, full_name, level_access = row
 
-            # Check password
-            if not check_password(password, retrived_password):
+            # check password
+            if not check_password(password, retrieved_password):
                 logger.info(f"[Auth] Failed login attempt for user '{username}' (bad password)")
-                # if the password is incorrect return an error response
                 return Response(
                     {'error': 'Invalid credentials'},
                     status=401
                 )
 
-            # Get role from sub-tables
+            # get role from sub-tables
             role = get_user_role(cursor, username)
 
-        # Generate JWT tokens
+        # generate JWT tokens
         from rest_framework_simplejwt.tokens import RefreshToken
-        from django.contrib.auth.models import User as DjangoUser
 
-        # Create a simple token payload without Django's User model
+        # create a simple token payload without Django's User model
         refresh = RefreshToken()
         refresh['username'] = username
         refresh['role'] = role
@@ -71,7 +77,7 @@ class LoginView(APIView):
         logger.info(f"[Auth] User '{username}' logged in successfully (role={role})")
 
         # set tokens as httpOnly cookies — not readable by JavaScript
-        # secure=False is acceptable for local/Docker dev; set True when serving over HTTPS
+        # secure follows DEBUG: False in dev, True when served over HTTPS in production
         response = Response({
             'username': username,
             'full_name': full_name,
@@ -83,53 +89,51 @@ class LoginView(APIView):
             max_age=30 * 60,
             httponly=True,
             samesite='Lax',
-            secure=False,
+            secure=not settings.DEBUG,
         )
         response.set_cookie(
             'refresh_token', str(refresh),
             max_age=7 * 24 * 60 * 60,
             httponly=True,
             samesite='Lax',
-            secure=False,
+            secure=not settings.DEBUG,
         )
         return response
 
+
 # create account view to create a users account and check for conflicts
 class CreateAccountView(APIView):
-    # create the authentication classes
     authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [RegisterThrottle]
 
     def post(self, request):
-        # key values to insert into the users table
         username = request.data.get('username')
         full_name = request.data.get('full_name')
         password = request.data.get('password')
 
         # check for missing fields
         if not username or not full_name or not password:
-            # return an error response for username and password being required
             return Response(
                 {'error': 'Username, full name and password are required'},
                 status=400
             )
 
-        # enforce minimum password length (same requirement as ChangePassword)
+        # enforce minimum password length
         if len(password) < 8:
             return Response({'error': 'Password must be at least 8 characters'}, status=400)
 
-        with connection.cursor() as cursor:
-            # check for deuplicate username
+        # wrap both inserts in a transaction so a failed amateur insert doesn't leave an orphaned user row
+        with transaction.atomic(), connection.cursor() as cursor:
+            # check for duplicate username
             cursor.execute("SELECT username FROM user WHERE username = %s", [username])
-            # if the usename is a duplicated return a conflict error response
             if cursor.fetchone():
                 return Response(
                     {'error': 'Username already taken'},
                     status=409
                 )
-            
-            # hash the pasword to insert into the database
+
+            # hash the password before storing
             hashed = bcrypt.hashpw(
                 password.encode('utf-8'),
                 bcrypt.gensalt()
@@ -140,49 +144,56 @@ class CreateAccountView(APIView):
                 "INSERT INTO user (username, password, full_name, level_access) VALUES (%s, %s, %s, %s)",
                 [username, hashed, full_name, 1]
             )
-            
+
             # insert the new user subclass entry
             cursor.execute("INSERT INTO amateur (username, interests) VALUES (%s, %s)", [username, None])
 
-
         logger.info(f"[Auth] New account registered: '{username}'")
-        # return a success response
         return Response(
             {'message': 'Account Created Successfully'},
             status=201
         )
-    
+
+
+# get users view to list all users — requires level 3+
 class GetUsers(APIView):
     def get(self, request):
+        if getattr(request.user, 'level_access', 0) < 3:
+            return Response({'error': 'Insufficient permissions'}, status=403)
+
         with connection.cursor() as cursor:
             # get all the users and their subclass type as a column
             cursor.execute("""
-                SELECT 
-                    u.full_name, 
-                    u.username, 
+                SELECT
+                    u.full_name,
+                    u.username,
                     u.level_access,
                     CASE
                         WHEN ad.username IS NOT NULL THEN 'Administrator'
                         WHEN am.username IS NOT NULL THEN 'Amateur'
                         WHEN da.username IS NOT NULL THEN 'Data Analyst'
-                        WHEN s.username IS NOT NULL THEN 'Scientist'
+                        WHEN s.username  IS NOT NULL THEN 'Scientist'
                         ELSE 'Unknown'
                     END AS user_type
                 FROM user u
                     LEFT JOIN administrator ad ON u.username = ad.username
-                    LEFT JOIN amateur am ON u.username = am.username
-                    LEFT JOIN data_analyst da ON u.username = da.username
-                    LEFT JOIN scientist s ON u.username = s.username
-                """)
+                    LEFT JOIN amateur       am ON u.username = am.username
+                    LEFT JOIN data_analyst  da ON u.username = da.username
+                    LEFT JOIN scientist     s  ON u.username = s.username
+            """)
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        # return the user data
+
         return Response(data)
-    
+
+
+# get user profile view to fetch a single user — requires level 3+
 class GetUserProfile(APIView):
     def get(self, request, username):
+        if getattr(request.user, 'level_access', 0) < 3:
+            return Response({'error': 'Insufficient permissions'}, status=403)
+
         with connection.cursor() as cursor:
-            # select a specific user name and their user type from the database
             cursor.execute("""
                 SELECT
                     u.username,
@@ -192,25 +203,25 @@ class GetUserProfile(APIView):
                         WHEN ad.username IS NOT NULL THEN 'Administrator'
                         WHEN am.username IS NOT NULL THEN 'Amateur'
                         WHEN da.username IS NOT NULL THEN 'Data Analyst'
-                        WHEN s.username IS NOT NULL THEN 'Scientist'
+                        WHEN s.username  IS NOT NULL THEN 'Scientist'
                         ELSE 'Unknown'
                     END AS user_type
                 FROM user u
                     LEFT JOIN administrator ad ON u.username = ad.username
-                    LEFT JOIN amateur am ON u.username = am.username
-                    LEFT JOIN data_analyst da ON u.username = da.username
-                    LEFT JOIN scientist s ON u.username = s.username
-                WHERE u.username = %s""", [username])
+                    LEFT JOIN amateur       am ON u.username = am.username
+                    LEFT JOIN data_analyst  da ON u.username = da.username
+                    LEFT JOIN scientist     s  ON u.username = s.username
+                WHERE u.username = %s
+            """, [username])
             columns = [col[0] for col in cursor.description]
             row = cursor.fetchone()
 
-            # if no user is found return an error response
             if not row:
                 return Response({'error': 'user not found'}, status=404)
 
             data = dict(zip(columns, row))
 
-            # Fetch subtype-specific fields
+            # fetch subtype-specific fields
             subtype_data = {}
             user_type = data['user_type']
             if user_type in ('Administrator', 'Data Analyst'):
@@ -231,12 +242,12 @@ class GetUserProfile(APIView):
                     subtype_data['interests'] = r[0]
 
         data['subtype_data'] = subtype_data
-        # return the user data and subtype data
         return Response(data)
 
-# modify user class to change an existing users data 
+
+# modify user class to change an existing user's role, level, and subtype data — requires level 4
 class ModifyUser(APIView):
-    # create a table map
+    # maps display name to table name
     TYPE_TABLE_MAP = {
         'Administrator': 'administrator',
         'Data Analyst':  'data_analyst',
@@ -246,46 +257,43 @@ class ModifyUser(APIView):
     # default values for NOT NULL columns when inserting into a new type table
     TYPE_INSERT = {
         'administrator': ("INSERT INTO administrator (username, employee_id) VALUES (%s, %s)", 0),
-        'data_analyst':  ("INSERT INTO data_analyst (username, employee_id) VALUES (%s, %s)", 0),
-        'scientist':     ("INSERT INTO scientist (username, profession) VALUES (%s, %s)", ''),
-        'amateur':       ("INSERT INTO amateur (username, interests) VALUES (%s, %s)", None),
+        'data_analyst':  ("INSERT INTO data_analyst  (username, employee_id) VALUES (%s, %s)", 0),
+        'scientist':     ("INSERT INTO scientist      (username, profession)  VALUES (%s, %s)", ''),
+        'amateur':       ("INSERT INTO amateur        (username, interests)   VALUES (%s, %s)", None),
     }
 
     def post(self, request):
-        # get the original values from the request
+        if getattr(request.user, 'level_access', 0) < 4:
+            return Response({'error': 'Insufficient permissions'}, status=403)
+
         original_username = request.data.get('original_username')
         level_access = request.data.get('level_access')
         user_type = request.data.get('user_type')
         subtype_data = request.data.get('subtype_data', {})
 
-        # check to see that the user sent their original usename and return an error response if they didnt
         if not original_username:
             return Response({'error': 'original_username is required'}, status=400)
 
-        # check the user type is valid
+        # validate level_access is a recognised access level
+        if level_access not in (1, 2, 3, 4):
+            return Response({'error': 'level_access must be 1, 2, 3, or 4'}, status=400)
+
         new_table = self.TYPE_TABLE_MAP.get(user_type)
         if not new_table:
             return Response({'error': 'Invalid user_type'}, status=400)
 
-        # get the original username actually exists in the database
         with transaction.atomic(), connection.cursor() as cursor:
             cursor.execute("SELECT username FROM user WHERE username = %s", [original_username])
             if not cursor.fetchone():
                 return Response({'error': 'User not found'}, status=404)
 
-            # update the access level of the user
             cursor.execute(
                 "UPDATE user SET level_access = %s WHERE username = %s",
                 [level_access, original_username]
             )
 
-            # find current subtype table
-            current_table = None
-            for table in ['administrator', 'data_analyst', 'scientist', 'amateur']:
-                cursor.execute(f"SELECT username FROM {table} WHERE username = %s", [original_username])
-                if cursor.fetchone():
-                    current_table = table
-                    break
+            # use the shared service helper instead of reimplementing the lookup
+            current_table = get_user_role(cursor, original_username)
 
             if current_table != new_table:
                 if current_table:
@@ -293,7 +301,7 @@ class ModifyUser(APIView):
                 sql, default_val = self.TYPE_INSERT[new_table]
                 cursor.execute(sql, [original_username, default_val])
 
-            # Update subtype-specific fields if provided
+            # update subtype-specific fields if provided
             if new_table in ('administrator', 'data_analyst') and 'employee_id' in subtype_data:
                 cursor.execute(
                     f"UPDATE {new_table} SET employee_id = %s WHERE username = %s",
@@ -305,83 +313,71 @@ class ModifyUser(APIView):
                     [subtype_data['profession'], original_username]
                 )
 
-        logger.info(f"[Auth] User '{original_username}' updated (type={user_type}, level={level_access})")
-        # return a success response if the user is updated successfully
+        logger.info(f"[Auth] User '{original_username}' updated by '{request.user.username}' (type={user_type}, level={level_access})")
         return Response({'message': 'User updated successfully'})
 
 
-# update own profile class to change just a specific user that only the user can access
+# update own profile — allows the authenticated user to change their own username, name, and subtype fields
 class UpdateOwnProfile(APIView):
     def post(self, request):
-        # get the current values from the request
         current_username = request.user.username
         new_username = request.data.get('username', '').strip()
         full_name = request.data.get('full_name', '').strip()
         subtype_data = request.data.get('subtype_data', {})
 
-        # check all values exists
         if not full_name:
             return Response({'error': 'full_name is required'}, status=400)
         if not new_username:
             return Response({'error': 'username is required'}, status=400)
 
-        # check the user that the usernames do not match so its a real change
         username_changed = new_username != current_username
 
         with transaction.atomic(), connection.cursor() as cursor:
-            # Check new username isn't already taken
             if username_changed:
                 cursor.execute("SELECT username FROM user WHERE username = %s", [new_username])
                 if cursor.fetchone():
                     return Response({'error': 'Username already taken'}, status=409)
 
-            # update the username if its not taken
             cursor.execute(
                 "UPDATE user SET full_name = %s WHERE username = %s",
                 [full_name, current_username]
             )
 
-            # check if the username is changed
             if username_changed:
-                # Temporarily disable FK checks so we can rename the PK
+                # FK checks are disabled then immediately re-enabled in a try/finally
+                # to guarantee they're restored even if an exception is raised mid-rename.
+                # Note: FOREIGN_KEY_CHECKS is a session variable and is NOT rolled back by
+                # the transaction — the finally block is the only reliable way to restore it.
                 cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
-                cursor.execute(
-                    "UPDATE user SET username = %s WHERE username = %s",
-                    [new_username, current_username]
-                )
-                # update the subclass tables
-                for table in ['administrator', 'data_analyst', 'scientist', 'amateur']:
+                try:
                     cursor.execute(
-                        f"UPDATE {table} SET username = %s WHERE username = %s",
+                        "UPDATE user SET username = %s WHERE username = %s",
                         [new_username, current_username]
                     )
-                # update the revies table
-                cursor.execute(
-                    "UPDATE reviews SET reviewed_by = %s WHERE reviewed_by = %s",
-                    [new_username, current_username]
-                )
-                # update the uploads table
-                cursor.execute(
-                    "UPDATE uploads SET uploaded_by = %s WHERE uploaded_by = %s",
-                    [new_username, current_username]
-                )
-                cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+                    for table in ['administrator', 'data_analyst', 'scientist', 'amateur']:
+                        cursor.execute(
+                            f"UPDATE {table} SET username = %s WHERE username = %s",
+                            [new_username, current_username]
+                        )
+                    cursor.execute(
+                        "UPDATE reviews SET reviewed_by = %s WHERE reviewed_by = %s",
+                        [new_username, current_username]
+                    )
+                    cursor.execute(
+                        "UPDATE uploads SET uploaded_by = %s WHERE uploaded_by = %s",
+                        [new_username, current_username]
+                    )
+                finally:
+                    cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
 
-            # Determine user's current subtype table (use new_username after rename)
+            # use new_username after rename; current_username otherwise
             active_username = new_username if username_changed else current_username
-            user_type = None
-            for role, table in [
-                ('Administrator', 'administrator'),
-                ('Data Analyst',  'data_analyst'),
-                ('Scientist',     'scientist'),
-                ('Amateur',       'amateur'),
-            ]:
-                cursor.execute(f"SELECT username FROM {table} WHERE username = %s", [active_username])
-                if cursor.fetchone():
-                    user_type = role
-                    break
 
-            # Update subtype-specific fields
+            # use the shared service helper instead of reimplementing the subtype lookup
+            role_table = get_user_role(cursor, active_username)
+            user_type = ROLE_DISPLAY_MAP.get(role_table)
+
+            # update subtype-specific fields if provided
             if user_type in ('Administrator', 'Data Analyst'):
                 table = 'administrator' if user_type == 'Administrator' else 'data_analyst'
                 if 'employee_id' in subtype_data:
@@ -400,7 +396,6 @@ class UpdateOwnProfile(APIView):
                     [subtype_data['interests'], active_username]
                 )
 
-        # return the success response
         return Response({
             'message': 'Profile updated successfully',
             'full_name': full_name,
@@ -412,53 +407,46 @@ class UpdateOwnProfile(APIView):
 # change password class to change a users account password
 class ChangePassword(APIView):
     def post(self, request):
-        # user and a password passed by the request
         username = request.user.username
         old_password = request.data.get('old_password', '')
         new_password = request.data.get('new_password', '')
 
-        # check that all fields are present
         if not old_password or not new_password:
             return Response({'error': 'Both old and new passwords are required'}, status=400)
 
-        # maintain password length requirement
         if len(new_password) < 8:
             return Response({'error': 'Password must be at least 8 characters'}, status=400)
 
         with connection.cursor() as cursor:
-            # get the user this password belongs to
             cursor.execute("SELECT password FROM user WHERE username = %s", [username])
             row = cursor.fetchone()
-            # make sure the user exists
             if not row:
                 return Response({'error': 'User not found'}, status=404)
 
-            # check the password is correct
             if not check_password(old_password, row[0]):
                 return Response({'error': 'Current password is incorrect'}, status=400)
 
-            # hash the new password
             hashed = bcrypt.hashpw(
                 new_password.encode('utf-8'),
                 bcrypt.gensalt()
             ).decode('utf-8')
 
-            # update the users password in the database
             cursor.execute(
                 "UPDATE user SET password = %s WHERE username = %s",
                 [hashed, username]
             )
 
         logger.info(f"[Auth] User '{username}' changed their password")
-        # return a success response
         return Response({'message': 'Password changed successfully'})
 
 
-# delete user class to remove a user from the database 
+# delete user class to remove a user from the database — requires level 4
 class DeleteUser(APIView):
     def delete(self, request, username):
+        if getattr(request.user, 'level_access', 0) < 4:
+            return Response({'error': 'Insufficient permissions'}, status=403)
+
         with transaction.atomic(), connection.cursor() as cursor:
-            # get the user from the database and make sure it exists
             cursor.execute("SELECT username FROM user WHERE username = %s", [username])
             if not cursor.fetchone():
                 return Response({'error': 'User not found'}, status=404)
@@ -467,15 +455,12 @@ class DeleteUser(APIView):
             cursor.execute("DELETE FROM reviews WHERE reviewed_by = %s", [username])
             cursor.execute("DELETE FROM uploads WHERE uploaded_by = %s", [username])
 
-            # remove from all subtype tables
             for table in ['administrator', 'data_analyst', 'scientist', 'amateur']:
                 cursor.execute(f"DELETE FROM {table} WHERE username = %s", [username])
 
-            # delete the user from the database
             cursor.execute("DELETE FROM user WHERE username = %s", [username])
 
-        logger.info(f"[Auth] User '{username}' deleted")
-        # return success response
+        logger.info(f"[Auth] User '{username}' deleted by '{request.user.username}'")
         return Response({'message': 'User deleted successfully'})
 
 
@@ -502,7 +487,7 @@ class RefreshTokenView(APIView):
             max_age=30 * 60,
             httponly=True,
             samesite='Lax',
-            secure=False,
+            secure=not settings.DEBUG,
         )
         return response
 
@@ -516,6 +501,15 @@ class LogoutView(APIView):
         response = Response({'message': 'Logged out successfully'})
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')
-        logger.info("[Auth] User logged out")
+        # attempt to extract the username from the access token cookie for audit logging
+        try:
+            from rest_framework_simplejwt.tokens import UntypedToken
+            raw = request.COOKIES.get('access_token')
+            if raw:
+                token = UntypedToken(raw)
+                logger.info(f"[Auth] User '{token.get('username', 'unknown')}' logged out")
+            else:
+                logger.info("[Auth] User logged out (no token present)")
+        except Exception:
+            logger.info("[Auth] User logged out")
         return response
-    
