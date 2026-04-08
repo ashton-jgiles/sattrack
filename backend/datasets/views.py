@@ -30,13 +30,15 @@ class TotalDatasets(APIView):
 # dataset view class which returns as json all datasets in the dataset table
 class DatasetView(APIView):
     def get(self, request):
-        # get the level and status filter from the request
+        # get the level and branch query based on access — level 3+ sees all non-deleted datasets
         level = getattr(request.user, 'level_access', 1)
-        status_filter = "" if level >= 3 else "AND review_status = 'approved'"
 
         with connection.cursor() as cursor:
             # get the non deleted datasets
-            cursor.execute(f"SELECT * FROM dataset WHERE deleted_at IS NULL {status_filter}")
+            if level >= 3:
+                cursor.execute("SELECT * FROM dataset WHERE deleted_at IS NULL")
+            else:
+                cursor.execute("SELECT * FROM dataset WHERE deleted_at IS NULL AND review_status = 'approved'")
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 

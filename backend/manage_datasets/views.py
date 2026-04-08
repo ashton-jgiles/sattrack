@@ -20,11 +20,9 @@ class GetReviewDatasets(APIView):
         # get closed datasets
         show_closed = request.GET.get('closed', 'false').lower() == 'true'
 
-        # if closed is true set the status filters
-        if show_closed:
-            status_filter = "AND review_status IN ('approved', 'rejected')"
-        else:
-            status_filter = "AND review_status = 'pending'"
+        # use parameterized IN so status values are never interpolated directly into SQL
+        status_values = ['approved', 'rejected'] if show_closed else ['pending']
+        placeholders = ', '.join(['%s'] * len(status_values))
 
         with connection.cursor() as cursor:
             # get dataset info from the dataset table and join satellites
@@ -42,10 +40,10 @@ class GetReviewDatasets(APIView):
                 LEFT JOIN satellite s
                     ON s.dataset_id = d.dataset_id AND s.deleted_at IS NULL
                 WHERE d.deleted_at IS NULL
-                {status_filter}
+                AND d.review_status IN ({placeholders})
                 GROUP BY d.dataset_id
                 ORDER BY d.creation_date DESC
-            """)
+            """, status_values)
             columns = [col[0] for col in cursor.description]
             rows = cursor.fetchall()
 
@@ -68,11 +66,18 @@ class ReviewDataset(APIView):
             return Response({'error': 'review_status must be approved or rejected'}, status=400)
 
         with connection.cursor() as cursor:
-            # select none deleted dataset
-            cursor.execute("SELECT dataset_id FROM dataset WHERE dataset_id = %s AND deleted_at IS NULL", [dataset_id])
+            # fetch current dataset and its review status
+            cursor.execute(
+                "SELECT dataset_id, review_status FROM dataset WHERE dataset_id = %s AND deleted_at IS NULL",
+                [dataset_id]
+            )
+            row = cursor.fetchone()
             # check the dataset exists
-            if not cursor.fetchone():
+            if not row:
                 return Response({'error': 'Dataset not found'}, status=404)
+            # only allow reviewing datasets that are still pending
+            if row[1] != 'pending':
+                return Response({'error': 'Only pending datasets can be reviewed'}, status=400)
 
             # update the dataset table review status
             cursor.execute("UPDATE dataset SET review_status = %s, review_comment = %s WHERE dataset_id = %s", [review_status, review_comment, dataset_id])

@@ -125,6 +125,10 @@ class CreateAccountView(APIView):
                 status=400
             )
 
+        # enforce minimum password length (same requirement as ChangePassword)
+        if len(password) < 8:
+            return Response({'error': 'Password must be at least 8 characters'}, status=400)
+
         with connection.cursor() as cursor:
             # check for deuplicate username
             cursor.execute("SELECT username FROM user WHERE username = %s", [username])

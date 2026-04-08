@@ -1,5 +1,6 @@
 # connection and api imports and rate limiting imports
 from django.db import connection
+from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
@@ -8,9 +9,11 @@ from backend.throttles import PositionsThrottle
 # satllite view to list all satellites and their subclass type
 class SatelliteView(APIView):
     def get(self, request):
-        # get the level access of the user 
+        # get the level access of the user
         level = getattr(request.user, 'level_access', 1)
-        status_filter = "!= 'rejected'" if level >= 3 else "= 'approved'"
+        # level 3+ can see pending; everyone else only sees approved
+        visible_statuses = ['pending', 'approved'] if level >= 3 else ['approved']
+        placeholders = ', '.join(['%s'] * len(visible_statuses))
 
         with connection.cursor() as cursor:
             # get all the satellite data and its subclass type and review status
@@ -28,7 +31,7 @@ class SatelliteView(APIView):
                         ELSE 'Unknown'
                     END AS satellite_type
                 FROM satellite s
-                    INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status {status_filter}
+                    INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status IN ({placeholders})
                     LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
                     LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
                     LEFT JOIN weather w  ON s.satellite_id = w.satellite_id
@@ -36,7 +39,7 @@ class SatelliteView(APIView):
                     LEFT JOIN internet i  ON s.satellite_id = i.satellite_id
                     LEFT JOIN research r  ON s.satellite_id = r.satellite_id
                 WHERE s.deleted_at IS NULL
-            """)
+            """, visible_statuses)
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
@@ -69,9 +72,10 @@ class SatelliteTypeCounts(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        # get the user level and status filter
+        # get the user level and build parameterized status list
         level = getattr(request.user, 'level_access', 1)
-        status_filter = "!= 'rejected'" if level >= 3 else "= 'approved'"
+        visible_statuses = ['pending', 'approved'] if level >= 3 else ['approved']
+        placeholders = ', '.join(['%s'] * len(visible_statuses))
 
         with connection.cursor() as cursor:
             # select the totals for each satellite type from each sublcass
@@ -85,7 +89,7 @@ class SatelliteTypeCounts(APIView):
                     COUNT(i.satellite_id)  AS internet,
                     COUNT(r.satellite_id)  AS research
                 FROM satellite s
-                    INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status {status_filter}
+                    INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status IN ({placeholders})
                     LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
                     LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
                     LEFT JOIN weather         w  ON s.satellite_id = w.satellite_id
@@ -93,7 +97,7 @@ class SatelliteTypeCounts(APIView):
                     LEFT JOIN internet        i  ON s.satellite_id = i.satellite_id
                     LEFT JOIN research        r  ON s.satellite_id = r.satellite_id
                 WHERE s.deleted_at IS NULL
-            """)
+            """, visible_statuses)
             columns = [col[0] for col in cursor.description]
             row = cursor.fetchone()
 
@@ -110,9 +114,9 @@ class AllTrajectory(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [PositionsThrottle]
 
-    # create page size constants
-    PAGE_SIZE_DEFAULT = 100
-    PAGE_SIZE_MAX = 200
+    # page size limits sourced from settings to keep them in one place
+    PAGE_SIZE_DEFAULT = settings.TRAJECTORY_PAGE_SIZE_DEFAULT
+    PAGE_SIZE_MAX = settings.TRAJECTORY_PAGE_SIZE_MAX
 
     def get(self, request):
         # compute the pages and page size and offset
@@ -123,25 +127,26 @@ class AllTrajectory(APIView):
         )
         offset = (page - 1) * page_size
 
-        # get the level and status filter
+        # get the level and build parameterized status list
         level = getattr(request.user, 'level_access', 1)
-        status_filter = "IN ('approved', 'pending')" if level >= 3 else "= 'approved'"
+        visible_statuses = ['approved', 'pending'] if level >= 3 else ['approved']
+        placeholders = ', '.join(['%s'] * len(visible_statuses))
 
         with connection.cursor() as cursor:
             # total active satellites in visible datasets for pagination metadata
             cursor.execute(f"""
                 SELECT COUNT(*) FROM satellite s
-                INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status {status_filter}
+                INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status IN ({placeholders})
                 WHERE s.deleted_at IS NULL
-            """)
+            """, visible_statuses)
             total_satellites = cursor.fetchone()[0]
 
             # satellite IDs for this page, with review status to identify pending
             cursor.execute(f"""
                 SELECT s.satellite_id, d.review_status FROM satellite s
-                INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status {status_filter}
+                INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status IN ({placeholders})
                 WHERE s.deleted_at IS NULL ORDER BY s.satellite_id LIMIT %s OFFSET %s
-            """, [page_size, offset])
+            """, visible_statuses + [page_size, offset])
             sat_rows = cursor.fetchall()
             sat_ids = [row[0] for row in sat_rows]
             pending_satellite_ids = [row[0] for row in sat_rows if row[1] == 'pending']
@@ -201,14 +206,8 @@ class RecentDeployments(APIView):
     def get(self, request):
         # get the level access and check permisions
         level = getattr(request.user, 'level_access', 1)
-        dataset_join = "" if level >= 3 else "INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status = 'approved'"
 
-        with connection.cursor() as cursor:
-            # select all the satellite data the deploy time and the satellite type with the last 5 years
-            cursor.execute(f"""
-                SELECT
-                    s.*,
-                    dp.deploy_date_time,
+        SUBTYPE_CASE = """
                     CASE
                         WHEN es.satellite_id IS NOT NULL THEN 'Earth Science'
                         WHEN os.satellite_id IS NOT NULL THEN 'Oceanic Science'
@@ -217,20 +216,39 @@ class RecentDeployments(APIView):
                         WHEN i.satellite_id  IS NOT NULL THEN 'Internet'
                         WHEN r.satellite_id  IS NOT NULL THEN 'Research'
                         ELSE 'Unknown'
-                    END AS satellite_type
-                FROM satellite s
-                    {dataset_join}
-                    INNER JOIN deploys_payload dp ON s.satellite_id = dp.satellite_id
+                    END AS satellite_type"""
+        SUBTYPE_JOINS = """
                     LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
                     LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
                     LEFT JOIN weather w  ON s.satellite_id = w.satellite_id
                     LEFT JOIN navigation n  ON s.satellite_id = n.satellite_id
                     LEFT JOIN internet i  ON s.satellite_id = i.satellite_id
-                    LEFT JOIN research r  ON s.satellite_id = r.satellite_id
-                WHERE s.deleted_at IS NULL
-                  AND dp.deploy_date_time >= NOW() - INTERVAL 5 year
-                ORDER BY dp.deploy_date_time
-            """)
+                    LEFT JOIN research r  ON s.satellite_id = r.satellite_id"""
+
+        with connection.cursor() as cursor:
+            # select all the satellite data the deploy time and the satellite type with the last 5 years
+            # level 3+ can see satellites from any dataset; others restricted to approved datasets only
+            if level >= 3:
+                cursor.execute(f"""
+                    SELECT s.*, dp.deploy_date_time, {SUBTYPE_CASE}
+                    FROM satellite s
+                        INNER JOIN deploys_payload dp ON s.satellite_id = dp.satellite_id
+                        {SUBTYPE_JOINS}
+                    WHERE s.deleted_at IS NULL
+                      AND dp.deploy_date_time >= NOW() - INTERVAL 5 YEAR
+                    ORDER BY dp.deploy_date_time
+                """)
+            else:
+                cursor.execute(f"""
+                    SELECT s.*, dp.deploy_date_time, {SUBTYPE_CASE}
+                    FROM satellite s
+                        INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status = 'approved'
+                        INNER JOIN deploys_payload dp ON s.satellite_id = dp.satellite_id
+                        {SUBTYPE_JOINS}
+                    WHERE s.deleted_at IS NULL
+                      AND dp.deploy_date_time >= NOW() - INTERVAL 5 YEAR
+                    ORDER BY dp.deploy_date_time
+                """)
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
@@ -241,23 +259,32 @@ class RecentDeployments(APIView):
 class SpecificSatelliteAllData(APIView):
     def get(self, request, satellite_id):
         with connection.cursor() as cursor:
-            # select all the satellite data related to one satellite
-            cursor.execute(""" 
-            SELECT 
+            # Single query that joins all satellite-related tables at once.
+            # INNER JOINs are required relationships (owner, launch, communication).
+            # LEFT JOINs are the optional subclass tables — only one will have a row.
+            # Results are parsed in Python below to separate into structured sections.
+            cursor.execute("""
+            SELECT
+                -- core satellite fields
                 s.*,
+                -- owner fields
                 so.*,
+                -- launch fields
                 dp.deploy_date_time,
                 lv.*,
+                -- launch site fields
                 ls.site_name,
                 ls.location,
                 ls.climate,
                 ls.country AS site_country,
+                -- subclass fields (only one set will be non-null)
                 es.*,
                 os.*,
                 n.*,
                 i.*,
                 r.*,
                 w.*,
+                -- communication fields
                 cw.communication_frequency,
                 cw.location AS station_location,
                 cs.name AS station_name,
@@ -269,22 +296,22 @@ class SpecificSatelliteAllData(APIView):
                     WHEN i.satellite_id  IS NOT NULL THEN 'Internet'
                     WHEN r.satellite_id  IS NOT NULL THEN 'Research'
                 END AS satellite_type
-            FROM satellite s 
-                INNER JOIN satellite_owner so ON s.owner_id = so.owner_id 
-                INNER JOIN deploys_payload dp ON s.satellite_id = dp.satellite_id 
-                INNER JOIN launch_vehicle lv ON dp.vehicle_id = lv.vehicle_id 
-                INNER JOIN launched_from lf ON lf.launch_date = dp.deploy_date_time 
+            FROM satellite s
+                INNER JOIN satellite_owner so ON s.owner_id = so.owner_id
+                INNER JOIN deploys_payload dp ON s.satellite_id = dp.satellite_id
+                INNER JOIN launch_vehicle lv ON dp.vehicle_id = lv.vehicle_id
+                INNER JOIN launched_from lf ON lf.launch_date = dp.deploy_date_time
                 INNER JOIN launch_site ls ON lf.site_name = ls.site_name
                 INNER JOIN communicates_with cw ON s.satellite_id = cw.satellite_id
-                INNER JOIN communication_station cs ON cw.location = cs.location 
-                LEFT JOIN earth_science es ON s.satellite_id = es.satellite_id 
-                LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id 
-                LEFT JOIN navigation n ON s.satellite_id = n.satellite_id 
-                LEFT JOIN internet i ON s.satellite_id = i.satellite_id 
-                LEFT JOIN research r ON s.satellite_id = r.satellite_id 
-                LEFT JOIN weather w ON s.satellite_id = w.satellite_id 
+                INNER JOIN communication_station cs ON cw.location = cs.location
+                LEFT JOIN earth_science es ON s.satellite_id = es.satellite_id
+                LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
+                LEFT JOIN navigation n ON s.satellite_id = n.satellite_id
+                LEFT JOIN internet i ON s.satellite_id = i.satellite_id
+                LEFT JOIN research r ON s.satellite_id = r.satellite_id
+                LEFT JOIN weather w ON s.satellite_id = w.satellite_id
             WHERE s.satellite_id = %s AND s.deleted_at IS NULL
-        """, [satellite_id])
+            """, [satellite_id])
             columns = [col[0] for col in cursor.description]
             row = cursor.fetchone()
 

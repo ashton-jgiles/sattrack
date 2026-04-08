@@ -23,6 +23,17 @@ CACHE_TTL_HOURS = 2
 # create the cache dictionary
 celestrak_cache = {}
 
+# allowed column names per subclass table — used to validate user-supplied field keys
+# before they are used as column names in dynamic SQL (prevents column-name injection)
+SUBCLASS_ALLOWED_COLUMNS = {
+    'earth_science':   frozenset(['instrument', 'data_measured', 'wavelength_band', 'resolution_m', 'data_archive_url', 'mission_status']),
+    'oceanic_science': frozenset(['instrument', 'data_measured', 'wavelength_band', 'resolution_m', 'data_archive_url', 'mission_status']),
+    'weather':         frozenset(['instrument', 'data_measured', 'coverage_region', 'imaging_channels', 'repeat_cycle_min', 'data_archive_url', 'mission_status']),
+    'navigation':      frozenset(['constellation', 'signal_type', 'accuracy_m', 'orbital_slot', 'clock_type']),
+    'internet':        frozenset(['coverage', 'frequency_band', 'service_type', 'throughput_gbps', 'altitude_km']),
+    'research':        frozenset(['instrument', 'data_measured', 'research_field', 'wavelength_band', 'data_archive_url', 'mission_status']),
+}
+
 # create the logger
 logger = logging.getLogger('sattrack')
 
@@ -91,6 +102,8 @@ def generate_trajectory_async(satellite_id, dataset_id, tle_data):
     norad_id = tle_data.get('norad_id')
     logger.info(f"[Trajectory] Generating for NORAD {norad_id}...")
 
+    # Django database connections are thread-local; the connection opened in this
+    # daemon thread must be explicitly closed when done to avoid connection pool exhaustion.
     try:
         # sat data structure from CelesTrak
         sat_data = {
@@ -176,6 +189,9 @@ def generate_trajectory_async(satellite_id, dataset_id, tle_data):
 
     except Exception as e:
         logger.info(f"[Trajectory] Unexpected error for NORAD {norad_id}: {e}")
+    finally:
+        # close the thread-local connection so it is returned to the pool
+        connection.close()
 
 # compute the orbit type from celestrak data
 def derive_orbit_type(mean_motion, inclination):
@@ -311,10 +327,13 @@ class ModifySatellite(APIView):
                     (satellite_id,)
                 )
                 if cursor.fetchone():
-                    # Build dynamic UPDATE from type_data keys
-                    if type_data:
-                        set_clause = ", ".join([f"{k} = %s" for k in type_data.keys()])
-                        values = list(type_data.values()) + [satellite_id]
+                    # Filter type_data keys against the whitelist for this table to
+                    # prevent user-supplied column names from reaching the SQL statement
+                    allowed_cols = SUBCLASS_ALLOWED_COLUMNS.get(table, frozenset())
+                    safe_type_data = {k: v for k, v in type_data.items() if k in allowed_cols}
+                    if safe_type_data:
+                        set_clause = ", ".join([f"`{k}` = %s" for k in safe_type_data.keys()])
+                        values = list(safe_type_data.values()) + [satellite_id]
                         cursor.execute(
                             f"UPDATE {table} SET {set_clause} WHERE satellite_id = %s",
                             values
@@ -427,6 +446,10 @@ class CreateSatellite(APIView):
             return Response({'error': 'name is required'}, status=400)
         if not type_data.get('subclass'):
             return Response({'error': 'satellite type is required'}, status=400)
+        if satellite.get('orbit_type') not in ('LEO', 'MEO', 'GEO', 'HEO'):
+            return Response({'error': 'orbit_type must be one of: LEO, MEO, GEO, HEO'}, status=400)
+        if satellite.get('classification', 'U') not in ('U', 'C', 'S'):
+            return Response({'error': 'classification must be one of: U, C, S'}, status=400)
 
         with transaction.atomic(), connection.cursor() as cursor:
 
@@ -447,6 +470,11 @@ class CreateSatellite(APIView):
                 owner_id = cursor.lastrowid
             else:
                 owner_id = owner.get('owner_id')
+                if not owner_id:
+                    return Response({'error': 'owner_id is required when not creating a new owner'}, status=400)
+                cursor.execute("SELECT owner_id FROM satellite_owner WHERE owner_id = %s", [owner_id])
+                if not cursor.fetchone():
+                    return Response({'error': 'Owner not found'}, status=400)
 
             # 2. Insert satellite 
             cursor.execute("""
@@ -542,10 +570,11 @@ class CreateSatellite(APIView):
             table = subclass_table_map.get(subclass)
 
             if table:
-                # Remove subclass key only insert actual fields
-                fields = {k: v for k, v in type_data.items() if k != 'subclass'}
+                # Filter type_data against the column whitelist to prevent column-name injection
+                allowed_cols = SUBCLASS_ALLOWED_COLUMNS.get(table, frozenset())
+                fields = {k: v for k, v in type_data.items() if k != 'subclass' and k in allowed_cols}
                 if fields:
-                    cols = ', '.join(fields.keys())
+                    cols = ', '.join(f'`{k}`' for k in fields.keys())
                     placeholders = ', '.join(['%s'] * len(fields))
                     values = list(fields.values())
                     cursor.execute(
