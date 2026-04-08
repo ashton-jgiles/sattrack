@@ -69,6 +69,8 @@ export default function SatelliteGlobe({
   const satelliteGroupsRef = useRef({});
   const satelliteIdsRef = useRef([]);
   const pendingSatelliteIdsRef = useRef(new Set());
+  const labelCollectionRef = useRef(null);
+  const selectedLabelRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -103,6 +105,22 @@ export default function SatelliteGlobe({
     pointCollectionRef.current = viewer.scene.primitives.add(
       new Cesium.PointPrimitiveCollection(),
     );
+    labelCollectionRef.current = viewer.scene.primitives.add(
+      new Cesium.LabelCollection(),
+    );
+    selectedLabelRef.current = labelCollectionRef.current.add({
+      show: false,
+      text: "",
+      font: "11px monospace",
+      fillColor: Cesium.Color.fromCssColorString("#e2e8f0"),
+      outlineColor: Cesium.Color.fromCssColorString("#020917"),
+      outlineWidth: 4,
+      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+      pixelOffset: new Cesium.Cartesian2(12, -8),
+      horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
+      verticalOrigin: Cesium.VerticalOrigin.TOP,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    });
 
     if (onReady) {
       onReady({
@@ -247,6 +265,8 @@ export default function SatelliteGlobe({
 
       const points = pointsRef.current;
       const groups = Object.values(satelliteGroupsRef.current);
+      const satelliteIds = satelliteIdsRef.current;
+      const highlightedId = highlightedSatellites[0] ?? null;
 
       points.forEach((point, index) => {
         const positions = groups[index];
@@ -256,15 +276,36 @@ export default function SatelliteGlobe({
         const posB = positions[(frameIndex + 1) % TOTAL_FRAMES];
         if (!posA || !posB) return;
 
-        point.position = interpolatePosition(posA, posB, t);
+        const interpolated = interpolatePosition(posA, posB, t);
+        point.position = interpolated;
+
+        const label = selectedLabelRef.current;
+        if (label && parseInt(satelliteIds[index]) === highlightedId) {
+          const altKm = (lerp(posA.altitude, posB.altitude, t)).toFixed(0);
+
+          // velocity: real distance between frames / real time delta
+          const cartA = Cesium.Cartesian3.fromDegrees(posA.longitude, posA.latitude, posA.altitude * 1000);
+          const cartB = Cesium.Cartesian3.fromDegrees(posB.longitude, posB.latitude, posB.altitude * 1000);
+          const distM = Cesium.Cartesian3.distance(cartA, cartB);
+          const dtSec = (new Date(posB.timestamp) - new Date(posA.timestamp)) / 1000;
+          const velKms = dtSec > 0 ? (distM / dtSec / 1000).toFixed(2) : "—";
+
+          label.position = interpolated;
+          label.text = `ALT ${altKm} km\nVEL ${velKms} km/s`;
+          label.show = true;
+        }
       });
+
+      if (highlightedId === null && selectedLabelRef.current) {
+        selectedLabelRef.current.show = false;
+      }
 
       animRef.current = requestAnimationFrame(animate);
     };
 
     animRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animRef.current);
-  }, []);
+  }, [highlightedSatellites]);
 
   return (
     <div className={styles.globeWrapper}>
