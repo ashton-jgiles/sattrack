@@ -8,7 +8,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import RestoreIcon from "@mui/icons-material/Restore";
 
 // component imports
-import SatelliteProfileModal from "../components/SatelliteProfileModal";
+import SatelliteProfileModal from "../components/satellite/SatelliteProfileModal";
 import AddSatelliteModal from "../components/AddSatelliteModal";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import PopupMessage from "../components/PopupMessage";

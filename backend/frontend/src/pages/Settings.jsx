@@ -7,7 +7,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import CachedIcon from "@mui/icons-material/Cached";
 
 // component imports
-import UserProfileModal from "../components/UserProfileModal";
+import UserProfileModal from "../components/user/UserProfileModal";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import PopupMessage from "../components/PopupMessage";
 

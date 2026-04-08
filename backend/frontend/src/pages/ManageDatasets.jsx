@@ -16,8 +16,8 @@ import {
 } from "../api/datasetService";
 
 // component imports
-import DatasetProfileModal from "../components/DatasetProfileModal";
-import AddDatasetModal from "../components/AddDatasetModal";
+import DatasetProfileModal from "../components/dataset/DatasetProfileModal";
+import AddDatasetModal from "../components/addDataset/AddDatasetModal";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import PopupMessage from "../components/PopupMessage";
 
