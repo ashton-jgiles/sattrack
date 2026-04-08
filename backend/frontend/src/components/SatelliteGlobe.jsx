@@ -53,8 +53,8 @@ function interpolatePosition(posA, posB, t) {
   );
 }
 
-// Release lookAt lock and reorient camera to face Earth so Cesium orbits it correctly.
-function reorientTowardEarth(viewer) {
+// Release lookAt lock and smoothly fly camera to an Earth-facing orientation.
+function releaseToEarth(viewer) {
   if (!viewer || viewer.isDestroyed()) return;
   const cam = viewer.camera;
   cam.lookAtTransform(Cesium.Matrix4.IDENTITY);
@@ -64,7 +64,7 @@ function reorientTowardEarth(viewer) {
     Cesium.Cartesian3.negate(camPos, new Cesium.Cartesian3()),
     new Cesium.Cartesian3(),
   );
-  // Build a stable up vector perpendicular to toEarth (use world Z, fall back to X near poles)
+  // Stable up vector perpendicular to toEarth
   const worldZ = new Cesium.Cartesian3(0, 0, 1);
   const refAxis = Math.abs(Cesium.Cartesian3.dot(toEarth, worldZ)) > 0.99
     ? new Cesium.Cartesian3(1, 0, 0)
@@ -75,7 +75,12 @@ function reorientTowardEarth(viewer) {
   );
   const up = Cesium.Cartesian3.cross(right, toEarth, new Cesium.Cartesian3());
 
-  cam.setView({ destination: camPos, orientation: { direction: toEarth, up } });
+  cam.flyTo({
+    destination: camPos,
+    orientation: { direction: toEarth, up },
+    duration: 1.2,
+    easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
+  });
 }
 
 export default function SatelliteGlobe({
@@ -85,7 +90,6 @@ export default function SatelliteGlobe({
   visibleSatelliteIds = null,
   onReady = null,
   tracking = false,
-  onStopTracking = null,
 }) {
   const cesiumContainer = useRef(null);
   const viewerRef = useRef(null);
@@ -100,7 +104,6 @@ export default function SatelliteGlobe({
   const selectedLabelRef = useRef(null);
   const trackingRef = useRef(false);
   const trackingRangeRef = useRef(null); // null = use default on next frame
-  const onStopTrackingRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -184,35 +187,9 @@ export default function SatelliteGlobe({
     };
     cesiumContainer.current.addEventListener("wheel", handleWheel, { passive: false });
 
-    // When the user drags while tracking, release tracking and reorient toward Earth
-    let dragOrigin = null;
-    const handlePointerDown = (e) => {
-      if (!trackingRef.current) return;
-      dragOrigin = { x: e.clientX, y: e.clientY };
-    };
-    const handlePointerMove = (e) => {
-      if (!trackingRef.current || !dragOrigin) return;
-      const dx = e.clientX - dragOrigin.x;
-      const dy = e.clientY - dragOrigin.y;
-      if (Math.sqrt(dx * dx + dy * dy) > 5) {
-        dragOrigin = null;
-        trackingRef.current = false;
-        trackingRangeRef.current = null;
-        reorientTowardEarth(viewer);
-        onStopTrackingRef.current?.();
-      }
-    };
-    const handlePointerUp = () => { dragOrigin = null; };
-    cesiumContainer.current.addEventListener("pointerdown", handlePointerDown);
-    cesiumContainer.current.addEventListener("pointermove", handlePointerMove);
-    cesiumContainer.current.addEventListener("pointerup", handlePointerUp);
-
     return () => {
       ro.disconnect();
       cesiumContainer.current?.removeEventListener("wheel", handleWheel);
-      cesiumContainer.current?.removeEventListener("pointerdown", handlePointerDown);
-      cesiumContainer.current?.removeEventListener("pointermove", handlePointerMove);
-      cesiumContainer.current?.removeEventListener("pointerup", handlePointerUp);
       cancelAnimationFrame(animRef.current);
       if (viewerRef.current && !viewerRef.current.isDestroyed()) {
         viewerRef.current.destroy();
@@ -221,15 +198,27 @@ export default function SatelliteGlobe({
     };
   }, []);
 
-  // Keep onStopTrackingRef current
-  useEffect(() => { onStopTrackingRef.current = onStopTracking; }, [onStopTracking]);
-
-  // Sync tracking prop → ref, and release camera when tracking is turned off
+  // Sync tracking prop → ref; disable/enable camera controls; smooth release
   useEffect(() => {
     trackingRef.current = tracking;
-    if (!tracking && viewerRef.current && !viewerRef.current.isDestroyed()) {
-      reorientTowardEarth(viewerRef.current);
+    const viewer = viewerRef.current;
+    if (!viewer || viewer.isDestroyed()) return;
+    const ctrl = viewer.scene.screenSpaceCameraController;
+    if (tracking) {
+      // Lock out all drag interactions; scroll is handled by our own wheel listener
+      viewer.camera.cancelFlight();
+      ctrl.enableRotate = false;
+      ctrl.enableTranslate = false;
+      ctrl.enableTilt = false;
+      ctrl.enableZoom = false;
+    } else {
+      // Restore controls and smoothly fly back to an Earth-facing view
+      ctrl.enableRotate = true;
+      ctrl.enableTranslate = true;
+      ctrl.enableTilt = true;
+      ctrl.enableZoom = true;
       trackingRangeRef.current = null;
+      releaseToEarth(viewer);
     }
   }, [tracking]);
 
