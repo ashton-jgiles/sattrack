@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener("auth:expired", handleExpired);
   }, []);
 
-  // login — backend sets httpOnly cookies; we only receive non-sensitive user metadata
+  // login backend sets httpOnly cookies; we only receive non-sensitive user metadata
   const login = async (username, password) => {
     const data = await post("/auth/login/", { username, password });
     const { username: uname, full_name, role, level_access } = data;
@@ -49,7 +49,7 @@ export function AuthProvider({ children }) {
     sessionStorage.setItem("user", JSON.stringify(updated));
   };
 
-  // logout — ask the backend to clear the httpOnly cookies, then clear local state
+  // logout ask the backend to clear the httpOnly cookies, then clear local state
   const logout = async () => {
     try {
       await post("/auth/logout/", {});

@@ -17,5 +17,6 @@ export default function ProtectedRoute({ children, minLevel = 1 }) {
   // redirect users who lack the required access level
   if (user.level_access < minLevel) return <Navigate to="/login" replace />;
 
+  // return the children
   return children;
 }
