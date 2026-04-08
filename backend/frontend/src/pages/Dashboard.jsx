@@ -207,6 +207,7 @@ function InfoField({ label, value }) {
 // Satellite info panel shown below the globe when a satellite is selected
 function SatelliteInfoPanel({
   satelliteId,
+  reviewStatus,
   onClose,
   minimized,
   onToggleMinimized,
@@ -280,6 +281,9 @@ function SatelliteInfoPanel({
                 >
                   {s.satellite_type}
                 </span>
+              )}
+              {reviewStatus === "pending" && (
+                <span className={styles.infoPanelBadgePending}>Pending</span>
               )}
               {s.description && (
                 <span className={styles.infoPanelDescription}>
@@ -481,6 +485,11 @@ function OverviewPage() {
     });
   }, [allSatellites, searchTerm, globeFilteredIds]);
 
+  const selectedSatellite = useMemo(
+    () => allSatellites.find((sat) => sat.satellite_id === selectedSatelliteId),
+    [allSatellites, selectedSatelliteId],
+  );
+
   const clearFilters = () => {
     setSatelliteTypeFilter("");
     setOrbitTypeFilter("");
@@ -629,6 +638,7 @@ function OverviewPage() {
         {selectedSatelliteId && (
           <SatelliteInfoPanel
             satelliteId={selectedSatelliteId}
+            reviewStatus={selectedSatellite?.review_status}
             minimized={infoPanelMinimized}
             onToggleMinimized={() => setInfoPanelMinimized((m) => !m)}
             onClose={() => {
@@ -817,14 +827,11 @@ function OverviewPage() {
                     style={
                       selectedSatelliteId === sat.satellite_id
                         ? { backgroundColor: "#3b82f6" }
-                        : user?.level_access >= 3 &&
-                            sat.review_status === "pending"
-                          ? { backgroundColor: "#f59e0b" }
-                          : {
-                              backgroundColor: getSatelliteCategoryColor(
-                                sat.satellite_type,
-                              ),
-                            }
+                        : {
+                            backgroundColor: getSatelliteCategoryColor(
+                              sat.satellite_type,
+                            ),
+                          }
                     }
                   />
                   <div className={styles.satelliteItemInfo}>

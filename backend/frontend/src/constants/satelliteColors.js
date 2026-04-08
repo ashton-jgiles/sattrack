@@ -1,5 +1,5 @@
 const SATELLITE_CATEGORY_COLORS = {
-  "earth science": "#f59e0b",
+  "earth science": "#ffc35b",
   "oceanic science": "#a855f7",
   navigation: "#07b346",
   internet: "#ec4899",
