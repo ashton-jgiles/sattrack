@@ -29,6 +29,8 @@ import {
   getRecentDeployments,
 } from "../../api/satelliteService";
 
+import { getAllOwners } from "../../api/lookupsService";
+
 // style imports
 import styles from "../../styles/satellite/Visualizations.module.css";
 
@@ -124,14 +126,16 @@ function Skeleton() {
 export default function Visualizations() {
   const [satellites, setSatellites] = useState([]);
   const [deployments, setDeployments] = useState([]);
+  const [owners, setOwners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    Promise.all([getAllSatellites(), getRecentDeployments()])
-      .then(([sats, deps]) => {
+    Promise.all([getAllSatellites(), getRecentDeployments(), getAllOwners()])
+      .then(([sats, deps, owners]) => {
         setSatellites(sats);
         setDeployments(deps);
+        setOwners(owners);
       })
       .catch((err) => {
         console.error(err);
@@ -176,31 +180,22 @@ export default function Visualizations() {
   }, [satellites]);
 
   // Altitude distribution buckets
-  const altitudeData = useMemo(() => {
-    const buckets = {
-      "< 500 km": 0,
-      "500–1000 km": 0,
-      "1000–5000 km": 0,
-      "5000–20000 km": 0,
-      "> 20000 km": 0,
-      Unknown: 0,
-    };
-    satellites.forEach((s) => {
-      const alt = parseFloat(s.altitude);
-      if (isNaN(alt)) {
-        buckets["Unknown"]++;
-        return;
-      }
-      if (alt < 500) buckets["< 500 km"]++;
-      else if (alt < 1000) buckets["500–1000 km"]++;
-      else if (alt < 5000) buckets["1000–5000 km"]++;
-      else if (alt < 20000) buckets["5000–20000 km"]++;
-      else buckets["> 20000 km"]++;
+  // Country distribution via owner_id lookup
+  const countryData = useMemo(() => {
+    const ownerCountryMap = {};
+    owners.forEach((o) => {
+      ownerCountryMap[o.owner_id] = o.country || "Unknown";
     });
-    return Object.entries(buckets)
-      .filter(([, v]) => v > 0)
-      .map(([name, value]) => ({ name, value }));
-  }, [satellites]);
+    const counts = {};
+    satellites.forEach((s) => {
+      const country = ownerCountryMap[s.owner_id] || "Unknown";
+      counts[country] = (counts[country] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10); // top 10 countries
+  }, [satellites, owners]);
 
   // Deployments per year (last 5 years from recentDeployments)
   const deploymentsByYear = useMemo(() => {
@@ -331,6 +326,7 @@ export default function Visualizations() {
                 <Tooltip
                   contentStyle={tooltipStyle}
                   cursor={{ fill: "rgba(59,130,246,0.08)" }}
+                  itemStyle={{ color: "#cbd5e1" }}
                 />
                 <Bar dataKey="value" name="Satellites" radius={[4, 4, 0, 0]}>
                   {typeData.map((entry, i) => (
@@ -378,17 +374,17 @@ export default function Visualizations() {
           )}
         </ChartCard>
 
-        {/* 4. Altitude distribution bar */}
+        {/* 4. Country distribution bar */}
         <ChartCard
-          title="Altitude Distribution"
-          subtitle="Satellites grouped by orbital altitude (km)"
+          title="Top Countries by Satellite Count"
+          subtitle="Based on satellite owner country (top 10)"
         >
           {loading ? (
             <Skeleton />
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <BarChart
-                data={altitudeData}
+                data={countryData}
                 margin={{ top: 4, right: 8, left: -16, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
@@ -398,9 +394,9 @@ export default function Visualizations() {
                   tickLine={false}
                   axisLine={false}
                   interval={0}
-                  angle={-15}
+                  angle={-20}
                   textAnchor="end"
-                  height={48}
+                  height={52}
                 />
                 <YAxis
                   tick={{ fill: "#64748b", fontSize: 11 }}
@@ -411,9 +407,10 @@ export default function Visualizations() {
                 <Tooltip
                   contentStyle={tooltipStyle}
                   cursor={{ fill: "rgba(59,130,246,0.08)" }}
+                  itemStyle={{ color: "#cbd5e1" }}
                 />
                 <Bar dataKey="value" name="Satellites" radius={[4, 4, 0, 0]}>
-                  {altitudeData.map((entry, i) => (
+                  {countryData.map((entry, i) => (
                     <Cell key={i} fill={getColor(entry.name, i)} />
                   ))}
                 </Bar>
