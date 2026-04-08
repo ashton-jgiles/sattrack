@@ -1,38 +1,13 @@
-# connection and api imports, jwt, hashing, and rate limiting imports
-import bcrypt
+# connection and api imports, jwt, and rate limiting imports
 import logging
 from django.db import connection, transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from backend.throttles import RegisterThrottle
+from users.services import check_password, get_user_role
 
 logger = logging.getLogger('sattrack')
-
-# check password method
-def check_password(plain, hashed):
-    # check the password to see if they match
-    return bcrypt.checkpw(
-        plain.encode('utf-8'),
-        hashed.encode('utf-8')
-    )
-
-# get user role method to get the role subclass of a user
-def get_user_role(cursor, username):
-    # Check each sub-table to determine role
-    for role, table in [
-        ('administrator', 'administrator'),
-        ('data_analyst', 'data_analyst'),
-        ('scientist', 'scientist'),
-        ('amateur', 'amateur'),
-    ]:
-        # get the username from the database
-        cursor.execute(f"SELECT username FROM {table} WHERE username = %s", [username])
-        # if there is a username return the role of the user
-        if cursor.fetchone():
-            return role
-    # other wise nothing is returned
-    return None
 
 # login view class to log the user in and generate the JWT token
 class LoginView(APIView):
