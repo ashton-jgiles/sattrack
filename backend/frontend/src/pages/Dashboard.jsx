@@ -35,7 +35,6 @@ import PersonIcon from "@mui/icons-material/Person";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
-import GpsFixedIcon from "@mui/icons-material/GpsFixed";
 
 // component imports
 import SatelliteGlobe from "../components/SatelliteGlobe";
@@ -47,6 +46,10 @@ import {
   getSatelliteProfile,
 } from "../api/satelliteService";
 import { getTotalDatasets } from "../api/datasetService";
+import {
+  SATELLITE_CATEGORY_COLORS,
+  getSatelliteCategoryColor,
+} from "../constants/satelliteColors";
 
 // style imports
 import styles from "../styles/Dashboard.module.css";
@@ -364,6 +367,16 @@ function OverviewPage() {
     () => [...new Set(allSatellites.map((s) => s.orbit_type).filter(Boolean))],
     [allSatellites],
   );
+  const satelliteTypeById = useMemo(
+    () =>
+      Object.fromEntries(
+        allSatellites.map((sat) => [
+          String(sat.satellite_id),
+          sat.satellite_type,
+        ]),
+      ),
+    [allSatellites],
+  );
 
   const isFiltered =
     satelliteTypeFilter !== "" ||
@@ -534,37 +547,70 @@ function OverviewPage() {
           <StatCard
             label="Earth Satellites"
             value={stats.earth}
-            icon={<PublicIcon sx={{ fontSize: 20 }} />}
+            icon={
+              <PublicIcon
+                sx={{
+                  fontSize: 20,
+                  color: SATELLITE_CATEGORY_COLORS["earth science"],
+                }}
+              />
+            }
             loading={loading}
           />
           <StatCard
             label="Oceanic Satellites"
             value={stats.oceanic}
-            icon={<WavesIcon sx={{ fontSize: 20 }} />}
+            icon={
+              <WavesIcon
+                sx={{
+                  fontSize: 20,
+                  color: SATELLITE_CATEGORY_COLORS["oceanic science"],
+                }}
+              />
+            }
             loading={loading}
           />
           <StatCard
             label="Navigation Satellites"
             value={stats.navigation}
-            icon={<ExploreIcon sx={{ fontSize: 20 }} />}
+            icon={
+              <ExploreIcon
+                sx={{
+                  fontSize: 20,
+                  color: SATELLITE_CATEGORY_COLORS.navigation,
+                }}
+              />
+            }
             loading={loading}
           />
           <StatCard
             label="Internet Satellites"
             value={stats.internet}
-            icon={<WifiIcon sx={{ fontSize: 20 }} />}
+            icon={
+              <WifiIcon
+                sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS.internet }}
+              />
+            }
             loading={loading}
           />
           <StatCard
             label="Research Satellites"
             value={stats.research}
-            icon={<ScienceIcon sx={{ fontSize: 20 }} />}
+            icon={
+              <ScienceIcon
+                sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS.research }}
+              />
+            }
             loading={loading}
           />
           <StatCard
             label="Weather Satellites"
             value={stats.weather}
-            icon={<AirIcon sx={{ fontSize: 20 }} />}
+            icon={
+              <AirIcon
+                sx={{ fontSize: 20, color: SATELLITE_CATEGORY_COLORS.weather }}
+              />
+            }
             loading={loading}
           />
         </div>
@@ -590,6 +636,7 @@ function OverviewPage() {
             <SatelliteGlobe
               highlightedSatellites={highlightedSatellites}
               visibleSatelliteIds={globeFilteredIds}
+              satelliteTypeById={satelliteTypeById}
               onReady={(controls) => {
                 globeControlsRef.current = controls;
               }}
@@ -761,7 +808,11 @@ function OverviewPage() {
                         : user?.level_access >= 3 &&
                             sat.review_status === "pending"
                           ? { backgroundColor: "#f59e0b" }
-                          : undefined
+                          : {
+                              backgroundColor: getSatelliteCategoryColor(
+                                sat.satellite_type,
+                              ),
+                            }
                     }
                   />
                   <div className={styles.satelliteItemInfo}>

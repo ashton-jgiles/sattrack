@@ -7,6 +7,7 @@ import "cesium/Build/Cesium/Widgets/widgets.css";
 
 // api imports
 import { getSatellitePositionsPage } from "../api/trajectoryService";
+import { getSatelliteCategoryColor } from "../constants/satelliteColors";
 
 // styles
 import styles from "../styles/SatelliteGlobe.module.css";
@@ -91,6 +92,7 @@ export default function SatelliteGlobe({
   // When set, only satellites whose IDs are in this Set/array are shown.
   // When null/undefined, all satellites are shown.
   visibleSatelliteIds = null,
+  satelliteTypeById = {},
   onReady = null,
   tracking = false,
 }) {
@@ -102,6 +104,7 @@ export default function SatelliteGlobe({
   const startTimeRef = useRef(null);
   const satelliteGroupsRef = useRef({});
   const satelliteIdsRef = useRef([]);
+  const satelliteTypeByIdRef = useRef({});
   const pendingSatelliteIdsRef = useRef(new Set());
   const labelCollectionRef = useRef(null);
   const selectedLabelRef = useRef(null);
@@ -110,6 +113,28 @@ export default function SatelliteGlobe({
   const flyingInRef = useRef(false); // true while the fly-in animation plays
   const currentSatPosRef = useRef(null); // live ECEF position of highlighted satellite
   const currentSatAltRef = useRef(0); // live altitude (km) of highlighted satellite
+
+  const getSatelliteColorPalette = (
+    satelliteId,
+    isHighlighted,
+    fallbackType = "",
+  ) => {
+    if (isHighlighted) {
+      return {
+        baseColor: "#3b82f6",
+      };
+    }
+
+    const rawType =
+      satelliteTypeById[String(satelliteId)] ??
+      satelliteTypeByIdRef.current[String(satelliteId)] ??
+      fallbackType;
+    const typeColor = getSatelliteCategoryColor(rawType);
+
+    return {
+      baseColor: typeColor,
+    };
+  };
 
   const getSatelliteSampleAtTimestamp = (satelliteId, timestampMs) => {
     if (satelliteId === null || satelliteId === undefined) return null;
@@ -387,20 +412,17 @@ export default function SatelliteGlobe({
           const pos = positions[0];
           const id = parseInt(satelliteId);
           const isHighlighted = highlightedSatellites.includes(id);
-          const isPending = pendingSatelliteIds.has(id);
           const isVisible =
             visibleSatelliteIds === null || visibleSatelliteIds.has(id);
-
-          const baseColor = isHighlighted
-            ? "#3b82f6"
-            : isPending
-              ? "#f59e0b"
-              : "#22c55e";
-          const outlineColor = isHighlighted
-            ? "#60a5fa"
-            : isPending
-              ? "#fbbf24"
-              : "#4ade80";
+          const inferredType = pos?.satellite_type ?? "";
+          if (inferredType) {
+            satelliteTypeByIdRef.current[String(satelliteId)] = inferredType;
+          }
+          const { baseColor } = getSatelliteColorPalette(
+            satelliteId,
+            isHighlighted,
+            inferredType,
+          );
 
           return collection.add({
             position: Cesium.Cartesian3.fromDegrees(
@@ -412,7 +434,7 @@ export default function SatelliteGlobe({
             pixelSize: isHighlighted ? 14 : 6,
             outlineColor: isHighlighted
               ? Cesium.Color.WHITE.withAlpha(0.4)
-              : Cesium.Color.fromCssColorString(outlineColor).withAlpha(0.4),
+              : Cesium.Color.fromCssColorString(baseColor).withAlpha(0.45),
             outlineWidth: isHighlighted ? 2 : 3,
             show: isVisible,
           });
@@ -432,6 +454,11 @@ export default function SatelliteGlobe({
 
   // Update visibility and colours when filters or highlights change
   useEffect(() => {
+    satelliteTypeByIdRef.current = {
+      ...satelliteTypeByIdRef.current,
+      ...satelliteTypeById,
+    };
+
     const collection = pointCollectionRef.current;
     if (!collection || collection.isDestroyed()) return;
 
@@ -442,22 +469,22 @@ export default function SatelliteGlobe({
       const isVisible =
         visibleSatelliteIds === null || visibleSatelliteIds.has(id);
 
-      const isPending = pendingSatelliteIdsRef.current.has(id);
+      const inferredType =
+        satelliteGroupsRef.current[String(id)]?.[0]?.satellite_type ?? "";
+      const { baseColor } = getSatelliteColorPalette(
+        id,
+        isHighlighted,
+        inferredType,
+      );
       point.show = isVisible;
-      point.color = isHighlighted
-        ? Cesium.Color.fromCssColorString("#3b82f6").withAlpha(0.9)
-        : isPending
-          ? Cesium.Color.fromCssColorString("#f59e0b").withAlpha(0.9)
-          : Cesium.Color.fromCssColorString("#22c55e").withAlpha(0.9);
+      point.color = Cesium.Color.fromCssColorString(baseColor).withAlpha(0.9);
       point.pixelSize = isHighlighted ? 14 : 6;
       point.outlineColor = isHighlighted
         ? Cesium.Color.WHITE.withAlpha(0.4)
-        : isPending
-          ? Cesium.Color.fromCssColorString("#fbbf24").withAlpha(0.4)
-          : Cesium.Color.fromCssColorString("#4ade80").withAlpha(0.4);
+        : Cesium.Color.fromCssColorString(baseColor).withAlpha(0.45);
       point.outlineWidth = isHighlighted ? 2 : 3;
     });
-  }, [highlightedSatellites, visibleSatelliteIds]);
+  }, [highlightedSatellites, visibleSatelliteIds, satelliteTypeById]);
 
   // Animation loop
   useEffect(() => {
