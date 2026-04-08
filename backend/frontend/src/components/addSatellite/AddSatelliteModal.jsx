@@ -719,7 +719,7 @@ export default function AddSatelliteModal({
   onClose,
   onSave,
 }) {
-  // modal functions and variables
+  // component fields
   const [step, setStep] = useState(1);
   const [selectedDataset, setSelectedDataset] = useState(null);
   const [satellites, setSatellites] = useState([]);

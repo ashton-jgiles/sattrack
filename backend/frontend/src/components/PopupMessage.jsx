@@ -4,7 +4,7 @@ import React from "react";
 // style imports
 import styles from "../styles/PopupMessage.module.css";
 
-// cerate the popup message component with all elements defined in the hook
+// create the popup message component with all elements defined in the hook
 export default function PopupMessage({
   message,
   type = "success",

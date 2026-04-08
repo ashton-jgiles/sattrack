@@ -231,7 +231,7 @@ function validate(editData) {
 
 // modal component
 export default function SatelliteProfileModal({ data, onClose, onSave }) {
-  // functions and variables
+  // component fields
   const [activeTab, setActiveTab] = useState("info");
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState([]);

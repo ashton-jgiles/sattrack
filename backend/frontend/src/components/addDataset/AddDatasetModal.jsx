@@ -10,6 +10,7 @@ import AddIcon from "@mui/icons-material/Add";
 import styles from "../../styles/satellite/SatelliteProfileModal.module.css";
 import dropdownStyles from "../../styles/dataset/AddDatasetModal.module.css";
 
+// edit field function for editable fields
 function EditField({ label, value, onChange, placeholder }) {
   return (
     <div className={`${styles.field} ${styles.fieldFull}`}>
@@ -25,7 +26,9 @@ function EditField({ label, value, onChange, placeholder }) {
   );
 }
 
+// default function for the modal component for adding a new dataset to the database
 export default function AddDatasetModal({ sources = [], onClose, onSave }) {
+  // component fields
   const [form, setForm] = useState({
     group: "",
     dataset_name: "",
@@ -37,19 +40,23 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
   const [errors, setErrors] = useState([]);
   const inputRef = useRef(null);
 
+  // fiiltered sources to filter the datasources based on user input
   const filteredSources = sources.filter((s) =>
     s.group.toLowerCase().includes(form.group.toLowerCase()),
   );
 
+  // handle change when input fields change
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  // handle group input to a handle when group fields change
   const handleGroupInput = (value) => {
     setForm((prev) => ({ ...prev, group: value }));
     setDropdownOpen(true);
   };
 
+  // handle group select to handle when groups change
   const handleGroupSelect = (group) => {
     const match = sources.find((s) => s.group === group);
     if (match?.previously_deleted) {
@@ -72,9 +79,11 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
     setDropdownOpen(false);
   };
 
+  // is restore method to restore previously delete datasets
   const isRestore =
     sources.find((s) => s.group === form.group)?.previously_deleted ?? false;
 
+  // handle save when the save button is clicked
   const handleSave = async () => {
     const errs = [];
     if (!form.group.trim()) errs.push("Group is required.");
@@ -99,6 +108,7 @@ export default function AddDatasetModal({ sources = [], onClose, onSave }) {
     }
   };
 
+  // create the modal component
   return ReactDOM.createPortal(
     <div
       className={styles.backdrop}
