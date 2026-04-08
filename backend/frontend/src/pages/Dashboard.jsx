@@ -54,6 +54,15 @@ import {
 // style imports
 import styles from "../styles/Dashboard.module.css";
 
+function getSatelliteTypeBadgeStyle(satelliteType) {
+  const color = getSatelliteCategoryColor(satelliteType);
+  return {
+    color,
+    backgroundColor: `${color}1A`,
+    borderColor: `${color}4D`,
+  };
+}
+
 function NumInput({ placeholder, value, onChange, step = 1000 }) {
   const adjust = (dir) => {
     const current = parseInt(value) || 0;
@@ -265,7 +274,10 @@ function SatelliteInfoPanel({
                 <span className={styles.infoPanelBadge}>{s.orbit_type}</span>
               )}
               {s.satellite_type && (
-                <span className={styles.infoPanelBadgeAlt}>
+                <span
+                  className={styles.infoPanelBadgeAlt}
+                  style={getSatelliteTypeBadgeStyle(s.satellite_type)}
+                >
                   {s.satellite_type}
                 </span>
               )}

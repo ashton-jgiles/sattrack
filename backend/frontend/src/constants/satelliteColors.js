@@ -4,7 +4,7 @@ const SATELLITE_CATEGORY_COLORS = {
   navigation: "#07b346",
   internet: "#ec4899",
   research: "#ef4444",
-  weather: "#06bedf",
+  weather: "#38d7f3",
 };
 
 //   "earth science": "#07ae44",
