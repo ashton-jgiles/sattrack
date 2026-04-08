@@ -593,6 +593,7 @@ function OverviewPage() {
                 globeControlsRef.current = controls;
               }}
               tracking={trackingSatellite}
+              onStopTracking={() => setTrackingSatellite(false)}
             />
             <div className={styles.globeControls}>
               {selectedSatelliteId && (
