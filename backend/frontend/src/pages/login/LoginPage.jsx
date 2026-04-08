@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // import authentication
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
@@ -11,8 +11,9 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 
 // style imports
-import styles from "../styles/LoginPage.module.css";
+import styles from "../../styles/login/LoginPage.module.css";
 
+// default login page component
 export default function LoginPage() {
   // component fields
   const navigate = useNavigate();

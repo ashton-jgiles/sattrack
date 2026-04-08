@@ -22,12 +22,18 @@ export const getSatelliteCounts = async () => {
 
 // get recent deployments interface gets all satellites deployed in last 5 years
 export const getRecentDeployments = async () => {
-  const data = await get(`/satellite/recentDeployments/`);
+  const data = await get(`/satellite/recent_deployments/`);
   return data;
 };
 
 // get satellite profile gives one row of all sattelite info, owner, launch, vehicle, comm station for a satellite
 export const getSatelliteProfile = async (id) => {
   const data = await get(`/satellite/${id}/profile/`);
+  return data;
+};
+
+// get one page of satellite trajectory data for the globe visualization
+export const getSatellitePositionsPage = async (page = 1, pageSize = 100) => {
+  const data = await get(`/satellite/positions/?page=${page}&page_size=${pageSize}`);
   return data;
 };

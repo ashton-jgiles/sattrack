@@ -9,18 +9,19 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import StorageIcon from "@mui/icons-material/Storage";
 
 // api imports
-import { getReviewDatasets, reviewDataset } from "../api/datasetService";
-import { getSatellitesInDataset } from "../api/datasetService";
+import { getReviewDatasets, reviewDataset } from "../../api/datasetService";
+import { getSatellitesInDataset } from "../../api/datasetService";
 
 // component imports
-import PopupMessage from "../components/PopupMessage";
+import PopupMessage from "../../components/PopupMessage";
 
 // hooks
-import usePopupMessage from "../hooks/usePopupMessage";
+import usePopupMessage from "../../hooks/usePopupMessage";
 
 // style imports
-import styles from "../styles/Reviews.module.css";
+import styles from "../../styles/dataset/Reviews.module.css";
 
+// status styles
 const STATUS_STYLES = {
   approved: styles.statusApproved,
   pending: styles.statusPending,
@@ -29,10 +30,12 @@ const STATUS_STYLES = {
 
 // single review card
 function ReviewCard({ dataset, showClosed, onReview }) {
+  // function fields
   const [satellitesOpen, setSatellitesOpen] = useState(false);
   const [satellites, setSatellites] = useState([]);
   const [satellitesLoading, setSatellitesLoading] = useState(false);
 
+  // handle toggle satellites
   const handleToggleSatellites = () => {
     if (!satellitesOpen && satellites.length === 0) {
       setSatellitesLoading(true);
@@ -44,6 +47,7 @@ function ReviewCard({ dataset, showClosed, onReview }) {
     setSatellitesOpen((prev) => !prev);
   };
 
+  // main function components
   return (
     <div className={styles.card}>
       {/* Card Header */}
@@ -54,7 +58,9 @@ function ReviewCard({ dataset, showClosed, onReview }) {
         <div className={styles.cardMeta}>
           <h3 className={styles.cardTitle}>{dataset.dataset_name}</h3>
         </div>
-        <span className={`${styles.statusBadge} ${STATUS_STYLES[dataset.review_status] ?? ""}`}>
+        <span
+          className={`${styles.statusBadge} ${STATUS_STYLES[dataset.review_status] ?? ""}`}
+        >
           {dataset.review_status}
         </span>
       </div>
@@ -90,7 +96,9 @@ function ReviewCard({ dataset, showClosed, onReview }) {
         </div>
         <div className={styles.statItem}>
           <span className={styles.statLabel}>Satellites</span>
-          <span className={styles.statValue}>{dataset.satellite_count ?? 0}</span>
+          <span className={styles.statValue}>
+            {dataset.satellite_count ?? 0}
+          </span>
         </div>
       </div>
 
@@ -104,7 +112,10 @@ function ReviewCard({ dataset, showClosed, onReview }) {
 
       {/* Card Actions */}
       <div className={styles.cardActions}>
-        <button className={styles.satelliteToggle} onClick={handleToggleSatellites}>
+        <button
+          className={styles.satelliteToggle}
+          onClick={handleToggleSatellites}
+        >
           {satellitesOpen ? (
             <ExpandLessIcon sx={{ fontSize: 15 }} />
           ) : (
@@ -138,7 +149,9 @@ function ReviewCard({ dataset, showClosed, onReview }) {
           {satellitesLoading ? (
             <p className={styles.satelliteEmpty}>Loading...</p>
           ) : satellites.length === 0 ? (
-            <p className={styles.satelliteEmpty}>No satellites in this dataset</p>
+            <p className={styles.satelliteEmpty}>
+              No satellites in this dataset
+            </p>
           ) : (
             satellites.map((sat) => (
               <div key={sat.satellite_id} className={styles.satelliteRow}>
@@ -157,7 +170,9 @@ function ReviewCard({ dataset, showClosed, onReview }) {
   );
 }
 
+// default reviews component
 export default function Reviews() {
+  // component fields
   const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showClosed, setShowClosed] = useState(false);
@@ -166,9 +181,11 @@ export default function Reviews() {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // create the message
   const { message, messageFading, messageVisible, showPopupMessage } =
     usePopupMessage();
 
+  // load the datasets
   const loadDatasets = (closed) => {
     setLoading(true);
     getReviewDatasets(closed)
@@ -177,22 +194,26 @@ export default function Reviews() {
       .finally(() => setLoading(false));
   };
 
+  // on mount load the datasets
   useEffect(() => {
     loadDatasets(showClosed);
   }, [showClosed]);
 
+  // open reviews
   const openReview = (dataset, action) => {
     setReviewTarget(dataset);
     setPendingAction(action);
     setComment("");
   };
 
+  // close review
   const closeReview = () => {
     setReviewTarget(null);
     setPendingAction(null);
     setComment("");
   };
 
+  // handle submit to update the database
   const handleSubmit = async () => {
     if (!reviewTarget || !pendingAction) return;
     setSubmitting(true);
@@ -202,7 +223,7 @@ export default function Reviews() {
         review_comment: comment,
       });
       showPopupMessage(
-        `Dataset ${pendingAction === "approved" ? "approved" : "rejected"} successfully`
+        `Dataset ${pendingAction === "approved" ? "approved" : "rejected"} successfully`,
       );
       closeReview();
       loadDatasets(showClosed);
@@ -214,6 +235,7 @@ export default function Reviews() {
     }
   };
 
+  // main reviews page component
   return (
     <div className={styles.page}>
       {/* Page Header */}
@@ -265,7 +287,9 @@ export default function Reviews() {
               </button>
             </div>
             <div className={styles.modalBody}>
-              <p className={styles.modalSubtitle}>{reviewTarget.dataset_name}</p>
+              <p className={styles.modalSubtitle}>
+                {reviewTarget.dataset_name}
+              </p>
               <label className={styles.commentLabel}>
                 {pendingAction === "approved"
                   ? "Approval note (optional)"
@@ -294,8 +318,8 @@ export default function Reviews() {
                   {submitting
                     ? "Submitting..."
                     : pendingAction === "approved"
-                    ? "Approve"
-                    : "Reject"}
+                      ? "Approve"
+                      : "Reject"}
                 </button>
               </div>
             </div>

@@ -7,24 +7,24 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import CachedIcon from "@mui/icons-material/Cached";
 
 // component imports
-import UserProfileModal from "../components/UserProfileModal";
-import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
-import PopupMessage from "../components/PopupMessage";
+import UserProfileModal from "../../components/user/UserProfileModal";
+import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
+import PopupMessage from "../../components/PopupMessage";
 
 // hooks
-import usePopupMessage from "../hooks/usePopupMessage";
+import usePopupMessage from "../../hooks/usePopupMessage";
 
 // api imports
-import { updateTrajectories } from "../api/trajectoryService";
+import { updateTrajectories } from "../../api/settingsService";
 import {
   getUsers,
   getUserProfile,
   modifyUser,
   deleteUser,
-} from "../api/userService";
+} from "../../api/userService";
 
 // style imports
-import styles from "../styles/Settings.module.css";
+import styles from "../../styles/user/Settings.module.css";
 
 // subclass filters array
 const SUBCLASS_FILTERS = [
@@ -35,6 +35,7 @@ const SUBCLASS_FILTERS = [
   { value: "Amateur", label: "Amateur" },
 ];
 
+// default settings component
 export default function Settings() {
   // component fields
   const [users, setUsers] = useState([]);

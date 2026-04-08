@@ -1,6 +1,8 @@
+# path and views imports
 from django.urls import path
 from . import views
 
+# manage datasets app urls
 urlpatterns = [
     path('<int:dataset_id>/modify/', views.ModifyDataset.as_view()),
     path('<int:dataset_id>/delete/', views.DeleteDataset.as_view()),

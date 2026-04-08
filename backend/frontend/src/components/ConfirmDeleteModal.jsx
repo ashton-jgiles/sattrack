@@ -6,7 +6,7 @@ import ReactDOM from "react-dom";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 // style imports
-import styles from "../styles/SatelliteProfileModal.module.css";
+import styles from "../styles/satellite/SatelliteProfileModal.module.css";
 
 // confirm delete modal for general pop confirms for deleting elements
 export default function ConfirmDeleteModal({

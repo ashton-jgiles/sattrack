@@ -1,6 +1,7 @@
 // import use state to create popup message hook
 import { useState } from "react";
 
+// default popup message hook
 export default function usePopupMessage() {
   // popup message methods and variables
   const [message, setMessage] = useState(null);

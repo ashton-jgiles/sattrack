@@ -6,13 +6,13 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 // page imports
-import ManageSatellites from "./ManageSatellites";
-import ManageDatasets from "./ManageDatasets";
-import Datasets from "./Datasets";
-import UserProfile from "./UserProfile";
-import Settings from "./Settings";
-import Reviews from "./Reviews";
-import Visualizations from "./Visualizations";
+import ManageSatellites from "./satellite/ManageSatellites";
+import ManageDatasets from "./dataset/ManageDatasets";
+import Datasets from "./dataset/Datasets";
+import UserProfile from "./user/UserProfile";
+import Settings from "./user/Settings";
+import Reviews from "./dataset/Reviews";
+import Visualizations from "./satellite/Visualizations";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
@@ -23,7 +23,6 @@ import StorageIcon from "@mui/icons-material/Storage";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import ManageSearchIcon from "@mui/icons-material/ManageSearch";
 import SettingsIcon from "@mui/icons-material/Settings";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import PublicIcon from "@mui/icons-material/Public";
 import DatasetIcon from "@mui/icons-material/Dataset";
 import WavesIcon from "@mui/icons-material/Waves";
@@ -39,7 +38,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 
 // component imports
-import SatelliteGlobe from "../components/SatelliteGlobe";
+import SatelliteGlobe from "../components/satellite/SatelliteGlobe";
 
 // api imports
 import {
@@ -56,6 +55,7 @@ import {
 // style imports
 import styles from "../styles/Dashboard.module.css";
 
+// get the satellite badge style
 function getSatelliteTypeBadgeStyle(satelliteType) {
   const color = getSatelliteCategoryColor(satelliteType);
   return {
@@ -65,6 +65,7 @@ function getSatelliteTypeBadgeStyle(satelliteType) {
   };
 }
 
+// number input component
 function NumInput({ placeholder, value, onChange, step = 1000 }) {
   const adjust = (dir) => {
     const current = parseInt(value) || 0;
@@ -169,7 +170,7 @@ const NAV_ITEMS = [
       {
         id: "settings",
         label: "Settings",
-        icon: <AdminPanelSettingsIcon sx={{ fontSize: 18 }} />,
+        icon: <SettingsIcon sx={{ fontSize: 18 }} />,
         minLevel: 4,
       },
     ],

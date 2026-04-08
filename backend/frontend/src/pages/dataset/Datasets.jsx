@@ -8,13 +8,16 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
 // api imports
-import { getAllDatasets, getSatellitesInDataset } from "../api/datasetService";
+import {
+  getAllDatasets,
+  getSatellitesInDataset,
+} from "../../api/datasetService";
 
 // auth imports
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 
 // style imports
-import styles from "../styles/Datasets.module.css";
+import styles from "../../styles/dataset/Datasets.module.css";
 
 // status badge color map
 const STATUS_COLORS = {
@@ -25,13 +28,16 @@ const STATUS_COLORS = {
 
 // dataset card component
 function DatasetCard({ dataset, onViewDetails, showStatus }) {
+  // function fields
   const [satellitesOpen, setSatellitesOpen] = useState(false);
   const [satellites, setSatellites] = useState([]);
   const [satellitesLoading, setSatellitesLoading] = useState(false);
 
+  // status class
   const statusClass =
     STATUS_COLORS[dataset.review_status] ?? styles.statusPending;
 
+  // dataset page component
   return (
     <div className={styles.card}>
       {/* Card Header */}
@@ -130,7 +136,9 @@ function DatasetCard({ dataset, onViewDetails, showStatus }) {
               <div key={sat.satellite_id} className={styles.satelliteRow}>
                 <span className={styles.satelliteName}>{sat.name}</span>
                 <span className={styles.satelliteMeta}>
-                  {[sat.object_id, sat.orbit_type, sat.classification].filter(Boolean).join(" · ")}
+                  {[sat.object_id, sat.orbit_type, sat.classification]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </span>
               </div>
             ))
@@ -143,6 +151,7 @@ function DatasetCard({ dataset, onViewDetails, showStatus }) {
 
 // datasets page
 export default function Datasets() {
+  // component fields
   const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDataset, setSelectedDataset] = useState(null);
@@ -157,6 +166,7 @@ export default function Datasets() {
       .finally(() => setLoading(false));
   }, []);
 
+  // main dataset page components
   return (
     <div className={styles.page}>
       {/* Page Header */}

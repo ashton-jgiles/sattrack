@@ -8,27 +8,30 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import RestoreIcon from "@mui/icons-material/Restore";
 
 // component imports
-import SatelliteProfileModal from "../components/SatelliteProfileModal";
-import AddSatelliteModal from "../components/AddSatelliteModal";
-import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
-import PopupMessage from "../components/PopupMessage";
+import SatelliteProfileModal from "../../components/satellite/SatelliteProfileModal";
+import AddSatelliteModal from "../../components/addSatellite/AddSatelliteModal";
+import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
+import PopupMessage from "../../components/PopupMessage";
 
 // hooks
-import usePopupMessage from "../hooks/usePopupMessage";
+import usePopupMessage from "../../hooks/usePopupMessage";
 
 // api imports
-import { getAllSatellites, getSatelliteProfile } from "../api/satelliteService";
+import {
+  getAllSatellites,
+  getSatelliteProfile,
+} from "../../api/satelliteService";
 import {
   modifySatellite,
   deleteSatellite,
   getDeletedSatellites,
   recoverSatellite,
   createSatellite,
-} from "../api/manageSatellitesService";
-import { getAllDatasets } from "../api/datasetService";
+} from "../../api/manageSatellitesService";
+import { getAllDatasets } from "../../api/datasetService";
 
 // style imports
-import styles from "../styles/ManageSatellites.module.css";
+import styles from "../../styles/satellite/ManageSatellites.module.css";
 
 // subclass filters array
 const SUBCLASS_FILTERS = [
@@ -41,6 +44,7 @@ const SUBCLASS_FILTERS = [
   { value: "Research", label: "Research" },
 ];
 
+// default manage satellites component
 export default function ManageSatellites() {
   // component fields
   const [satellites, setSatellites] = useState([]);

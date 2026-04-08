@@ -22,6 +22,7 @@ export const getNewSatellitesFromDataset = async (
   return await get(`/manage/satellite/dataset/${datasetId}/new/?${params}`);
 };
 
+// create satellite which takes a payload and then creates a new satellite in the database
 export const createSatellite = async (payload) => {
   return await post("/manage/satellite/create/", payload);
 };
@@ -35,4 +36,3 @@ export const getDeletedSatellites = async () => {
 export const recoverSatellite = async (id) => {
   return await post(`/manage/satellite/${id}/recover/`, {});
 };
-

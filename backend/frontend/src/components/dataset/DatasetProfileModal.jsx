@@ -7,21 +7,23 @@ import CloseIcon from "@mui/icons-material/Close";
 import SaveIcon from "@mui/icons-material/Save";
 
 // style imports
-import styles from "../styles/SatelliteProfileModal.module.css";
+import styles from "../../styles/satellite/SatelliteProfileModal.module.css";
 
+// dataset status options
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },
 ];
 
+// dataset status styles
 const STATUS_STYLES = {
   approved: { backgroundColor: "#14532d", color: "#4ade80" },
-  pending:  { backgroundColor: "#1c1917", color: "#f59e0b" },
+  pending: { backgroundColor: "#1c1917", color: "#f59e0b" },
   rejected: { backgroundColor: "#450a0a", color: "#f87171" },
 };
 
-
+// field function for fields on the modal
 function Field({ label, value }) {
   return (
     <div className={styles.field}>
@@ -31,6 +33,7 @@ function Field({ label, value }) {
   );
 }
 
+// edit field function for fields that are editable on the modal
 function EditField({ label, value, onChange, full }) {
   return (
     <div className={`${styles.field} ${full ? styles.fieldFull : ""}`}>
@@ -45,8 +48,9 @@ function EditField({ label, value, onChange, full }) {
   );
 }
 
-
+// default function to create the profile modal
 export default function DatasetProfileModal({ data, onClose, onSave }) {
+  // component fields
   const [editData, setEditData] = useState({
     description: data.description ?? "",
     pull_frequency: data.pull_frequency ?? "",
@@ -55,10 +59,12 @@ export default function DatasetProfileModal({ data, onClose, onSave }) {
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState([]);
 
+  // handle change for field changes
   const handleChange = (field, value) => {
     setEditData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // handle save to update dataset and pass to backend
   const handleSave = async () => {
     setIsSaving(true);
     setErrors([]);
@@ -73,10 +79,13 @@ export default function DatasetProfileModal({ data, onClose, onSave }) {
     }
   };
 
+  // create the modal component
   return ReactDOM.createPortal(
     <div
       className={styles.backdrop}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -98,11 +107,19 @@ export default function DatasetProfileModal({ data, onClose, onSave }) {
             <Field label="Source URL" value={data.source_url} />
             <Field
               label="Creation Date"
-              value={data.creation_date ? new Date(data.creation_date).toLocaleDateString() : null}
+              value={
+                data.creation_date
+                  ? new Date(data.creation_date).toLocaleDateString()
+                  : null
+              }
             />
             <Field
               label="Last Pulled"
-              value={data.last_pulled ? new Date(data.last_pulled).toLocaleString() : null}
+              value={
+                data.last_pulled
+                  ? new Date(data.last_pulled).toLocaleString()
+                  : null
+              }
             />
             <div className={styles.field}>
               <span className={styles.fieldLabel}>Review Status</span>
@@ -113,7 +130,9 @@ export default function DatasetProfileModal({ data, onClose, onSave }) {
                 style={STATUS_STYLES[editData.review_status] ?? {}}
               >
                 {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -135,7 +154,9 @@ export default function DatasetProfileModal({ data, onClose, onSave }) {
         {errors.length > 0 && (
           <div className={styles.errorBanner}>
             {errors.map((e, i) => (
-              <span key={i} className={styles.errorItem}>• {e}</span>
+              <span key={i} className={styles.errorItem}>
+                • {e}
+              </span>
             ))}
           </div>
         )}
@@ -156,6 +177,6 @@ export default function DatasetProfileModal({ data, onClose, onSave }) {
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }

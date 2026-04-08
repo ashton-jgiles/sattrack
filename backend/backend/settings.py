@@ -84,7 +84,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'simple': {
-            'format': '[{asctime}] {message}',
+            'format': '[{asctime}] {levelname} {message}',
             'style': '{',
             'datefmt': '%H:%M:%S',
         },
@@ -169,3 +169,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
+
+# Trajectory positions API pagination limits
+TRAJECTORY_PAGE_SIZE_DEFAULT = 100
+TRAJECTORY_PAGE_SIZE_MAX = 200

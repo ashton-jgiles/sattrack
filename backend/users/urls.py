@@ -1,4 +1,4 @@
-# path imports
+# path and views imports
 from django.urls import path
 from . import views
 
@@ -7,9 +7,11 @@ urlpatterns = [
     path('login/', views.LoginView.as_view()),
     path('register/', views.CreateAccountView.as_view()),
     path('users/', views.GetUsers.as_view()),
-    path('<str:username>/userProfile/', views.GetUserProfile.as_view()),
+    path('<str:username>/profile/', views.GetUserProfile.as_view()),
     path('user/modify/', views.ModifyUser.as_view()),
     path('user/<str:username>/delete/', views.DeleteUser.as_view()),
     path('me/update/', views.UpdateOwnProfile.as_view()),
     path('me/password/', views.ChangePassword.as_view()),
+    path('refresh/', views.RefreshTokenView.as_view()),
+    path('logout/', views.LogoutView.as_view()),
 ]

@@ -1,8 +1,10 @@
+// setup global webpack variables
 const path = require("path");
 const webpack = require("webpack");
 const Dotenv = require("dotenv-webpack");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 
+// export the webpack with all required modules, plugins, and dotenv setup
 module.exports = {
   entry: "./src/index.jsx",
   output: {

@@ -6,11 +6,11 @@ import * as Cesium from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
 // api imports
-import { getSatellitePositionsPage } from "../api/trajectoryService";
-import { getSatelliteCategoryColor } from "../constants/satelliteColors";
+import { getSatellitePositionsPage } from "../../api/satelliteService";
+import { getSatelliteCategoryColor } from "../../constants/satelliteColors";
 
 // styles
-import styles from "../styles/SatelliteGlobe.module.css";
+import styles from "../../styles/satellite/SatelliteGlobe.module.css";
 
 // set the cesium token
 Cesium.Ion.defaultAccessToken = process.env.CESIUM_TOKEN;
@@ -37,10 +37,12 @@ function groupBySatellite(positions) {
   return groups;
 }
 
+// linear interpolation function
 function lerp(a, b, t) {
   return a + (b - a) * t;
 }
 
+// linear interpolation for longitude
 function lerpLongitude(a, b, t) {
   let diff = b - a;
   if (diff > 180) diff -= 360;
@@ -48,6 +50,7 @@ function lerpLongitude(a, b, t) {
   return a + diff * t;
 }
 
+// interpolate position to display on globe
 function interpolatePosition(posA, posB, t) {
   return Cesium.Cartesian3.fromDegrees(
     lerpLongitude(posA.longitude, posB.longitude, t),
@@ -87,6 +90,7 @@ function releaseToEarth(viewer) {
   });
 }
 
+// default globe component function
 export default function SatelliteGlobe({
   highlightedSatellites = [],
   // When set, only satellites whose IDs are in this Set/array are shown.
@@ -96,6 +100,7 @@ export default function SatelliteGlobe({
   onReady = null,
   tracking = false,
 }) {
+  // component fields
   const cesiumContainer = useRef(null);
   const viewerRef = useRef(null);
   const pointCollectionRef = useRef(null);
@@ -113,7 +118,10 @@ export default function SatelliteGlobe({
   const flyingInRef = useRef(false); // true while the fly-in animation plays
   const currentSatPosRef = useRef(null); // live ECEF position of highlighted satellite
   const currentSatAltRef = useRef(0); // live altitude (km) of highlighted satellite
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // get the color palette for satellite types on the globe
   const getSatelliteColorPalette = (
     satelliteId,
     isHighlighted,
@@ -136,6 +144,7 @@ export default function SatelliteGlobe({
     };
   };
 
+  // get a section of satellite data at a timestamp
   const getSatelliteSampleAtTimestamp = (satelliteId, timestampMs) => {
     if (satelliteId === null || satelliteId === undefined) return null;
 
@@ -169,9 +178,6 @@ export default function SatelliteGlobe({
       altKm: lerp(posA.altitude, posB.altitude, t),
     };
   };
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   // Initialize Cesium viewer once
   useEffect(() => {
@@ -271,7 +277,7 @@ export default function SatelliteGlobe({
     };
   }, []);
 
-  // Sync tracking prop → ref; disable/enable camera controls; smooth release
+  // Sync tracking prop ref; disable/enable camera controls; smooth release
   useEffect(() => {
     trackingRef.current = tracking;
     const viewer = viewerRef.current;
@@ -563,6 +569,7 @@ export default function SatelliteGlobe({
     return () => cancelAnimationFrame(animRef.current);
   }, [highlightedSatellites]);
 
+  // return globe react component
   return (
     <div className={styles.globeWrapper}>
       {loading && (

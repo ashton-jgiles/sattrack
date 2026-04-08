@@ -7,7 +7,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import SaveIcon from "@mui/icons-material/Save";
 
 // style imports
-import styles from "../styles/SatelliteProfileModal.module.css";
+import styles from "../../styles/satellite/SatelliteProfileModal.module.css";
 
 // tab config
 const TABS = [
@@ -231,7 +231,7 @@ function validate(editData) {
 
 // modal component
 export default function SatelliteProfileModal({ data, onClose, onSave }) {
-  // functions and variables
+  // component fields
   const [activeTab, setActiveTab] = useState("info");
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState([]);

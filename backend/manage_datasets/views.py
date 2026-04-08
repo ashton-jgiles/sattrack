@@ -1,24 +1,29 @@
-# connection and api imports
-from django.db import connection
+# connection and api imports and requests
+import logging
+from django.db import connection, transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from datetime import date
 import requests
 import re
 
+# create the logger
+logger = logging.getLogger('sattrack')
+
+# global statuses and base url
 VALID_STATUSES = {'pending', 'approved', 'rejected'}
 CLOSED_STATUSES = {'approved', 'rejected'}
 CELESTRAK_BASE = 'https://celestrak.org/NORAD/elements/gp.php'
+
 
 # get review datasets returns all non-deleted datasets for the reviews page
 class GetReviewDatasets(APIView):
     def get(self, request):
         show_closed = request.GET.get('closed', 'false').lower() == 'true'
 
-        if show_closed:
-            status_filter = "AND review_status IN ('approved', 'rejected')"
-        else:
-            status_filter = "AND review_status = 'pending'"
+        # use parameterized IN so status values are never interpolated directly into SQL
+        status_values = ['approved', 'rejected'] if show_closed else ['pending']
+        placeholders = ', '.join(['%s'] * len(status_values))
 
         with connection.cursor() as cursor:
             cursor.execute(f"""
@@ -35,10 +40,10 @@ class GetReviewDatasets(APIView):
                 LEFT JOIN satellite s
                     ON s.dataset_id = d.dataset_id AND s.deleted_at IS NULL
                 WHERE d.deleted_at IS NULL
-                {status_filter}
+                AND d.review_status IN ({placeholders})
                 GROUP BY d.dataset_id
                 ORDER BY d.creation_date DESC
-            """)
+            """, status_values)
             columns = [col[0] for col in cursor.description]
             rows = cursor.fetchall()
 
@@ -56,21 +61,25 @@ class ReviewDataset(APIView):
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT dataset_id FROM dataset WHERE dataset_id = %s AND deleted_at IS NULL",
+                "SELECT dataset_id, review_status FROM dataset WHERE dataset_id = %s AND deleted_at IS NULL",
                 [dataset_id]
             )
-            if not cursor.fetchone():
+            row = cursor.fetchone()
+            if not row:
                 return Response({'error': 'Dataset not found'}, status=404)
+            if row[1] != 'pending':
+                return Response({'error': 'Only pending datasets can be reviewed'}, status=400)
 
             cursor.execute(
                 "UPDATE dataset SET review_status = %s, review_comment = %s WHERE dataset_id = %s",
                 [review_status, review_comment, dataset_id]
             )
 
+        logger.info(f"[Dataset] Dataset {dataset_id} {review_status}")
         return Response({'message': f'Dataset {review_status} successfully'})
 
 
-# modify dataset class which updates description, pull_frequency, and review_status
+# modify dataset updates description, pull_frequency, and review_status
 class ModifyDataset(APIView):
     def post(self, request, dataset_id):
         description = request.data.get('description')
@@ -94,12 +103,16 @@ class ModifyDataset(APIView):
                 WHERE dataset_id = %s
             """, [description, pull_frequency, review_status, dataset_id])
 
+        logger.info(f"[Dataset] Dataset {dataset_id} modified")
         return Response({'message': 'Dataset updated successfully'})
 
-# delete dataset class which soft deletes a dataset and cascades to its satellites
+
+# delete dataset soft-deletes the dataset and cascades to its satellites
+# both UPDATEs are wrapped in a transaction so a partial failure can't leave
+# the dataset deleted while its satellites remain visible
 class DeleteDataset(APIView):
     def delete(self, request, dataset_id):
-        with connection.cursor() as cursor:
+        with transaction.atomic(), connection.cursor() as cursor:
             cursor.execute(
                 "SELECT dataset_id FROM dataset WHERE dataset_id = %s AND deleted_at IS NULL",
                 [dataset_id]
@@ -119,9 +132,11 @@ class DeleteDataset(APIView):
                 [deleted_at, dataset_id]
             )
 
+        logger.info(f"[Dataset] Dataset {dataset_id} soft-deleted")
         return Response({'message': 'Dataset deleted successfully'})
 
-# sources endpoint which scrapes the CelesTrak current data page and returns groups not yet in the database
+
+# sources endpoint scrapes the CelesTrak current data page and returns groups not yet in the database
 class DatasetSources(APIView):
     def get(self, request):
         try:
@@ -130,6 +145,7 @@ class DatasetSources(APIView):
             groups = re.findall(r'GROUP=([^&"\']+)', response.text)
             groups = list(dict.fromkeys(groups))
         except Exception as e:
+            logger.warning(f"[Dataset] Failed to fetch CelesTrak group list: {e}")
             return Response({'error': f'Failed to fetch CelesTrak groups: {str(e)}'}, status=502)
 
         with connection.cursor() as cursor:
@@ -162,7 +178,10 @@ class DatasetSources(APIView):
 
         return Response(available)
 
-# add dataset class which validates a CelesTrak group and inserts a new dataset row
+
+# add dataset validates a CelesTrak group and inserts a new dataset row
+# the restore path (two UPDATEs) is wrapped in a transaction so a partial
+# failure can't undelete the dataset while leaving its satellites deleted
 class AddDataset(APIView):
     def post(self, request):
         group = request.data.get('group', '').strip()
@@ -184,8 +203,11 @@ class AddDataset(APIView):
                 [source_url]
             )
             existing = cursor.fetchone()
-            if existing:
-                dataset_id, dataset_deleted_at = existing
+
+        if existing:
+            dataset_id, dataset_deleted_at = existing
+            # wrap both UPDATEs so a failure can't restore the dataset without its satellites
+            with transaction.atomic(), connection.cursor() as cursor:
                 cursor.execute(
                     "UPDATE dataset SET deleted_at = NULL, dataset_name = %s, description = %s, pull_frequency = %s WHERE dataset_id = %s",
                     [dataset_name, description, pull_frequency, dataset_id]
@@ -194,8 +216,9 @@ class AddDataset(APIView):
                     "UPDATE satellite SET deleted_at = NULL WHERE dataset_id = %s AND deleted_at = %s",
                     [dataset_id, dataset_deleted_at]
                 )
-                return Response({'message': 'Dataset restored successfully', 'dataset_id': dataset_id}, status=200)
+            return Response({'message': 'Dataset restored successfully', 'dataset_id': dataset_id}, status=200)
 
+        with connection.cursor() as cursor:
             # reject if an active dataset with this url already exists
             cursor.execute(
                 "SELECT dataset_id FROM dataset WHERE source_url = %s AND deleted_at IS NULL",
@@ -204,7 +227,7 @@ class AddDataset(APIView):
             if cursor.fetchone():
                 return Response({'error': 'A dataset for this group already exists'}, status=400)
 
-        # new dataset — validate the group against CelesTrak
+        # new dataset — validate the group against CelesTrak before inserting
         try:
             response = requests.get(source_url, timeout=30)
             response.raise_for_status()
@@ -213,17 +236,16 @@ class AddDataset(APIView):
                 return Response({'error': 'Invalid or empty CelesTrak group'}, status=400)
         except ValueError:
             # CelesTrak rate limited — check DB cache as fallback
+            logger.warning(f"[Dataset] CelesTrak rate limited while validating group '{group}', checking cache")
             with connection.cursor() as cursor:
-                cursor.execute(
-                    "SELECT 1 FROM celestrak_cache WHERE url = %s",
-                    [source_url]
-                )
+                cursor.execute("SELECT 1 FROM celestrak_cache WHERE url = %s", [source_url])
                 if not cursor.fetchone():
                     return Response(
                         {'error': 'Could not validate group. CelesTrak rate limited and no cache available. Try again later.'},
                         status=429
                     )
         except Exception as e:
+            logger.warning(f"[Dataset] Failed to validate CelesTrak group '{group}': {e}")
             return Response({'error': f'Failed to validate CelesTrak group: {str(e)}'}, status=502)
 
         with connection.cursor() as cursor:
@@ -243,4 +265,5 @@ class AddDataset(APIView):
             ])
             dataset_id = cursor.lastrowid
 
+        logger.info(f"[Dataset] New dataset '{dataset_name}' created (id={dataset_id}, group={group})")
         return Response({'message': 'Dataset created successfully', 'dataset_id': dataset_id}, status=201)

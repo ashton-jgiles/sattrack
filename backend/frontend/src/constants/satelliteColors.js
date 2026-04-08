@@ -1,3 +1,9 @@
+//   "earth science": "#07ae44",
+//   "oceanic science": "#06bedf",
+//   navigation: "#f59e0b",
+//   internet: "#ec4899",
+//   research: "#ef4444",
+//   weather: "#a855f7",
 const SATELLITE_CATEGORY_COLORS = {
   "earth science": "#ffc35b",
   "oceanic science": "#a855f7",
@@ -7,15 +13,10 @@ const SATELLITE_CATEGORY_COLORS = {
   weather: "#38d7f3",
 };
 
-//   "earth science": "#07ae44",
-//   "oceanic science": "#06bedf",
-//   navigation: "#f59e0b",
-//   internet: "#ec4899",
-//   research: "#ef4444",
-//   weather: "#a855f7",
-
+// default satellite color
 const DEFAULT_SATELLITE_CATEGORY_COLOR = "#22c55e";
 
+// function to get the satellite color based off the type
 function getSatelliteCategoryColor(satelliteType) {
   const key = String(satelliteType ?? "")
     .trim()
@@ -23,6 +24,7 @@ function getSatelliteCategoryColor(satelliteType) {
   return SATELLITE_CATEGORY_COLORS[key] ?? DEFAULT_SATELLITE_CATEGORY_COLOR;
 }
 
+// export the constants and function
 module.exports = {
   SATELLITE_CATEGORY_COLORS,
   DEFAULT_SATELLITE_CATEGORY_COLOR,

@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // api imports
-import { registerUser } from "../api/userService";
+import { registerUser } from "../../api/userService";
 
 // icon imports
 import SatelliteAltIcon from "@mui/icons-material/SatelliteAlt";
@@ -11,8 +11,9 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 
 // style imports
-import styles from "../styles/LoginPage.module.css";
+import styles from "../../styles/login/LoginPage.module.css";
 
+// default create account component
 export default function CreateAccountPage() {
   // component fields
   const navigate = useNavigate();

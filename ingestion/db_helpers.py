@@ -11,11 +11,6 @@ def get_satellite_id(cursor, norad_id):
     row = cursor.fetchone()
     return row[0] if row else None
 
-# satellite exists function
-def satellite_exists(cursor, norad_id):
-    # return if there is a satellite at the norad id
-    return get_satellite_id(cursor, norad_id)
-
 # ensure dataset method
 def ensure_dataset(cursor, source, name, description, url, frequency):
     # select the dataset id from the source

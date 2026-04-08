@@ -7,7 +7,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import SaveIcon from "@mui/icons-material/Save";
 
 // style imports
-import styles from "../styles/UserProfileModal.module.css";
+import styles from "../../styles/user/UserProfileModal.module.css";
 
 // field components
 function Field({ label, value, full }) {
@@ -54,7 +54,9 @@ function SelectField({ label, value, onChange, options, full }) {
   );
 }
 
+// default profile modal for settings page to change user access
 export default function UserProfileModal({ data, onClose, onSave }) {
+  // component fields
   const [form, setForm] = useState({
     username: data.username ?? "",
     level_access: String(data.level_access ?? "1"),
@@ -67,18 +69,24 @@ export default function UserProfileModal({ data, onClose, onSave }) {
   });
   const [saving, setSaving] = useState(false);
 
+  // handle change to change field selection
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  // handle type change for user type change
   const handleTypeChange = (value) => {
     // reset subtype fields when switching type
     setForm((prev) => ({ ...prev, user_type: value }));
     setSubtypeForm({ employee_id: "", profession: "" });
   };
 
+  // build subtype data to get the correct fields based on user subtype
   const buildSubtypeData = () => {
-    if (form.user_type === "Administrator" || form.user_type === "Data Analyst") {
+    if (
+      form.user_type === "Administrator" ||
+      form.user_type === "Data Analyst"
+    ) {
       return { employee_id: parseInt(subtypeForm.employee_id) || 0 };
     }
     if (form.user_type === "Scientist") {
@@ -87,6 +95,7 @@ export default function UserProfileModal({ data, onClose, onSave }) {
     return {};
   };
 
+  // handle save for saving user changes
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -101,6 +110,7 @@ export default function UserProfileModal({ data, onClose, onSave }) {
     }
   };
 
+  // create main modal component
   return ReactDOM.createPortal(
     <div
       className={styles.backdrop}
