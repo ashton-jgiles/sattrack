@@ -30,7 +30,7 @@ def build_sat_record(satellite_data):
     # return the record
     return satellite_record
 
-# SGP4 helper
+# SGP4 helper to compute latitude, longitude and altitude
 def ecef_to_geodetic(x, y, z):
     a = 6378.137
     f = 1 / 298.257223563
