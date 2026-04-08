@@ -1,4 +1,4 @@
-# path imports
+# path and views imports
 from django.urls import path, re_path
 from . import views
 
