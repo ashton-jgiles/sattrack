@@ -28,13 +28,16 @@ const STATUS_COLORS = {
 
 // dataset card component
 function DatasetCard({ dataset, onViewDetails, showStatus }) {
+  // function fields
   const [satellitesOpen, setSatellitesOpen] = useState(false);
   const [satellites, setSatellites] = useState([]);
   const [satellitesLoading, setSatellitesLoading] = useState(false);
 
+  // status class
   const statusClass =
     STATUS_COLORS[dataset.review_status] ?? styles.statusPending;
 
+  // dataset page component
   return (
     <div className={styles.card}>
       {/* Card Header */}
@@ -148,6 +151,7 @@ function DatasetCard({ dataset, onViewDetails, showStatus }) {
 
 // datasets page
 export default function Datasets() {
+  // component fields
   const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDataset, setSelectedDataset] = useState(null);
@@ -162,6 +166,7 @@ export default function Datasets() {
       .finally(() => setLoading(false));
   }, []);
 
+  // main dataset page components
   return (
     <div className={styles.page}>
       {/* Page Header */}

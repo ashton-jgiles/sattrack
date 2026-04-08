@@ -57,6 +57,7 @@ const CATEGORY_COLORS = {
 // Normalize + lookup helper
 const normalize = (str) => str?.trim().toLowerCase();
 
+// get color function for the graphs
 const getColor = (name, index = 0) => {
   const key = Object.keys(CATEGORY_COLORS).find(
     (k) => normalize(k) === normalize(name),

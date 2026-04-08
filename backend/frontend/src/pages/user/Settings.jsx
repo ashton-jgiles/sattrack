@@ -35,6 +35,7 @@ const SUBCLASS_FILTERS = [
   { value: "Amateur", label: "Amateur" },
 ];
 
+// default settings component
 export default function Settings() {
   // component fields
   const [users, setUsers] = useState([]);

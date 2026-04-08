@@ -13,6 +13,7 @@ import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 // style imports
 import styles from "../../styles/login/LoginPage.module.css";
 
+// default create account component
 export default function CreateAccountPage() {
   // component fields
   const navigate = useNavigate();

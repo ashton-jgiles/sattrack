@@ -23,7 +23,9 @@ import {
 // style imports
 import styles from "../../styles/user/UserProfile.module.css";
 
+// default user profile component
 export default function UserProfile() {
+  // component fields
   const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
@@ -43,9 +45,11 @@ export default function UserProfile() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordError, setPasswordError] = useState("");
 
+  // create the message popup
   const { message, messageFading, messageVisible, showPopupMessage } =
     usePopupMessage();
 
+  // on mount load all the data
   useEffect(() => {
     if (!user?.username) return;
     getUserProfile(user.username)
@@ -59,6 +63,7 @@ export default function UserProfile() {
       .finally(() => setLoading(false));
   }, [user?.username]);
 
+  // on save save the users profile
   const handleProfileSave = async () => {
     setProfileError("");
     if (!fullName.trim()) {
@@ -93,6 +98,7 @@ export default function UserProfile() {
     }
   };
 
+  // on password change handle the password logic
   const handlePasswordChange = async () => {
     setPasswordError("");
     if (!oldPassword || !newPassword || !confirmPassword) {
@@ -124,6 +130,7 @@ export default function UserProfile() {
     }
   };
 
+  // render subtype fields based on user subtype
   const renderSubtypeFields = () => {
     if (!profile) return null;
     const type = profile.user_type;

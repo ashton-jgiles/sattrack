@@ -23,7 +23,6 @@ import StorageIcon from "@mui/icons-material/Storage";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import ManageSearchIcon from "@mui/icons-material/ManageSearch";
 import SettingsIcon from "@mui/icons-material/Settings";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import PublicIcon from "@mui/icons-material/Public";
 import DatasetIcon from "@mui/icons-material/Dataset";
 import WavesIcon from "@mui/icons-material/Waves";
@@ -56,6 +55,7 @@ import {
 // style imports
 import styles from "../styles/Dashboard.module.css";
 
+// get the satellite badge style
 function getSatelliteTypeBadgeStyle(satelliteType) {
   const color = getSatelliteCategoryColor(satelliteType);
   return {
@@ -65,6 +65,7 @@ function getSatelliteTypeBadgeStyle(satelliteType) {
   };
 }
 
+// number input component
 function NumInput({ placeholder, value, onChange, step = 1000 }) {
   const adjust = (dir) => {
     const current = parseInt(value) || 0;
@@ -169,7 +170,7 @@ const NAV_ITEMS = [
       {
         id: "settings",
         label: "Settings",
-        icon: <AdminPanelSettingsIcon sx={{ fontSize: 18 }} />,
+        icon: <SettingsIcon sx={{ fontSize: 18 }} />,
         minLevel: 4,
       },
     ],

@@ -21,6 +21,7 @@ import usePopupMessage from "../../hooks/usePopupMessage";
 // style imports
 import styles from "../../styles/dataset/Reviews.module.css";
 
+// status styles
 const STATUS_STYLES = {
   approved: styles.statusApproved,
   pending: styles.statusPending,
@@ -29,10 +30,12 @@ const STATUS_STYLES = {
 
 // single review card
 function ReviewCard({ dataset, showClosed, onReview }) {
+  // function fields
   const [satellitesOpen, setSatellitesOpen] = useState(false);
   const [satellites, setSatellites] = useState([]);
   const [satellitesLoading, setSatellitesLoading] = useState(false);
 
+  // handle toggle satellites
   const handleToggleSatellites = () => {
     if (!satellitesOpen && satellites.length === 0) {
       setSatellitesLoading(true);
@@ -44,6 +47,7 @@ function ReviewCard({ dataset, showClosed, onReview }) {
     setSatellitesOpen((prev) => !prev);
   };
 
+  // main function components
   return (
     <div className={styles.card}>
       {/* Card Header */}
@@ -166,7 +170,9 @@ function ReviewCard({ dataset, showClosed, onReview }) {
   );
 }
 
+// default reviews component
 export default function Reviews() {
+  // component fields
   const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showClosed, setShowClosed] = useState(false);
@@ -175,9 +181,11 @@ export default function Reviews() {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // create the message
   const { message, messageFading, messageVisible, showPopupMessage } =
     usePopupMessage();
 
+  // load the datasets
   const loadDatasets = (closed) => {
     setLoading(true);
     getReviewDatasets(closed)
@@ -186,22 +194,26 @@ export default function Reviews() {
       .finally(() => setLoading(false));
   };
 
+  // on mount load the datasets
   useEffect(() => {
     loadDatasets(showClosed);
   }, [showClosed]);
 
+  // open reviews
   const openReview = (dataset, action) => {
     setReviewTarget(dataset);
     setPendingAction(action);
     setComment("");
   };
 
+  // close review
   const closeReview = () => {
     setReviewTarget(null);
     setPendingAction(null);
     setComment("");
   };
 
+  // handle submit to update the database
   const handleSubmit = async () => {
     if (!reviewTarget || !pendingAction) return;
     setSubmitting(true);
@@ -223,6 +235,7 @@ export default function Reviews() {
     }
   };
 
+  // main reviews page component
   return (
     <div className={styles.page}>
       {/* Page Header */}

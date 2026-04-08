@@ -27,13 +27,16 @@ import usePopupMessage from "../../hooks/usePopupMessage";
 // style imports
 import styles from "../../styles/dataset/ManageDatasets.module.css";
 
+// status styles
 const STATUS_STYLES = {
   approved: { backgroundColor: "#14532d", color: "#4ade80" },
   pending: { backgroundColor: "#1c1917", color: "#f59e0b" },
   rejected: { backgroundColor: "#450a0a", color: "#f87171" },
 };
 
+// default manage datasets component
 export default function ManageDatasets() {
+  // component fields
   const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editTarget, setEditTarget] = useState(null);
@@ -41,6 +44,7 @@ export default function ManageDatasets() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [sources, setSources] = useState([]);
 
+  // setup the message popup
   const { message, messageFading, messageVisible, showPopupMessage } =
     usePopupMessage();
 

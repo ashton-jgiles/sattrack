@@ -44,6 +44,7 @@ const SUBCLASS_FILTERS = [
   { value: "Research", label: "Research" },
 ];
 
+// default manage satellites component
 export default function ManageSatellites() {
   // component fields
   const [satellites, setSatellites] = useState([]);
