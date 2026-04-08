@@ -1,5 +1,8 @@
 # bcrypt import for password hashing
 import bcrypt
+import logging
+
+logger = logging.getLogger('sattrack')
 
 
 def check_password(plain, hashed):
@@ -13,8 +16,12 @@ def check_password(plain, hashed):
 def get_user_role(cursor, username):
     """
     Determine a user's role by checking each subclass table in priority order.
-    Returns the role string ('administrator', 'data_analyst', 'scientist', 'amateur')
-    or None if the user is not found in any subclass table.
+    Returns the table/role key ('administrator', 'data_analyst', 'scientist', 'amateur')
+    or None if the user has no subtype row.
+
+    A None return indicates a data integrity issue (user exists in `user` table
+    but has no matching subtype row). This is logged as a warning so it surfaces
+    in the logs without crashing the caller.
     """
     for role, table in [
         ('administrator', 'administrator'),
@@ -25,4 +32,6 @@ def get_user_role(cursor, username):
         cursor.execute(f"SELECT username FROM {table} WHERE username = %s", [username])
         if cursor.fetchone():
             return role
+
+    logger.warning(f"[Auth] No subtype row found for user '{username}' — data integrity issue")
     return None
