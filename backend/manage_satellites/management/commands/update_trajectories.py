@@ -162,6 +162,7 @@ class Command(BaseCommand):
         self.stdout.write(f'  Total time               : {elapsed}s')
         self.stdout.write('========================================')
 
+    # fetch and cache method to get data and cache it if needed
     def fetch_and_cache(self, url):
         try:
             response = requests.get(url, timeout=30)
@@ -184,3 +185,4 @@ class Command(BaseCommand):
         except Exception as e:
             self.stdout.write(f'[Trajectory] Failed to fetch {url}: {e}')
             return []
+        
