@@ -8,10 +8,12 @@ from backend.throttles import PositionsThrottle
 # satllite view to list all satellites and their subclass type
 class SatelliteView(APIView):
     def get(self, request):
+        # get the level access of the user 
         level = getattr(request.user, 'level_access', 1)
         status_filter = "!= 'rejected'" if level >= 3 else "= 'approved'"
 
         with connection.cursor() as cursor:
+            # get all the satellite data and its subclass type and review status
             cursor.execute(f"""
                 SELECT
                     s.*,
@@ -38,30 +40,40 @@ class SatelliteView(APIView):
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
+        # return the response data
         return Response(data)
     
 # specific satellite gets a satellite by its id and return it
 class SpecificSatelliteView(APIView):
     def get(self, request, satellite_id):
         with connection.cursor() as cursor:
+            # select the satellite from the database with its id and where its not deleted
             cursor.execute("SELECT * FROM satellite WHERE satellite_id = %s AND deleted_at IS NULL", [satellite_id])
             columns = [col[0] for col in cursor.description]
             row = cursor.fetchone()
 
+        # ensure the satellite exists
         if not row:
             return Response({'error': 'Satellite not found'}, status=404)
         
-        return Response(dict(zip(columns, row)))
+        # create the data
+        data = dict(zip(columns, row))
+
+        # return the data
+        return Response(data)
 
 # satellite type counts returns total satellite count and a breakdown by subtype in a single query
 class SatelliteTypeCounts(APIView):
+    # set the permision classes
     permission_classes = [AllowAny]
 
     def get(self, request):
+        # get the user level and status filter
         level = getattr(request.user, 'level_access', 1)
         status_filter = "!= 'rejected'" if level >= 3 else "= 'approved'"
 
         with connection.cursor() as cursor:
+            # select the totals for each satellite type from each sublcass
             cursor.execute(f"""
                 SELECT
                     COUNT(s.satellite_id)  AS total,
@@ -84,17 +96,24 @@ class SatelliteTypeCounts(APIView):
             columns = [col[0] for col in cursor.description]
             row = cursor.fetchone()
 
-        return Response(dict(zip(columns, row)))
+        # create the data
+        data = dict(zip(columns, row))
+
+        # return the data
+        return Response(data)
 
 # all trajectory returns paginated trajectory rows, scoped to a satellite batch per page
 class AllTrajectory(APIView):
+    # set the permisions classes and rate limiting
     permission_classes = [AllowAny]
     throttle_classes = [PositionsThrottle]
 
+    # create page size constants
     PAGE_SIZE_DEFAULT = 100
     PAGE_SIZE_MAX = 200
 
     def get(self, request):
+        # compute the pages and page size and offset
         page = max(1, int(request.GET.get('page', 1)))
         page_size = min(
             self.PAGE_SIZE_MAX,
@@ -102,6 +121,7 @@ class AllTrajectory(APIView):
         )
         offset = (page - 1) * page_size
 
+        # get the level and status filter
         level = getattr(request.user, 'level_access', 1)
         status_filter = "IN ('approved', 'pending')" if level >= 3 else "= 'approved'"
 
@@ -124,6 +144,7 @@ class AllTrajectory(APIView):
             sat_ids = [row[0] for row in sat_rows]
             pending_satellite_ids = [row[0] for row in sat_rows if row[1] == 'pending']
 
+            # create the response json structure
             if not sat_ids:
                 total_pages = max(1, -(-total_satellites // page_size))
                 return Response({
@@ -136,9 +157,16 @@ class AllTrajectory(APIView):
                 })
 
             placeholders = ','.join(['%s'] * len(sat_ids))
+            # get the trajectory data from the database
             cursor.execute(f"""
-                SELECT t.satellite_id, t.dataset_id, t.timestamp,
-                       t.latitude, t.longitude, t.altitude, t.velocity
+                SELECT 
+                    t.satellite_id, 
+                    t.dataset_id, 
+                    t.timestamp,
+                    t.latitude,
+                    t.longitude, 
+                    t.altitude, 
+                    t.velocity
                 FROM trajectory t
                 INNER JOIN (
                     SELECT satellite_id, MAX(timestamp) AS max_ts
@@ -153,8 +181,10 @@ class AllTrajectory(APIView):
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
+        # compute the total pages
         total_pages = max(1, -(-total_satellites // page_size))
 
+        # create and return the response json structure
         return Response({
             'results': results,
             'pending_satellite_ids': pending_satellite_ids,
@@ -167,10 +197,12 @@ class AllTrajectory(APIView):
 # recent deployments gets all satelites deployed in the last 5 years
 class RecentDeployments(APIView):
     def get(self, request):
+        # get the level access and check permisions
         level = getattr(request.user, 'level_access', 1)
         dataset_join = "" if level >= 3 else "INNER JOIN dataset d ON s.dataset_id = d.dataset_id AND d.deleted_at IS NULL AND d.review_status = 'approved'"
 
         with connection.cursor() as cursor:
+            # select all the satellite data the deploy time and the satellite type with the last 5 years
             cursor.execute(f"""
                 SELECT
                     s.*,
@@ -189,10 +221,10 @@ class RecentDeployments(APIView):
                     INNER JOIN deploys_payload dp ON s.satellite_id = dp.satellite_id
                     LEFT JOIN earth_science  es ON s.satellite_id = es.satellite_id
                     LEFT JOIN oceanic_science os ON s.satellite_id = os.satellite_id
-                    LEFT JOIN weather         w  ON s.satellite_id = w.satellite_id
-                    LEFT JOIN navigation      n  ON s.satellite_id = n.satellite_id
-                    LEFT JOIN internet        i  ON s.satellite_id = i.satellite_id
-                    LEFT JOIN research        r  ON s.satellite_id = r.satellite_id
+                    LEFT JOIN weather w  ON s.satellite_id = w.satellite_id
+                    LEFT JOIN navigation n  ON s.satellite_id = n.satellite_id
+                    LEFT JOIN internet i  ON s.satellite_id = i.satellite_id
+                    LEFT JOIN research r  ON s.satellite_id = r.satellite_id
                 WHERE s.deleted_at IS NULL
                   AND dp.deploy_date_time >= NOW() - INTERVAL 5 year
                 ORDER BY dp.deploy_date_time
@@ -200,12 +232,14 @@ class RecentDeployments(APIView):
             columns = [col[0] for col in cursor.description]
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
+        # return the response data
         return Response(data)
 
 # specific satellite view gets all associated data with a satellite id
 class SpecificSatelliteAllData(APIView):
     def get(self, request, satellite_id):
         with connection.cursor() as cursor:
+            # select all the satellite data related to one satellite
             cursor.execute(""" 
             SELECT 
                 s.*,
@@ -252,6 +286,7 @@ class SpecificSatelliteAllData(APIView):
             columns = [col[0] for col in cursor.description]
             row = cursor.fetchone()
 
+        # check that the satellite exists
         if not row:
             return Response({'error': 'Satellite data not found'}, status=404)
         
@@ -295,6 +330,7 @@ class SpecificSatelliteAllData(APIView):
         )
         type_data = {k: v for k, v in flat.items() if k not in known_keys}
 
+        # create response json structure and return it
         return Response({
             'satellite':   satellite,
             'owner':       owner,
