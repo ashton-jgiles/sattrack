@@ -468,6 +468,7 @@ function OverviewPage() {
   const handleSelectSatellite = (satelliteId) => {
     setHighlightedSatellites([satelliteId]);
     setSelectedSatelliteId(satelliteId);
+    setInfoPanelMinimized(true);
   };
 
   useEffect(() => {
