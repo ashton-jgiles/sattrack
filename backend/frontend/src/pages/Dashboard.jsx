@@ -692,7 +692,9 @@ function OverviewPage() {
                   <div
                     className={styles.satelliteItemDot}
                     style={
-                      user?.level_access >= 3 && sat.review_status === "pending"
+                      selectedSatelliteId === sat.satellite_id
+                        ? { backgroundColor: "#3b82f6" }
+                        : user?.level_access >= 3 && sat.review_status === "pending"
                         ? { backgroundColor: "#f59e0b" }
                         : undefined
                     }
