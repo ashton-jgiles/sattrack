@@ -25,7 +25,7 @@ class TotalDatasets(APIView):
         data = dict(zip(columns, row))
 
         # return the data as a response
-        return Response(data);
+        return Response(data)
 
 # dataset view class which returns as json all datasets in the dataset table
 class DatasetView(APIView):

@@ -64,7 +64,8 @@ class SpecificSatelliteView(APIView):
 
 # satellite type counts returns total satellite count and a breakdown by subtype in a single query
 class SatelliteTypeCounts(APIView):
-    # set the permision classes
+    # set the auth and permision classes
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -104,7 +105,8 @@ class SatelliteTypeCounts(APIView):
 
 # all trajectory returns paginated trajectory rows, scoped to a satellite batch per page
 class AllTrajectory(APIView):
-    # set the permisions classes and rate limiting
+    # set the auth and permision classes and rate limiting
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [PositionsThrottle]
 

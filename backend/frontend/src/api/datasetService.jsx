@@ -3,7 +3,7 @@ import { get, post, del } from "./api";
 
 // get total distance creates a frontend interface to the total datasets endpoint
 export const getTotalDatasets = async () => {
-  const data = await get(`/dataset/totalDatasets/`);
+  const data = await get(`/dataset/total_datasets/`);
   return data.total;
 };
 

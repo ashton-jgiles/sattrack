@@ -1,10 +1,13 @@
 # connection and api imports and requests
+import logging
 from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from datetime import date
 import requests
 import re
+
+logger = logging.getLogger('sattrack')
 
 # global statuses and base url
 VALID_STATUSES = {'pending', 'approved', 'rejected'}
@@ -74,6 +77,7 @@ class ReviewDataset(APIView):
             # update the dataset table review status
             cursor.execute("UPDATE dataset SET review_status = %s, review_comment = %s WHERE dataset_id = %s", [review_status, review_comment, dataset_id])
 
+        logger.info(f"[Dataset] Dataset {dataset_id} {review_status}")
         # return success reponse
         return Response({'message': f'Dataset {review_status} successfully'})
 
@@ -104,6 +108,7 @@ class ModifyDataset(APIView):
                 WHERE dataset_id = %s
             """, [description, pull_frequency, review_status, dataset_id])
 
+        logger.info(f"[Dataset] Dataset {dataset_id} modified")
         # return success response
         return Response({'message': 'Dataset updated successfully'})
 
@@ -125,6 +130,7 @@ class DeleteDataset(APIView):
             cursor.execute("UPDATE dataset SET deleted_at = %s WHERE dataset_id = %s", [deleted_at, dataset_id])
             cursor.execute("UPDATE satellite SET deleted_at = %s WHERE dataset_id = %s AND deleted_at IS NULL", [deleted_at, dataset_id])
 
+        logger.info(f"[Dataset] Dataset {dataset_id} soft-deleted")
         # return success response
         return Response({'message': 'Dataset deleted successfully'})
 
@@ -138,6 +144,7 @@ class DatasetSources(APIView):
             groups = re.findall(r'GROUP=([^&"\']+)', response.text)
             groups = list(dict.fromkeys(groups))
         except Exception as e:
+            logger.info(f"[Dataset] Failed to fetch CelesTrak group list: {e}")
             return Response({'error': f'Failed to fetch CelesTrak groups: {str(e)}'}, status=502)
 
         with connection.cursor() as cursor:
@@ -227,7 +234,8 @@ class AddDataset(APIView):
             if not isinstance(data, list) or len(data) == 0:
                 return Response({'error': 'Invalid or empty CelesTrak group'}, status=400)
         except ValueError:
-            # CelesTrak rate limited check DB cache as fallback
+            # CelesTrak rate limited — check DB cache as fallback
+            logger.info(f"[Dataset] CelesTrak rate limited while validating group '{group}', checking cache")
             with connection.cursor() as cursor:
                 cursor.execute(
                     "SELECT 1 FROM celestrak_cache WHERE url = %s",
@@ -239,6 +247,7 @@ class AddDataset(APIView):
                         status=429
                     )
         except Exception as e:
+            logger.info(f"[Dataset] Failed to validate CelesTrak group '{group}': {e}")
             return Response({'error': f'Failed to validate CelesTrak group: {str(e)}'}, status=502)
 
         # insert the new dataset into the dataset table
@@ -259,5 +268,6 @@ class AddDataset(APIView):
             ])
             dataset_id = cursor.lastrowid
 
+        logger.info(f"[Dataset] New dataset '{dataset_name}' created (id={dataset_id}, group={group})")
         # return success response
         return Response({'message': 'Dataset created successfully', 'dataset_id': dataset_id}, status=201)

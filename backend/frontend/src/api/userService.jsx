@@ -9,7 +9,7 @@ export const getUsers = async () => {
 
 // get specific user
 export const getUserProfile = async (username) => {
-  const data = await get(`/auth/${username}/userProfile/`);
+  const data = await get(`/auth/${username}/profile/`);
   return data;
 };
 

@@ -1,8 +1,11 @@
 # rest api imports, and command and threading imports for updating trajectory asynchronously
+import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.management import call_command
 import threading
+
+logger = logging.getLogger('sattrack')
 
 # update trajectory endpoint to create background thread to update all trajectory
 class UpdateTrajectories(APIView):
@@ -14,8 +17,9 @@ class UpdateTrajectories(APIView):
             args=('update_trajectories',),
             daemon=True
         )
-        # start the start
+        # start the thread
         thread.start()
+        logger.info("[Settings] Trajectory update triggered manually")
         # return the success response
         return Response({'message': 'Trajectory update started'})
     

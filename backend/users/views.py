@@ -1,11 +1,13 @@
 # connection and api imports, jwt, hashing, and rate limiting imports
 import bcrypt
+import logging
 from django.db import connection, transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.permissions import AllowAny
 from backend.throttles import RegisterThrottle
+
+logger = logging.getLogger('sattrack')
 
 # check password method
 def check_password(plain, hashed):
@@ -48,7 +50,7 @@ class LoginView(APIView):
             # if not return an error response
             return Response(
                 {'error': 'Username and password required'},
-                status=status.HTTP_400_BAD_REQUEST
+                status=400
             )
 
         with connection.cursor() as cursor:
@@ -58,10 +60,11 @@ class LoginView(APIView):
 
             # if now user exists in the database
             if not row:
+                logger.info(f"[Auth] Failed login attempt for unknown user '{username}'")
                 # return an error response for invalid credentials
                 return Response(
                     {'error': 'Invalid credentials'},
-                    status=status.HTTP_401_UNAUTHORIZED
+                    status=401
                 )
 
             # create
@@ -69,10 +72,11 @@ class LoginView(APIView):
 
             # Check password
             if not check_password(password, retrived_password):
+                logger.info(f"[Auth] Failed login attempt for user '{username}' (bad password)")
                 # if the password is incorrect return an error response
                 return Response(
                     {'error': 'Invalid credentials'},
-                    status=status.HTTP_401_UNAUTHORIZED
+                    status=401
                 )
 
             # Get role from sub-tables
@@ -89,6 +93,7 @@ class LoginView(APIView):
         refresh['level_access'] = level_access
         refresh['full_name'] = full_name
 
+        logger.info(f"[Auth] User '{username}' logged in successfully (role={role})")
         # return the response for successful loging with jwt tokens
         return Response({
             'access': str(refresh.access_token),
@@ -117,9 +122,9 @@ class CreateAccountView(APIView):
             # return an error response for username and password being required
             return Response(
                 {'error': 'Username, full name and password are required'},
-                status=status.HTTP_400_BAD_REQUEST
+                status=400
             )
-        
+
         with connection.cursor() as cursor:
             # check for deuplicate username
             cursor.execute("SELECT username FROM user WHERE username = %s", [username])
@@ -127,7 +132,7 @@ class CreateAccountView(APIView):
             if cursor.fetchone():
                 return Response(
                     {'error': 'Username already taken'},
-                    status=status.HTTP_409_CONFLICT
+                    status=409
                 )
             
             # hash the pasword to insert into the database
@@ -146,10 +151,11 @@ class CreateAccountView(APIView):
             cursor.execute("INSERT INTO amateur (username, interests) VALUES (%s, %s)", [username, None])
 
 
+        logger.info(f"[Auth] New account registered: '{username}'")
         # return a success response
         return Response(
             {'message': 'Account Created Successfully'},
-            status=status.HTTP_201_CREATED
+            status=201
         )
     
 class GetUsers(APIView):
@@ -305,6 +311,7 @@ class ModifyUser(APIView):
                     [subtype_data['profession'], original_username]
                 )
 
+        logger.info(f"[Auth] User '{original_username}' updated (type={user_type}, level={level_access})")
         # return a success response if the user is updated successfully
         return Response({'message': 'User updated successfully'})
 
@@ -448,6 +455,7 @@ class ChangePassword(APIView):
                 [hashed, username]
             )
 
+        logger.info(f"[Auth] User '{username}' changed their password")
         # return a success response
         return Response({'message': 'Password changed successfully'})
 
@@ -472,6 +480,7 @@ class DeleteUser(APIView):
             # delete the user from the database
             cursor.execute("DELETE FROM user WHERE username = %s", [username])
 
+        logger.info(f"[Auth] User '{username}' deleted")
         # return success response
         return Response({'message': 'User deleted successfully'})
     

@@ -22,7 +22,7 @@ export const getSatelliteCounts = async () => {
 
 // get recent deployments interface gets all satellites deployed in last 5 years
 export const getRecentDeployments = async () => {
-  const data = await get(`/satellite/recentDeployments/`);
+  const data = await get(`/satellite/recent_deployments/`);
   return data;
 };
 
