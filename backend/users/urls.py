@@ -12,4 +12,6 @@ urlpatterns = [
     path('user/<str:username>/delete/', views.DeleteUser.as_view()),
     path('me/update/', views.UpdateOwnProfile.as_view()),
     path('me/password/', views.ChangePassword.as_view()),
+    path('refresh/', views.RefreshTokenView.as_view()),
+    path('logout/', views.LogoutView.as_view()),
 ]

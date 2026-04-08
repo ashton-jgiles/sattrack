@@ -94,15 +94,30 @@ class LoginView(APIView):
         refresh['full_name'] = full_name
 
         logger.info(f"[Auth] User '{username}' logged in successfully (role={role})")
-        # return the response for successful loging with jwt tokens
-        return Response({
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
+
+        # set tokens as httpOnly cookies — not readable by JavaScript
+        # secure=False is acceptable for local/Docker dev; set True when serving over HTTPS
+        response = Response({
             'username': username,
             'full_name': full_name,
             'role': role,
             'level_access': level_access,
         })
+        response.set_cookie(
+            'access_token', str(refresh.access_token),
+            max_age=30 * 60,
+            httponly=True,
+            samesite='Lax',
+            secure=False,
+        )
+        response.set_cookie(
+            'refresh_token', str(refresh),
+            max_age=7 * 24 * 60 * 60,
+            httponly=True,
+            samesite='Lax',
+            secure=False,
+        )
+        return response
 
 # create account view to create a users account and check for conflicts
 class CreateAccountView(APIView):
@@ -487,4 +502,45 @@ class DeleteUser(APIView):
         logger.info(f"[Auth] User '{username}' deleted")
         # return success response
         return Response({'message': 'User deleted successfully'})
+
+
+# refresh token view reads the httpOnly refresh cookie and issues a new access cookie
+class RefreshTokenView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from rest_framework_simplejwt.tokens import RefreshToken as JWTRefreshToken
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            return Response({'error': 'No refresh token'}, status=401)
+
+        try:
+            token = JWTRefreshToken(refresh_token)
+            new_access = str(token.access_token)
+        except Exception:
+            return Response({'error': 'Invalid or expired refresh token'}, status=401)
+
+        response = Response({'message': 'Token refreshed'})
+        response.set_cookie(
+            'access_token', new_access,
+            max_age=30 * 60,
+            httponly=True,
+            samesite='Lax',
+            secure=False,
+        )
+        return response
+
+
+# logout view clears the httpOnly auth cookies
+class LogoutView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        response = Response({'message': 'Logged out successfully'})
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        logger.info("[Auth] User logged out")
+        return response
     

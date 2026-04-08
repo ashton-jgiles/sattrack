@@ -8,41 +8,35 @@ const AuthContext = createContext(null);
 // export the auth provider function
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // On mount, restore session from sessionStorage
+  // On mount, restore user metadata from sessionStorage.
+  // Tokens are stored in httpOnly cookies managed by the browser — not accessible here.
   useEffect(() => {
     const storedUser = sessionStorage.getItem("user");
-    const storedToken = sessionStorage.getItem("access_token");
-    if (storedUser && storedToken) {
+    if (storedUser) {
       setUser(JSON.parse(storedUser));
-      setAccessToken(storedToken);
     }
     setLoading(false);
   }, []);
 
-  // login method to call our login endpoint
+  // Listen for session expiry events dispatched by the api layer when token refresh fails
+  useEffect(() => {
+    const handleExpired = () => {
+      setUser(null);
+      sessionStorage.removeItem("user");
+    };
+    window.addEventListener("auth:expired", handleExpired);
+    return () => window.removeEventListener("auth:expired", handleExpired);
+  }, []);
+
+  // login — backend sets httpOnly cookies; we only receive non-sensitive user metadata
   const login = async (username, password) => {
     const data = await post("/auth/login/", { username, password });
-    const {
-      access,
-      refresh,
-      username: uname,
-      full_name,
-      role,
-      level_access,
-    } = data;
+    const { username: uname, full_name, role, level_access } = data;
 
-    // store the user data
     const userData = { username: uname, full_name, role, level_access };
-
-    // Store access token in memory and sessionStorage
-    // Store refresh token in sessionStorage (use httpOnly cookie in production)
-    setAccessToken(access);
     setUser(userData);
-    sessionStorage.setItem("access_token", access);
-    sessionStorage.setItem("refresh_token", refresh);
     sessionStorage.setItem("user", JSON.stringify(userData));
 
     return userData;
@@ -55,16 +49,20 @@ export function AuthProvider({ children }) {
     sessionStorage.setItem("user", JSON.stringify(updated));
   };
 
-  // logout method
-  const logout = () => {
-    setAccessToken(null);
+  // logout — ask the backend to clear the httpOnly cookies, then clear local state
+  const logout = async () => {
+    try {
+      await post("/auth/logout/", {});
+    } catch {
+      // even if the request fails, clear local state so the UI reflects logged-out
+    }
     setUser(null);
-    sessionStorage.clear();
+    sessionStorage.removeItem("user");
   };
 
   // return the auth context
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, logout, updateUser, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );
