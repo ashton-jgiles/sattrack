@@ -23,8 +23,8 @@ services:
       timeout: 5s
       retries: 12
       start_period: 30s
-      ports:
-        - "3307:3307"
+    ports:
+      - "3307:3306"
 
   # One time data seed
   seed:
