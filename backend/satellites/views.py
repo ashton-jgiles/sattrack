@@ -106,7 +106,6 @@ class SatelliteTypeCounts(APIView):
 
 # all trajectory returns paginated trajectory rows, scoped to a satellite batch per page
 class AllTrajectory(APIView):
-    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [PositionsThrottle]
 
