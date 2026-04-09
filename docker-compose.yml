@@ -1,0 +1,71 @@
+x-sattrack-build: &sattrack-build
+  image: ghcr.io/ashton-jgiles/sattrack:latest
+  build:
+    context: .
+    dockerfile: Dockerfile
+    args:
+      CESIUM_TOKEN: ${CESIUM_TOKEN:-}
+
+services:
+  # MySQL database
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-}
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: ${DB_NAME:-sattrack}
+    volumes:
+      - ./db/01_create.sql:/docker-entrypoint-initdb.d/01_create.sql:ro
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    ports:
+      - "3307:3306"
+
+  # One time data seed
+  seed:
+    <<: *sattrack-build
+    working_dir: /ingestion
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python seed.py
+    restart: "no"
+
+  # Django Backend and React Frontend
+  app:
+    <<: *sattrack-build
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    command: >
+      bash -c "
+        START=$$(date +%s) &&
+        python manage.py migrate --fake-initial &&
+        END=$$(date +%s) &&
+        echo '' &&
+        echo '  ======================================' &&
+        echo \"  Build ready in $$(( END - START ))s\" &&
+        echo '  Sattrack is running at http://localhost:8000' &&
+        echo '  ======================================' &&
+        echo '' &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+    ports:
+      - "8000:8000"
+
+volumes:
+  mysql_data:

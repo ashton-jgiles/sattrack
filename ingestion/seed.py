@@ -432,7 +432,18 @@ def seed_navigation(cursor):
 
 # main run method
 def run():
-    # track the straci time
+    # skip seeding if data already exists (e.g. docker-compose down/up with persisted volume)
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM satellite")
+    (count,) = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    if count > 0:
+        print(f"[Seed] Database already contains {count} satellites — skipping seed.")
+        return
+
+    # track the start time
     start = datetime.now()
 
     print("========================================")

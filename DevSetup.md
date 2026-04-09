@@ -12,13 +12,14 @@ cd sattrack
 Run & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u <your_username> -p -e "source db/01_create.sql"
 Then enter your MySQL Password
 
-cd ingestion
+cd backend
 pip install -r requirements.txt
+cd ../ingestion
 python seed.py
 
 # Should output
 
-# Seed complete in 20s
+# Seed complete in 20-60s
 
 Verfiy in DBeaver on Satellite Table if record exists
 
@@ -34,8 +35,8 @@ python -c "import secrets; print(secrets.token_urlsafe(50))"
 # 4. Backend
 
 cd backend
-pip install -r requirements.txt
 python manage.py migrate --fake-initial
+python manage.py migrate
 python manage.py runserver
 
 # 5. Frontend (new terminal)
