@@ -828,10 +828,7 @@ function OverviewPage() {
                   <div
                     className={styles.satelliteItemDot}
                     style={{
-                      backgroundColor:
-                        selectedSatelliteId === sat.satellite_id
-                          ? "#3b82f6"
-                          : getSatelliteCategoryColor(sat.satellite_type),
+                      backgroundColor: getSatelliteCategoryColor(sat.satellite_type),
                       ...(sat.review_status === "pending" && {
                         boxShadow: "0 0 0 2px rgba(245, 158, 11, 0.45)",
                       }),

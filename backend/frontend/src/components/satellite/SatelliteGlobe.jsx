@@ -124,15 +124,8 @@ export default function SatelliteGlobe({
   // get the color palette for satellite types on the globe
   const getSatelliteColorPalette = (
     satelliteId,
-    isHighlighted,
     fallbackType = "",
   ) => {
-    if (isHighlighted) {
-      return {
-        baseColor: "#3b82f6",
-      };
-    }
-
     const rawType =
       satelliteTypeById[String(satelliteId)] ??
       satelliteTypeByIdRef.current[String(satelliteId)] ??
@@ -427,15 +420,12 @@ export default function SatelliteGlobe({
           }
           const { baseColor } = getSatelliteColorPalette(
             satelliteId,
-            isHighlighted,
             inferredType,
           );
 
-          const outlineColor = isHighlighted
-            ? Cesium.Color.WHITE.withAlpha(0.4)
-            : isPending
-              ? Cesium.Color.fromCssColorString("#f59e0b").withAlpha(0.45)
-              : Cesium.Color.fromCssColorString(baseColor).withAlpha(0.45);
+          const outlineColor = isPending
+            ? Cesium.Color.fromCssColorString("#f59e0b").withAlpha(0.45)
+            : Cesium.Color.fromCssColorString(baseColor).withAlpha(0.45);
           const outlineWidth = isHighlighted ? 2 : 3;
 
           return collection.add({
@@ -486,17 +476,14 @@ export default function SatelliteGlobe({
         satelliteGroupsRef.current[String(id)]?.[0]?.satellite_type ?? "";
       const { baseColor } = getSatelliteColorPalette(
         id,
-        isHighlighted,
         inferredType,
       );
       point.show = isVisible;
       point.color = Cesium.Color.fromCssColorString(baseColor).withAlpha(0.9);
       point.pixelSize = isHighlighted ? 14 : 6;
-      point.outlineColor = isHighlighted
-        ? Cesium.Color.WHITE.withAlpha(0.4)
-        : isPending
-          ? Cesium.Color.fromCssColorString("#f59e0b").withAlpha(0.45)
-          : Cesium.Color.fromCssColorString(baseColor).withAlpha(0.45);
+      point.outlineColor = isPending
+        ? Cesium.Color.fromCssColorString("#f59e0b").withAlpha(0.45)
+        : Cesium.Color.fromCssColorString(baseColor).withAlpha(0.45);
       point.outlineWidth = isHighlighted ? 2 : 3;
     });
   }, [highlightedSatellites, visibleSatelliteIds, satelliteTypeById]);
