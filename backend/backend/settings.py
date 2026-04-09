@@ -2,13 +2,14 @@
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
+from django.core.management.utils import get_random_secret_key
 import os
 
 # load our dotenv file with all our secret keys and connection info
 load_dotenv()
 
 # set secret key and debug status
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = os.environ.get('SECRET_KEY') or get_random_secret_key()
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
