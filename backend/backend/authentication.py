@@ -17,12 +17,12 @@ class CustomJWTAuthentication(JWTAuthentication):
         # try cookie first, fall back to Authorization header
         raw_token = request.COOKIES.get('access_token')
         if raw_token:
-            try:
-                validated_token = self.get_validated_token(raw_token)
-                return self.get_user(validated_token), validated_token
-            except Exception:
-                pass
-        # fall back to Authorization: Bearer header
+            # Token is present — validate it and let any exception propagate.
+            # This ensures an expired/invalid cookie returns a 401 so the
+            # client can refresh, rather than silently falling back to anonymous.
+            validated_token = self.get_validated_token(raw_token)
+            return self.get_user(validated_token), validated_token
+        # No cookie — fall back to Authorization: Bearer header (or anonymous)
         return super().authenticate(request)
 
     # get user to check token status and verify user details
