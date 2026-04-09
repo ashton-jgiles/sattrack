@@ -418,6 +418,7 @@ export default function SatelliteGlobe({
           const pos = positions[0];
           const id = parseInt(satelliteId);
           const isHighlighted = highlightedSatellites.includes(id);
+          const isPending = pendingSatelliteIdsRef.current.has(id);
           const isVisible =
             visibleSatelliteIds === null || visibleSatelliteIds.has(id);
           const inferredType = pos?.satellite_type ?? "";
@@ -430,6 +431,13 @@ export default function SatelliteGlobe({
             inferredType,
           );
 
+          const outlineColor = isHighlighted
+            ? Cesium.Color.WHITE.withAlpha(0.4)
+            : isPending
+              ? Cesium.Color.fromCssColorString("#f59e0b").withAlpha(0.45)
+              : Cesium.Color.fromCssColorString(baseColor).withAlpha(0.45);
+          const outlineWidth = isHighlighted ? 2 : 3;
+
           return collection.add({
             position: Cesium.Cartesian3.fromDegrees(
               pos.longitude,
@@ -437,11 +445,9 @@ export default function SatelliteGlobe({
               pos.altitude * 1000,
             ),
             color: Cesium.Color.fromCssColorString(baseColor).withAlpha(0.9),
-            pixelSize: isHighlighted ? 14 : 6,
-            outlineColor: isHighlighted
-              ? Cesium.Color.WHITE.withAlpha(0.4)
-              : Cesium.Color.fromCssColorString(baseColor).withAlpha(0.45),
-            outlineWidth: isHighlighted ? 2 : 3,
+            pixelSize: isHighlighted ? 14 : isPending ? 9 : 6,
+            outlineColor,
+            outlineWidth,
             show: isVisible,
           });
         });
@@ -475,6 +481,7 @@ export default function SatelliteGlobe({
       const isVisible =
         visibleSatelliteIds === null || visibleSatelliteIds.has(id);
 
+      const isPending = pendingSatelliteIdsRef.current.has(id);
       const inferredType =
         satelliteGroupsRef.current[String(id)]?.[0]?.satellite_type ?? "";
       const { baseColor } = getSatelliteColorPalette(
@@ -487,7 +494,9 @@ export default function SatelliteGlobe({
       point.pixelSize = isHighlighted ? 14 : 6;
       point.outlineColor = isHighlighted
         ? Cesium.Color.WHITE.withAlpha(0.4)
-        : Cesium.Color.fromCssColorString(baseColor).withAlpha(0.45);
+        : isPending
+          ? Cesium.Color.fromCssColorString("#f59e0b").withAlpha(0.45)
+          : Cesium.Color.fromCssColorString(baseColor).withAlpha(0.45);
       point.outlineWidth = isHighlighted ? 2 : 3;
     });
   }, [highlightedSatellites, visibleSatelliteIds, satelliteTypeById]);
