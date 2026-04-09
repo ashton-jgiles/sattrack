@@ -2,7 +2,7 @@
 const BASE_URL = "/api";
 
 // attempt to refresh the access token using the httpOnly refresh cookie
-const refreshAccessToken = async () => {
+export const refreshAccessToken = async () => {
   const res = await fetch(`${BASE_URL}/auth/refresh/`, {
     method: "POST",
     credentials: "include",

@@ -1,6 +1,6 @@
 // react and api imports
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { post } from "../api/api";
+import { post, refreshAccessToken } from "../api/api";
 
 // creating the auth context
 const AuthContext = createContext(null);
@@ -11,13 +11,19 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   // On mount, restore user metadata from sessionStorage.
-  // Tokens are stored in httpOnly cookies managed by the browser — not accessible here.
+  // Proactively refresh the access token so it is always present — the browser
+  // silently deletes expired httpOnly cookies, which would cause AllowAny
+  // endpoints to treat the user as anonymous without ever returning a 401.
   useEffect(() => {
     const storedUser = sessionStorage.getItem("user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      refreshAccessToken()
+        .then(() => setUser(JSON.parse(storedUser)))
+        .catch(() => sessionStorage.removeItem("user"))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   // Listen for session expiry events dispatched by the api layer when token refresh fails
