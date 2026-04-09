@@ -1,11 +1,13 @@
 /* ── Landing Page Module ────────────────────────────────────── */
 
 .page {
-  min-height: 100vh;
+  height: 100vh;
   background-color: #020917;
   color: #ffffff;
   width: 100%;
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* ── Header ─────────────────────────────────────────────────── */
@@ -74,9 +76,14 @@
   margin: 0 auto;
   padding: 2rem 2rem;
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr; /* ✅ left and right columns */
+  grid-template-columns: 1.2fr 0.8fr;
   gap: 2rem;
-  align-items: start; /* ✅ both columns start at the top */
+  align-items: stretch;
+  flex: 1;
+  height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* ── Left Column: Hero Text + Globe ─────────────────────────── */
@@ -85,6 +92,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  min-height: 0;
 }
 
 .heroTitle {
@@ -103,6 +111,8 @@
 
 .globeWrapper {
   width: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── Right Column: Stats ────────────────────────────────────── */
@@ -110,7 +120,8 @@
 .rightColumn {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
+  min-height: 0;
 }
 
 .statsTitle {
@@ -119,12 +130,15 @@
   font-weight: var(--font-weight-medium);
   text-align: center;
   color: #ffffff;
+  flex-shrink: 0;
 }
 
 .statsGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr); /* ✅ 2x4 grid */
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── Stat Cards ─────────────────────────────────────────────── */
@@ -133,40 +147,41 @@
   background-color: #0f172a;
   border: 1px solid #1e293b;
   border-radius: 0.75rem;
-  padding: 1.25rem 1.5rem;
+  padding: 0.625rem 0.875rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  transition:
-    border-color 0.2s ease,
-    transform 0.2s ease;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  min-height: 0;
 }
 
-.statCard:hover {
-  border-color: #3b82f6;
-  transform: translateY(-2px);
+.statCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
 }
 
-.statLabel {
-  font-size: var(--text-sm);
+.statCardLabel {
+  font-size: clamp(0.75rem, 1.8vh, 1.25rem);
   color: #94a3b8;
   font-weight: var(--font-weight-normal);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
-.statValue {
+.statCardIcon {
+  color: #3b82f6;
+  font-size: clamp(1rem, 2.8vh, 2rem);
+  display: flex;
+  align-items: center;
+}
+
+.statCardValue {
   font-family: var(--font-display);
-  font-size: var(--text-3xl);
+  font-size: clamp(1rem, 4vh, 3rem);
   font-weight: 600;
-  color: #22c55e;
+  color: #cbd5e1;
   line-height: 1;
-}
-
-.statLoading {
-  font-size: var(--text-sm);
-  color: #475569;
-  font-style: italic;
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */
