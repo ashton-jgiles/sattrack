@@ -3,7 +3,7 @@
 import os
 import sys
 
-
+# main method for starting the django backend
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
@@ -17,6 +17,6 @@ def main():
         ) from exc
     execute_from_command_line(sys.argv)
 
-
+# start main
 if __name__ == '__main__':
     main()

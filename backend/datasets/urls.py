@@ -1,6 +1,10 @@
+# path and views imports
 from django.urls import path
-from .views import main
+from . import views
 
+# dataset app urls
 urlpatterns = [
-    path('test/', main)
+    path('datasets/', views.DatasetView.as_view()),
+    path('total_datasets/', views.TotalDatasets.as_view()),
+    path('<int:dataset_id>/satellites/', views.SatellitesInDataset.as_view()),
 ]

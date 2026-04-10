@@ -1,0 +1,193 @@
+/* ── Landing Page Module ────────────────────────────────────── */
+
+.page {
+  height: 100vh;
+  background-color: #020917;
+  color: #ffffff;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: rgba(2, 9, 23, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid #1e293b;
+}
+
+.headerInner {
+  max-width: 80%;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logoIcon {
+  color: #3b82f6;
+}
+
+.logoText {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-medium);
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.loginButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.loginButton:hover {
+  background-color: #1d4ed8;
+}
+
+/* ── Main Two Column Layout ─────────────────────────────────── */
+
+.content {
+  max-width: 80%;
+  margin: 0 auto;
+  padding: 2rem 2rem;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 2rem;
+  align-items: stretch;
+  flex: 1;
+  height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ── Left Column: Hero Text + Globe ─────────────────────────── */
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-height: 0;
+}
+
+.heroTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+}
+
+.heroSubtitle {
+  font-size: var(--text-lg);
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.globeWrapper {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Right Column: Stats ────────────────────────────────────── */
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.statsTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.statsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Stat Cards ─────────────────────────────────────────────── */
+
+.statCard {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  min-height: 0;
+}
+
+.statCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.statCardLabel {
+  font-size: clamp(0.75rem, 1.8vh, 1.25rem);
+  color: #94a3b8;
+  font-weight: var(--font-weight-normal);
+  white-space: nowrap;
+}
+
+.statCardIcon {
+  color: #3b82f6;
+  font-size: clamp(1rem, 2.8vh, 2rem);
+  display: flex;
+  align-items: center;
+}
+
+.statCardValue {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 4vh, 3rem);
+  font-weight: 600;
+  color: #cbd5e1;
+  line-height: 1;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr; /* ✅ stack on smaller screens */
+  }
+}

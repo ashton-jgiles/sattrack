@@ -14,10 +14,12 @@ db.sqlite3
 
 # Node
 node_modules/
+**/node_modules/
 npm-debug.log*
 
 # Webpack build output
 backend/frontend/static/frontend/main.js
+backend/frontend/static/cesium
 
 # Database
 db/seed_dump.sql

@@ -1,0 +1,41 @@
+/* ── Satellite Globe Module ─────────────────────────────────── */
+
+.globeWrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid #1e293b;
+  background-color: #000;
+}
+
+.viewer {
+  width: 100%;
+  height: 100%;
+}
+
+/* Loading / error overlay */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(2, 9, 23, 0.85);
+  z-index: 10;
+}
+
+.overlayText {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+
+.overlayError {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  color: #ef4444;
+  letter-spacing: 0.05em;
+}
