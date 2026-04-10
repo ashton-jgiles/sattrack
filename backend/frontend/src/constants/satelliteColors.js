@@ -1,15 +1,9 @@
-//   "earth science": "#07ae44",
-//   "oceanic science": "#06bedf",
-//   navigation: "#f59e0b",
-//   internet: "#ec4899",
-//   research: "#ef4444",
-//   weather: "#a855f7",
 const SATELLITE_CATEGORY_COLORS = {
   "earth science": "#ffc35b",
   "oceanic science": "#a855f7",
   navigation: "#07b346",
-  internet: "#ec4899",
-  research: "#ef4444",
+  internet: "#ff7cbe",
+  research: "#e11b1b",
   weather: "#38d7f3",
 };
 

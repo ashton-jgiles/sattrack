@@ -4,6 +4,12 @@ A satellite tracking platform for visualizing and managing Earth-orbiting satell
 
 ---
 
+## GitHub Repository
+
+GitHub Repository: https://github.com/ashton-jgiles/sattrack
+
+---
+
 ## Running the App
 
 There are two ways to run SatTrack — pulling the pre-built image from GitHub, or cloning the repo and building locally.
@@ -134,12 +140,12 @@ While the containers are running, connect to the containerized MySQL database:
 
 Using the seeded database we have four different user types to test user level access and user subclasses. The following seeded users are given for testing
 
-| Role | Username | Password |
-|------|----------|----------|
-| Admin | `admin01` | `admin123` |
-| Data Analyst | `analyst01` | `analyst123` |
-| Scientist | `scientist01` | `scientist123` |
-| Amateur | `amateur01` | `amateur123` |
+| Role         | Username      | Password       |
+| ------------ | ------------- | -------------- |
+| Admin        | `admin01`     | `admin123`     |
+| Data Analyst | `analyst01`   | `analyst123`   |
+| Scientist    | `scientist01` | `scientist123` |
+| Amateur      | `amateur01`   | `amateur123`   |
 
 Additionally you can create your own user in the local system. For more information on specific systems within SatTrack please refer to the final report document in the docs/ folder and find sections on the visual interface and user guide at the bottom of that document.
 

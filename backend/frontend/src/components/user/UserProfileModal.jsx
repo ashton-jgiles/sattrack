@@ -101,6 +101,7 @@ export default function UserProfileModal({ data, onClose, onSave }) {
     try {
       await onSave({
         ...form,
+        level_access: parseInt(form.level_access),
         original_username: data.username,
         subtype_data: buildSubtypeData(),
       });

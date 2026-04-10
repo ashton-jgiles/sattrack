@@ -203,6 +203,7 @@ export default function Settings() {
           onClose={() => setUserData(null)}
           onSave={async (payload) => {
             await modifyUser(payload);
+            getUsers().then((data) => setUsers(data));
             showPopupMessage("User updated successfully");
           }}
         />
