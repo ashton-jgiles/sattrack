@@ -74,6 +74,10 @@ class ReviewDataset(APIView):
                 "UPDATE dataset SET review_status = %s, review_comment = %s WHERE dataset_id = %s",
                 [review_status, review_comment, dataset_id]
             )
+            cursor.execute(
+                "INSERT IGNORE INTO reviews (reviewed_by, dataset_id, reviewed_at) VALUES (%s, %s, NOW())",
+                [request.user.username, dataset_id]
+            )
 
         logger.info(f"[Dataset] Dataset {dataset_id} {review_status}")
         return Response({'message': f'Dataset {review_status} successfully'})
@@ -216,6 +220,10 @@ class AddDataset(APIView):
                     "UPDATE satellite SET deleted_at = NULL WHERE dataset_id = %s AND deleted_at = %s",
                     [dataset_id, dataset_deleted_at]
                 )
+                cursor.execute(
+                    "INSERT IGNORE INTO uploads (uploaded_by, dataset_id, uploaded_at) VALUES (%s, %s, NOW())",
+                    [request.user.username, dataset_id]
+                )
             return Response({'message': 'Dataset restored successfully', 'dataset_id': dataset_id}, status=200)
 
         with connection.cursor() as cursor:
@@ -264,6 +272,10 @@ class AddDataset(APIView):
                 'pending'
             ])
             dataset_id = cursor.lastrowid
+            cursor.execute(
+                "INSERT INTO uploads (uploaded_by, dataset_id, uploaded_at) VALUES (%s, %s, NOW())",
+                [request.user.username, dataset_id]
+            )
 
         logger.info(f"[Dataset] New dataset '{dataset_name}' created (id={dataset_id}, group={group})")
         return Response({'message': 'Dataset created successfully', 'dataset_id': dataset_id}, status=201)
