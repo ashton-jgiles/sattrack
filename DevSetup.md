@@ -34,7 +34,7 @@ python -c "import secrets; print(secrets.token_urlsafe(50))"
 
 # 4. Backend
 
-cd backend
+cd ../backend
 python manage.py migrate --fake-initial
 python manage.py migrate
 python manage.py runserver
