@@ -257,6 +257,30 @@ function SatelliteInfoPanel({
   const l = profile.launch || {};
   const ls = profile.launch_site || {};
   const c = profile.communication || {};
+  const t = profile.type_data || {};
+
+  const TYPE_FIELD_LABELS = {
+    instrument:       "Instrument",
+    data_measured:    "Data Measured",
+    wavelength_band:  "Wavelength Band",
+    resolution_m:     "Resolution (m)",
+    data_archive_url: "Data Archive URL",
+    mission_status:   "Mission Status",
+    constellation:    "Constellation",
+    signal_type:      "Signal Type",
+    accuracy_m:       "Accuracy (m)",
+    orbital_slot:     "Orbital Slot",
+    clock_type:       "Clock Type",
+    coverage:         "Coverage",
+    frequency_band:   "Frequency Band",
+    service_type:     "Service Type",
+    throughput_gbps:  "Throughput (Gbps)",
+    altitude_km:      "Altitude (km)",
+    research_field:   "Research Field",
+    coverage_region:  "Coverage Region",
+    imaging_channels: "Imaging Channels",
+    repeat_cycle_min: "Repeat Cycle (min)",
+  };
 
   const deployDate = l.deploy_date_time
     ? new Date(l.deploy_date_time).toLocaleDateString()
@@ -345,6 +369,19 @@ function SatelliteInfoPanel({
             <InfoField label="Frequency" value={c.communication_frequency} />
             <InfoField label="Satellite Type" value={s.satellite_type} />
           </div>
+
+          {Object.keys(t).length > 0 && (
+            <div className={styles.infoPanelSection}>
+              <span className={styles.infoPanelSectionTitle}>Instrument Data</span>
+              {Object.entries(t).map(([key, value]) => (
+                <InfoField
+                  key={key}
+                  label={TYPE_FIELD_LABELS[key] ?? key.replace(/_/g, " ")}
+                  value={value !== null ? String(value) : null}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

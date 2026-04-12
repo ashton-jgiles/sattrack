@@ -55,6 +55,7 @@ export default function ManageSatellites() {
   const [loading, setLoading] = useState(true);
   const [deletedLoading, setDeletedLoading] = useState(false);
   const [profileData, setProfileData] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const { message, messageFading, messageVisible, showPopupMessage } =
@@ -234,6 +235,7 @@ export default function ManageSatellites() {
                   <div className={styles.listCell}>{sat.norad_id}</div>
                   <button
                     className={styles.deleteButton}
+                    disabled={profileLoading}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEditClick(sat.satellite_id);
