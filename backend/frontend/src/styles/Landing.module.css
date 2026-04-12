@@ -188,6 +188,6 @@
 
 @media (max-width: 1024px) {
   .content {
-    grid-template-columns: 1fr; /* ✅ stack on smaller screens */
+    grid-template-columns: 1fr; /* stack on smaller screens */
   }
 }
