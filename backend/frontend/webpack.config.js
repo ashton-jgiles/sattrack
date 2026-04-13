@@ -71,7 +71,7 @@ module.exports = {
       systemvars: true,
     }),
     new webpack.DefinePlugin({
-      "process.env.NODE_ENV": JSON.stringify("development"), // ✅ not process.env object
+      "process.env.NODE_ENV": JSON.stringify("development"), // not process.env object
     }),
   ],
   resolve: {
