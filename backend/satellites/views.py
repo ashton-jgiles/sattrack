@@ -300,6 +300,17 @@ class SpecificSatelliteAllData(APIView):
         if not row:
             return Response({'error': 'Satellite data not found'}, status=404)
 
+        # record a view for this dataset against the requesting user
+        dataset_id = dict(zip(columns, row)).get('dataset_id')
+        username = getattr(request.user, 'username', None)
+        if username and dataset_id:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO views (username, dataset_id, views, downloads, interaction_date)
+                    VALUES (%s, %s, 1, 0, CURDATE())
+                    ON DUPLICATE KEY UPDATE views = views + 1
+                """, [username, dataset_id])
+
         # build flat dict, skipping NULL values (only one subclass table has real data)
         flat = {k: v for k, v in zip(columns, row) if v is not None}
 
