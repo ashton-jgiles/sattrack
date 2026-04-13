@@ -1,6 +1,6 @@
 # SatTrack
 
-A satellite tracking platform for visualizing and managing Earth-orbiting satellites, built with Django and React. This project was developed in CPSC 471 at the Univeristy of Calgary, Calgary, Alberta, Canada and was designed to implement a relational database system in MySQL. Where possible we attempted to follow best practice for repository setup, code organization and code structure as well as best security practices attainable within the development time available. One area where best practice was not upheld was in views.py files where we intentially didnt user djangos models and serializers to create interfaces between django and the database as we wanted to display our SQL queries in the codebase itself.
+A satellite tracking platform for visualizing and managing Earth-orbiting satellites, built with Django and React. This project was developed in CPSC 471 at the Univeristy of Calgary, Calgary, Alberta, Canada and was designed to implement a relational database system in MySQL. Where possible we attempted to follow best practice for repository setup, code organization and code structure as well as best security practices attainable within the development time available. One area where best practice was not upheld was in views.py files where we intentionally didn't use Django models and serializers to create interfaces between Django and the database as we wanted to display our SQL queries in the codebase itself.
 
 ---
 
@@ -206,7 +206,7 @@ While the containers are running, connect to the containerized MySQL database:
 
 ## Using the System
 
-Using the seeded database we have four different user types to test user level access and user subclasses. The following seeded users are given for testing
+Using the seeded database we have four different user types to test user level access and user subclasses. The following seeded users are given for testing:
 
 | Role         | Username      | Password       |
 | ------------ | ------------- | -------------- |
